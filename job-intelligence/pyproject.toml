@@ -1,0 +1,55 @@
+[project]
+name = "job-intelligence-platform"
+version = "0.1.0"
+description = "Standalone job intelligence platform powered by JobSpy."
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.13.3",
+    "apscheduler>=3.10.4",
+    "fastapi>=0.115.0",
+    "httpx>=0.27.2",
+    "pandas>=2.2.3",
+    "psycopg[binary]>=3.2.3",
+    "pydantic>=2.8.2",
+    "pydantic-settings>=2.5.2",
+    "python-jobspy>=1.1.82",
+    "sqlalchemy>=2.0.35",
+    "streamlit>=1.39.0",
+    "uvicorn[standard]>=0.30.6",
+]
+
+[project.optional-dependencies]
+ai = [
+    "anthropic>=0.36.0",
+    "google-generativeai>=0.8.3",
+    "openai>=1.51.0",
+]
+dev = [
+    "pytest>=8.3.3",
+    "pytest-cov>=5.0.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+    "analytics*",
+    "api*",
+    "collectors*",
+    "dashboard*",
+    "notifications*",
+    "scheduler*",
+    "search*",
+    "storage*",
+]
+exclude = ["tests*", "docs*", "docker*", "alembic*"]
+
+[tool.ruff]
+line-length = 100

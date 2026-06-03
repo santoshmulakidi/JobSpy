@@ -1,0 +1,26 @@
+name: Job Intelligence CI
+
+on:
+  push:
+    paths:
+      - "job-intelligence/**"
+      - ".github/workflows/job-intelligence-ci.yml"
+  pull_request:
+    paths:
+      - "job-intelligence/**"
+      - ".github/workflows/job-intelligence-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: job-intelligence
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install ".[dev]"
+      - run: pytest

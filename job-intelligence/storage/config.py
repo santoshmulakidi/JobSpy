@@ -1,0 +1,33 @@
+from __future__ import annotations
+
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    database_url: str = "sqlite:///./job_intelligence.db"
+    log_level: str = "INFO"
+    default_sites: str = (
+        "linkedin,indeed,google,zip_recruiter,glassdoor,careerbuilder,remotely,weworkremotely"
+    )
+    scheduler_hours: int = 4
+    slack_webhook_url: str | None = None
+    discord_webhook_url: str | None = None
+    telegram_bot_token: str | None = None
+    telegram_chat_id: str | None = None
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="JOB_INTELLIGENCE_",
+        extra="ignore",
+    )
+
+    @property
+    def default_site_list(self) -> list[str]:
+        return [site.strip() for site in self.default_sites.split(",") if site.strip()]
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

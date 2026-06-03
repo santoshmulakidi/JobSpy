@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Job Intelligence Platform</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">JI</div>
+          <div>
+            <h1>Job Intelligence</h1>
+            <p>Local job market command center</p>
+          </div>
+        </div>
+
+        <nav class="nav-list" aria-label="Main navigation">
+          <button class="nav-item is-active" data-view="overview" type="button">Overview</button>
+          <button class="nav-item" data-view="jobs" type="button">Jobs</button>
+          <button class="nav-item" data-view="collect" type="button">Collect</button>
+          <button class="nav-item" data-view="companies" type="button">Companies</button>
+        </nav>
+
+        <div class="system-card">
+          <span class="status-dot" id="apiStatusDot"></span>
+          <div>
+            <strong id="apiStatusText">Checking API</strong>
+            <small>FastAPI local runtime</small>
+          </div>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Standalone platform</p>
+            <h2 id="viewTitle">Overview</h2>
+          </div>
+          <div class="quick-actions">
+            <button class="icon-button" id="refreshButton" type="button" title="Reload stored database data">
+              Refresh Stored
+            </button>
+            <button class="primary-button" id="quickCollectButton" type="button" title="Scrape latest jobs now">
+              Collect Latest
+            </button>
+            <a class="secondary-button" href="/docs" target="_blank" rel="noreferrer">API Docs</a>
+          </div>
+        </header>
+
+        <section class="view is-visible" id="overviewView">
+          <div class="metric-grid">
+            <article class="metric">
+              <span>Total Jobs</span>
+              <strong id="totalJobs">0</strong>
+            </article>
+            <article class="metric">
+              <span>Remote Roles</span>
+              <strong id="remoteJobs">0</strong>
+            </article>
+            <article class="metric">
+              <span>Companies</span>
+              <strong id="companyCount">0</strong>
+            </article>
+            <article class="metric">
+              <span>Avg Salary Range</span>
+              <strong id="avgSalary">N/A</strong>
+            </article>
+          </div>
+
+          <div class="panel-grid">
+            <section class="panel">
+              <div class="panel-header">
+                <h3>Trending Companies</h3>
+                <span>By active jobs</span>
+              </div>
+              <div class="bar-list" id="companyChart"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-header">
+                <h3>Requested Skills</h3>
+                <span>From descriptions</span>
+              </div>
+              <div class="skill-cloud" id="skillCloud"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-header">
+                <h3>Location Trends</h3>
+                <span>Top markets</span>
+              </div>
+              <div class="bar-list" id="locationChart"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-header">
+                <h3>Latest Jobs</h3>
+                <span>Most recently seen</span>
+              </div>
+              <div class="compact-list" id="latestJobs"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="jobsView">
+          <section class="panel">
+            <form class="filter-grid" id="searchForm">
+              <label>
+                Keyword
+                <input id="keywordInput" name="keyword" placeholder="Python, .NET, React" />
+              </label>
+              <label>
+                Company
+                <input id="companyInput" name="company" placeholder="Company name" />
+              </label>
+              <label>
+                Location
+                <input id="locationInput" name="location" placeholder="Dallas, Remote, Texas" />
+              </label>
+              <label>
+                Source
+                <select id="sourceInput" name="source">
+                  <option value="">Any source</option>
+                </select>
+              </label>
+              <label>
+                Remote
+                <select id="remoteInput" name="remote">
+                  <option value="">Any</option>
+                  <option value="true">Remote only</option>
+                  <option value="false">On-site or hybrid</option>
+                </select>
+              </label>
+              <label>
+                Min Salary
+                <input id="minSalaryInput" min="0" name="min_salary" placeholder="90000" type="number" />
+              </label>
+              <label>
+                Max Salary
+                <input id="maxSalaryInput" min="0" name="max_salary" placeholder="180000" type="number" />
+              </label>
+              <button class="primary-button" type="submit">Search</button>
+            </form>
+          </section>
+
+          <section class="panel table-panel">
+            <div class="panel-header">
+              <h3>Job Explorer</h3>
+              <span id="jobCountLabel">0 jobs</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Role</th>
+                    <th>Company</th>
+                    <th>Location</th>
+                    <th>Source</th>
+                    <th>Visa Status</th>
+                    <th>Salary</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="jobsTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" id="collectView">
+          <section class="panel collect-panel">
+            <div class="panel-header">
+              <h3>Run Collection</h3>
+              <span>Scrapes fresh data and stores it locally</span>
+            </div>
+            <form class="collect-grid" id="collectForm">
+              <label>
+                Search Term
+                <input id="collectSearchTerm" required value="Senior .NET Developer" />
+              </label>
+              <label>
+                Location
+                <input id="collectLocation" value="Texas" />
+              </label>
+              <label>
+                Results Wanted
+                <input id="collectResults" max="1000" min="1" type="number" value="50" />
+              </label>
+              <label>
+                Country
+                <input id="collectCountry" value="usa" />
+              </label>
+              <fieldset>
+                <legend>Sources</legend>
+                <label><input checked type="checkbox" value="linkedin" /> LinkedIn</label>
+                <label><input checked type="checkbox" value="indeed" /> Indeed</label>
+                <label><input type="checkbox" value="google" /> Google Jobs</label>
+                <label><input type="checkbox" value="zip_recruiter" /> ZipRecruiter</label>
+                <label><input type="checkbox" value="glassdoor" /> Glassdoor</label>
+                <label><input type="checkbox" value="careerbuilder" /> CareerBuilder <span class="source-note">blocked/experimental</span></label>
+                <label><input type="checkbox" value="remotely" /> Remotely.jobs</label>
+                <label><input type="checkbox" value="weworkremotely" /> We Work Remotely <span class="source-note">blocked/experimental</span></label>
+              </fieldset>
+              <p class="source-warning">
+                CareerBuilder and We Work Remotely currently block direct automated collection with JavaScript challenges.
+              </p>
+              <label class="checkbox-row">
+                <input id="collectRemote" type="checkbox" />
+                Remote only
+              </label>
+              <button class="primary-button" id="collectButton" type="submit">Start Collection</button>
+            </form>
+            <div class="run-output" id="collectOutput">No collection run yet.</div>
+          </section>
+        </section>
+
+        <section class="view" id="companiesView">
+          <section class="panel table-panel">
+            <div class="panel-header">
+              <h3>Companies</h3>
+              <span id="companyCountLabel">0 companies</span>
+            </div>
+            <div class="company-grid" id="companiesGrid"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <aside class="detail-drawer" id="jobDrawer" aria-hidden="true">
+      <button class="drawer-close" id="drawerClose" type="button">Close</button>
+      <p class="eyebrow" id="drawerSource"></p>
+      <h3 id="drawerTitle"></h3>
+      <p id="drawerCompany"></p>
+      <div class="drawer-meta" id="drawerMeta"></div>
+      <p id="drawerDescription"></p>
+      <a class="primary-button" id="drawerLink" href="#" target="_blank" rel="noreferrer">Open Job</a>
+    </aside>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>
