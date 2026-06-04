@@ -14,7 +14,11 @@ class CollectionRequest(BaseModel):
     results_wanted: int = 50
     country_indeed: str = "usa"
     is_remote: bool = False
-    hours_old: int | None = None
+    job_type: str | None = None
+    hours_old: float | None = Field(default=None, gt=0)
+    use_company_targets: bool = False
+    company_target_limit: int = Field(default=25, ge=1, le=100)
+    visa_friendly_only: bool = False
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 

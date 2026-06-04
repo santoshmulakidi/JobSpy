@@ -319,7 +319,7 @@ class ScraperInput(BaseModel):
     request_timeout: int = 60
 
     results_wanted: int = 15
-    hours_old: int | None = None
+    hours_old: float | None = None
 
 
 class Scraper(ABC):

@@ -119,29 +119,71 @@ class Job(Base):
 
     @property
     def visa_status(self) -> str:
-        text = " ".join(
-            str(value or "")
-            for value in (
-                self.title,
-                self.description,
-                self.company_name,
-                self.raw.get("description") if isinstance(self.raw, dict) else None,
-                self.raw.get("job_function") if isinstance(self.raw, dict) else None,
-                self.raw.get("skills") if isinstance(self.raw, dict) else None,
-            )
-        ).lower()
+        text = self._visa_text()
 
-        if re.search(r"\b(us citizen|u\.s\. citizen|usc|green card|gc|permanent resident)\b", text):
+        if re.search(
+            r"\b(us citizen|u\.s\. citizen|u\.s citizen|usc|green card|gc-ead|gc ead|"
+            r"permanent resident)\b",
+            text,
+        ):
             return "USC/GC required"
-        if re.search(r"\b(no sponsorship|unable to sponsor|not sponsor|without sponsorship)\b", text):
+        if re.search(r"\b(w2 only|w-2 only|only w2|only w-2)\b", text):
+            return "W2 only"
+        if re.search(
+            r"\b(no sponsorship|no visa sponsorship|unable to sponsor|cannot sponsor|"
+            r"unable to offer employment sponsorship|"
+            r"will not sponsor|not eligible for visa sponsorship|visa sponsorship not available|"
+            r"sponsorship not available|does not offer employment sponsorship|"
+            r"does not anticipate providing sponsorship|without the need for employer sponsorship|"
+            r"without employer sponsorship|without sponsorship|do not sponsor|does not sponsor|"
+            r"not sponsor applicants|unable to sponsor h-?1b|unable to sponsor h1b|"
+            r"work authorization that does not now or in the future require sponsorship|"
+            r"does not intend to hire .* need .* sponsorship)\b",
+            text,
+        ):
             return "No sponsorship"
-        if re.search(r"\b(h-?1b|h1-b|h1b)\b", text):
-            return "H1B required"
+        if re.search(r"\b(no c2c|no c-2-c|no corp(?:oration)? to corp(?:oration)?|no third parties)\b", text):
+            return "No C2C"
+        if re.search(r"\b(c2c|c-2-c|corp(?:oration)? to corp(?:oration)?)\b", text):
+            return "C2C accepted"
+        if re.search(r"\b(limited immigration sponsorship may be available|sponsorship may be available|"
+                     r"sponsorship available|will sponsor|visa sponsorship available)\b", text):
+            return "Sponsorship available"
+        if re.search(r"\b(h-?1b|h1-b|h1b|h4-ead|h4 ead)\b", text):
+            return "H1B accepted"
         if re.search(r"\btn visa\b|\btn status\b|\btn eligible\b", text):
             return "TN visa"
-        if re.search(r"\b(visa sponsorship|sponsorship available|will sponsor)\b", text):
-            return "Sponsorship available"
+        if re.search(r"\b(opt-ead|opt ead|cpt|f-1|f1)\b", text):
+            return "OPT/CPT accepted"
+        if re.search(
+            r"\b(authorized to work in the united states|authorized to work in the us|"
+            r"work authorization|legally authorized to work)\b",
+            text,
+        ):
+            return "Work authorization required"
         return "Not specified"
+
+    def _visa_text(self) -> str:
+        values = [
+            self.title,
+            self.description,
+            self.company_name,
+            self.location,
+            self.job_type,
+            self.source,
+        ]
+        if isinstance(self.raw, dict):
+            values.append(self._flatten_for_visa(self.raw))
+        text = " ".join(str(value or "") for value in values).lower()
+        return re.sub(r"\s+", " ", text)
+
+    @classmethod
+    def _flatten_for_visa(cls, value) -> str:
+        if isinstance(value, dict):
+            return " ".join(cls._flatten_for_visa(item) for item in value.values())
+        if isinstance(value, list):
+            return " ".join(cls._flatten_for_visa(item) for item in value)
+        return str(value or "")
 
 
 class JobChange(Base):

@@ -40,6 +40,7 @@ class JobSpyCollector(Collector):
                     results_wanted=request.results_wanted,
                     country_indeed=request.country_indeed,
                     is_remote=request.is_remote,
+                    job_type=request.job_type,
                     hours_old=request.hours_old,
                 )
                 break

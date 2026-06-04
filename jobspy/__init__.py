@@ -45,7 +45,7 @@ def scrape_jobs(
     linkedin_fetch_description: bool | None = False,
     linkedin_company_ids: list[int] | None = None,
     offset: int | None = 0,
-    hours_old: int = None,
+    hours_old: float = None,
     enforce_annual_salary: bool = False,
     verbose: int = 0,
     user_agent: str = None,

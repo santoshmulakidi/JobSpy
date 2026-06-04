@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en" data-theme="amethyst">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="/static/admin.css?v=glass-themes" />
+  </head>
+  <body>
+    <div class="dashboard-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-icon">A</span>
+          <div>
+            <strong>Acme Admin</strong>
+            <span>Operations</span>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Main navigation">
+          <p class="nav-section">Platform</p>
+          <a class="nav-link active" href="#">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z" /></svg>
+            Dashboard
+          </a>
+          <a class="nav-link" href="#">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3ZM8 11c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3Zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13Zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5Z" /></svg>
+            Users
+          </a>
+          <a class="nav-link" href="#">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 3 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6l-9-4Zm1 16h-2v-2h2v2Zm0-4h-2V7h2v7Z" /></svg>
+            Security
+          </a>
+
+          <p class="nav-section">Workspace</p>
+          <a class="nav-link" href="#">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8h-3V4H7v4H4c-1.1 0-2 .9-2 2v9h20v-9c0-1.1-.9-2-2-2ZM9 6h6v2H9V6Zm2 11v-3h2v3h-2Z" /></svg>
+            Projects
+          </a>
+          <a class="nav-link" href="#">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14l4-4h12c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2Zm-3 9H8v-2h8v2Zm0-3H8V7h8v2Z" /></svg>
+            Tickets
+          </a>
+          <a class="nav-link" href="#">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.02-.66-.07-.98l2.11-1.65-2-3.46-2.49 1a7.28 7.28 0 0 0-1.69-.98L15 3h-4l-.36 2.93c-.6.23-1.17.56-1.69.98l-2.49-1-2 3.46 2.11 1.65c-.04.32-.07.65-.07.98s.02.66.07.98l-2.11 1.65 2 3.46 2.49-1c.52.4 1.09.73 1.69.98L11 21h4l.36-2.93c.6-.23 1.17-.56 1.69-.98l2.49 1 2-3.46-2.11-1.65ZM13 15.5A3.5 3.5 0 1 1 13 8a3.5 3.5 0 0 1 0 7.5Z" /></svg>
+            Settings
+          </a>
+        </nav>
+
+        <a class="nav-link sign-out" href="#">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.09 15.59 11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59ZM19 3h-6v2h6v14h-6v2h6c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2Z" /></svg>
+          Sign out
+        </a>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p>Admin</p>
+            <h1>Dashboard</h1>
+          </div>
+          <div class="topbar-actions">
+            <div class="theme-switcher" aria-label="Theme selector">
+              <button class="theme-button active" data-theme-button="amethyst" type="button">Amethyst</button>
+              <button class="theme-button" data-theme-button="light" type="button">Light</button>
+              <button class="theme-button" data-theme-button="dark" type="button">Dark</button>
+            </div>
+            <label class="search-box">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 3a6.5 6.5 0 0 1 5.15 10.46l4.44 4.45-1.41 1.41-4.45-4.44A6.5 6.5 0 1 1 9.5 3Zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9Z" /></svg>
+              <input type="search" placeholder="Search users, tickets..." />
+            </label>
+            <button class="icon-button" type="button" aria-label="Notifications">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6v-5c0-3.07-1.63-5.64-4.5-6.32V4a2.5 2.5 0 0 0-5 0v.68C6.63 5.36 5 7.92 5 11v5l-2 2v1h18v-1l-2-2Z" /></svg>
+            </button>
+            <div class="avatar" aria-label="User avatar">SM</div>
+          </div>
+        </header>
+
+        <section class="metrics-grid" aria-label="Metrics">
+          <article class="card metric-card">
+            <div class="metric-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3ZM8 11c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3Zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13Z" /></svg>
+            </div>
+            <span>Total Users</span>
+            <strong>24,892</strong>
+            <p class="trend up">+12.4% this month</p>
+          </article>
+          <article class="card metric-card">
+            <div class="metric-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 2h2v3h3v2h-3v2.06c2.28.32 4 1.7 4 3.44 0 2.2-2.1 3.5-5 3.5-1.94 0-3.5.47-3.5 1.5S10.06 19 12 19s3.5-.47 3.5-1.5H18c0 1.78-1.72 3.16-4 3.47V23h-2v-2H9v-2h3c1.94 0 3.5-.47 3.5-1.5S13.94 16 12 16c-2.9 0-5-1.3-5-3.5 0-1.74 1.72-3.12 4-3.44V7H8V5h3V2Z" /></svg>
+            </div>
+            <span>Revenue</span>
+            <strong>$128.4K</strong>
+            <p class="trend up">+8.1% this quarter</p>
+          </article>
+          <article class="card metric-card">
+            <div class="metric-icon warning">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 3H4c-1.1 0-2 .9-2 2v13h4v3l4-3h10c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2Zm-3 9H7v-2h10v2Zm-4 3H7v-2h6v2Zm4-6H7V7h10v2Z" /></svg>
+            </div>
+            <span>Open Tickets</span>
+            <strong>418</strong>
+            <p class="trend down">-3.2% since Friday</p>
+          </article>
+          <article class="card metric-card">
+            <div class="metric-icon success">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10.01 10.01 0 0 0 12 2Zm1 10.41 3.29 3.29-1.41 1.41L11 13.83V6h2v6.41Z" /></svg>
+            </div>
+            <span>Uptime</span>
+            <strong>99.98%</strong>
+            <p class="trend up">+0.02% rolling 30d</p>
+          </article>
+        </section>
+
+        <section class="content-grid">
+          <article class="card users-card">
+            <div class="card-header">
+              <div>
+                <h2>Recent Users</h2>
+                <p>Newest accounts and access state</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Join Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="avatar small">AR</span><div><strong>Avery Reed</strong><span>avery@acme.com</span></div></td>
+                    <td>Admin</td>
+                    <td><span class="badge success">Active</span></td>
+                    <td>Jun 3, 2026</td>
+                  </tr>
+                  <tr>
+                    <td><span class="avatar small">NC</span><div><strong>Nora Chen</strong><span>nora@acme.com</span></div></td>
+                    <td>Analyst</td>
+                    <td><span class="badge warning">Invited</span></td>
+                    <td>Jun 2, 2026</td>
+                  </tr>
+                  <tr>
+                    <td><span class="avatar small">MJ</span><div><strong>Mateo Jones</strong><span>mateo@acme.com</span></div></td>
+                    <td>Support</td>
+                    <td><span class="badge neutral">Pending</span></td>
+                    <td>May 31, 2026</td>
+                  </tr>
+                  <tr>
+                    <td><span class="avatar small">IK</span><div><strong>Iris Khan</strong><span>iris@acme.com</span></div></td>
+                    <td>Manager</td>
+                    <td><span class="badge success">Active</span></td>
+                    <td>May 29, 2026</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <aside class="side-stack">
+            <article class="card">
+              <div class="card-header">
+                <div>
+                  <h2>Traffic by Channel</h2>
+                  <p>Last 7 days</p>
+                </div>
+              </div>
+              <div class="bar-list">
+                <div class="bar-row"><span>Organic</span><div class="bar-track"><span style="width: 68%"></span></div><strong>68%</strong></div>
+                <div class="bar-row"><span>Direct</span><div class="bar-track"><span style="width: 51%"></span></div><strong>51%</strong></div>
+                <div class="bar-row"><span>Referral</span><div class="bar-track"><span style="width: 37%"></span></div><strong>37%</strong></div>
+                <div class="bar-row"><span>Social</span><div class="bar-track"><span style="width: 24%"></span></div><strong>24%</strong></div>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="card-header">
+                <div>
+                  <h2>Quick Invite</h2>
+                  <p>Add a teammate by email</p>
+                </div>
+              </div>
+              <form class="invite-form">
+                <input type="email" placeholder="name@company.com" />
+                <button class="primary-button" type="button">Send</button>
+              </form>
+            </article>
+          </aside>
+
+          <article class="card activity-card">
+            <div class="card-header">
+              <div>
+                <h2>Recent Activity</h2>
+                <p>System and account events</p>
+              </div>
+            </div>
+            <div class="activity-feed">
+              <div class="activity-item">
+                <span class="activity-icon success">✓</span>
+                <div><strong>Deployment completed</strong><p>Production API updated successfully.</p></div>
+                <time>4m ago</time>
+              </div>
+              <div class="activity-item">
+                <span class="activity-icon warning">!</span>
+                <div><strong>Invite pending</strong><p>Nora Chen has not accepted the workspace invite.</p></div>
+                <time>21m ago</time>
+              </div>
+              <div class="activity-item">
+                <span class="activity-icon">i</span>
+                <div><strong>New user created</strong><p>Avery Reed was added as an admin.</p></div>
+                <time>1h ago</time>
+              </div>
+              <div class="activity-item">
+                <span class="activity-icon danger">×</span>
+                <div><strong>Ticket escalated</strong><p>Billing issue moved to priority support.</p></div>
+                <time>2h ago</time>
+              </div>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+    <script src="/static/admin.js?v=glass-themes" defer></script>
+  </body>
+</html>

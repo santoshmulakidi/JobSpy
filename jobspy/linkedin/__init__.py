@@ -82,7 +82,7 @@ class LinkedIn(Scraper):
         start = scraper_input.offset // 10 * 10 if scraper_input.offset else 0
         request_count = 0
         seconds_old = (
-            scraper_input.hours_old * 3600 if scraper_input.hours_old else None
+            int(scraper_input.hours_old * 3600) if scraper_input.hours_old else None
         )
         continue_search = (
             lambda: len(job_list) < scraper_input.results_wanted and start < 1000

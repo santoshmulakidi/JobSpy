@@ -10,10 +10,14 @@ class CollectRequest(BaseModel):
     search_term: str
     location: str | None = None
     sites: list[str] = Field(default_factory=lambda: ["linkedin", "indeed"])
-    results_wanted: int = Field(default=50, ge=1, le=1000)
+    results_wanted: int = Field(default=100, ge=1, le=1000)
     country_indeed: str = "usa"
     is_remote: bool = False
-    hours_old: int | None = None
+    job_type: str | None = None
+    hours_old: float | None = Field(default=None, gt=0)
+    use_company_targets: bool = False
+    company_target_limit: int = Field(default=25, ge=1, le=100)
+    visa_friendly_only: bool = False
 
 
 class CollectResponse(BaseModel):
@@ -27,6 +31,8 @@ class SearchRequest(BaseModel):
     company: str | None = None
     location: str | None = None
     source: str | None = None
+    visa_status: str | None = None
+    job_type: str | None = None
     remote: bool | None = None
     min_salary: float | None = None
     max_salary: float | None = None
@@ -64,6 +70,16 @@ class CompanyOut(BaseModel):
     website_url: str | None
 
     model_config = {"from_attributes": True}
+
+
+class CompanyTargetOut(BaseModel):
+    rank: int
+    company: str
+    sector: str | None
+    h1b_or_funding: str | None
+    avg_salary: str | None
+    sponsor_status: str | None
+    career_url: str | None
 
 
 class AnalyticsOut(BaseModel):

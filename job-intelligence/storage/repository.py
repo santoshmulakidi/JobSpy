@@ -116,6 +116,8 @@ class JobRepository:
         company: str | None = None,
         location: str | None = None,
         source: str | None = None,
+        visa_status: str | None = None,
+        job_type: str | None = None,
         remote: bool | None = None,
         min_salary: float | None = None,
         max_salary: float | None = None,
@@ -127,11 +129,16 @@ class JobRepository:
             company=company,
             location=location,
             source=source,
+            job_type=job_type,
             remote=remote,
             min_salary=min_salary,
             max_salary=max_salary,
         )
-        statement = statement.order_by(Job.last_seen_at.desc()).limit(limit).offset(offset)
+        statement = statement.order_by(Job.date_posted.desc().nullslast(), Job.last_seen_at.desc())
+        if visa_status:
+            jobs = [job for job in self.session.scalars(statement).all() if job.visa_status == visa_status]
+            return jobs[offset : offset + limit]
+        statement = statement.limit(limit).offset(offset)
         return list(self.session.scalars(statement))
 
     def get_job(self, job_id: int) -> Job | None:
@@ -184,6 +191,7 @@ class JobRepository:
         company: str | None,
         location: str | None,
         source: str | None,
+        job_type: str | None,
         remote: bool | None,
         min_salary: float | None,
         max_salary: float | None,
@@ -198,6 +206,18 @@ class JobRepository:
             statement = statement.where(Job.location.ilike(f"%{location}%"))
         if source:
             statement = statement.where(Job.source == source)
+        if job_type:
+            if job_type == "fulltime":
+                statement = statement.where(
+                    or_(
+                        Job.job_type.ilike("%fulltime%"),
+                        Job.job_type.ilike("%full-time%"),
+                        Job.job_type.ilike("%full time%"),
+                        Job.job_type.ilike("%full_time%"),
+                    )
+                )
+            else:
+                statement = statement.where(Job.job_type.ilike(f"%{job_type}%"))
         if remote is not None:
             statement = statement.where(Job.is_remote == remote)
         if min_salary is not None:

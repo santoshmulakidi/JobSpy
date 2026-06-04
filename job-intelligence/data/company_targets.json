@@ -1,0 +1,2792 @@
+[
+  {
+    "rank": 1,
+    "company": "Amazon / AWS",
+    "sector": "Cloud, AI, E-commerce",
+    "h1b_or_funding": "12,391",
+    "avg_salary": "$155K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.amazon.jobs/"
+  },
+  {
+    "rank": 2,
+    "company": "Microsoft (Azure, Copilot)",
+    "sector": "Cloud, AI, SaaS",
+    "h1b_or_funding": "5,189",
+    "avg_salary": "$161K",
+    "sponsor_status": "Strong",
+    "career_url": "https://jobs.careers.microsoft.com/"
+  },
+  {
+    "rank": 3,
+    "company": "Google / Alphabet",
+    "sector": "AI, Cloud, Ads",
+    "h1b_or_funding": "4,181",
+    "avg_salary": "$185K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.google.com/about/careers/applications/jobs/results/"
+  },
+  {
+    "rank": 4,
+    "company": "Meta Platforms",
+    "sector": "Social, AI, VR",
+    "h1b_or_funding": "5,123",
+    "avg_salary": "$201K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.metacareers.com/jobs/"
+  },
+  {
+    "rank": 5,
+    "company": "Apple",
+    "sector": "Hardware, AI, iOS",
+    "h1b_or_funding": "4,202",
+    "avg_salary": "$175K",
+    "sponsor_status": "Strong",
+    "career_url": "https://jobs.apple.com/"
+  },
+  {
+    "rank": 6,
+    "company": "Nvidia",
+    "sector": "Semiconductors, AI HW",
+    "h1b_or_funding": "1,255",
+    "avg_salary": "$224K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.nvidia.com/en-us/about-nvidia/careers/"
+  },
+  {
+    "rank": 7,
+    "company": "Intel",
+    "sector": "Semiconductors, Hardware",
+    "h1b_or_funding": "564",
+    "avg_salary": "$166K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.intel.com/content/www/us/en/jobs/jobs-at-intel.html"
+  },
+  {
+    "rank": 8,
+    "company": "IBM",
+    "sector": "Enterprise, AI, Cloud",
+    "h1b_or_funding": "87",
+    "avg_salary": "$133K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.ibm.com/careers/search"
+  },
+  {
+    "rank": 9,
+    "company": "Cisco Systems",
+    "sector": "Networking, Security",
+    "h1b_or_funding": "1,570",
+    "avg_salary": "$175K",
+    "sponsor_status": "Strong",
+    "career_url": "https://jobs.cisco.com/jobs/SearchJobs/"
+  },
+  {
+    "rank": 10,
+    "company": "Qualcomm Technologies",
+    "sector": "Mobile, Semiconductors",
+    "h1b_or_funding": "58",
+    "avg_salary": "$128K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.qualcomm.com/careers"
+  },
+  {
+    "rank": 11,
+    "company": "Salesforce",
+    "sector": "CRM, AI Agents",
+    "h1b_or_funding": "High",
+    "avg_salary": "$150K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.salesforce.com/en/jobs/"
+  },
+  {
+    "rank": 12,
+    "company": "ServiceNow",
+    "sector": "IT SaaS, AI",
+    "h1b_or_funding": "74",
+    "avg_salary": "$148K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.servicenow.com/jobs/"
+  },
+  {
+    "rank": 13,
+    "company": "Snowflake",
+    "sector": "Data Cloud",
+    "h1b_or_funding": "106",
+    "avg_salary": "$197K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.snowflake.com/us/en/search-results"
+  },
+  {
+    "rank": 14,
+    "company": "Databricks",
+    "sector": "Data, AI Platform",
+    "h1b_or_funding": "106",
+    "avg_salary": "$164K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.databricks.com/company/careers/open-positions"
+  },
+  {
+    "rank": 15,
+    "company": "Oracle",
+    "sector": "ERP, Cloud DB",
+    "h1b_or_funding": "High",
+    "avg_salary": "$135K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.oracle.com/jobs/"
+  },
+  {
+    "rank": 16,
+    "company": "SAP America",
+    "sector": "ERP, S/4HANA Cloud",
+    "h1b_or_funding": "High",
+    "avg_salary": "$130K",
+    "sponsor_status": "Strong",
+    "career_url": "https://jobs.sap.com/"
+  },
+  {
+    "rank": 17,
+    "company": "Workday",
+    "sector": "HCM SaaS",
+    "h1b_or_funding": "High",
+    "avg_salary": "$140K",
+    "sponsor_status": "Strong",
+    "career_url": "https://workday.wd5.myworkdayjobs.com/Workday"
+  },
+  {
+    "rank": 18,
+    "company": "Adobe",
+    "sector": "Creative, Document Cloud",
+    "h1b_or_funding": "High",
+    "avg_salary": "$155K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.adobe.com/us/en/search-results"
+  },
+  {
+    "rank": 19,
+    "company": "Palo Alto Networks",
+    "sector": "Cybersecurity",
+    "h1b_or_funding": "High",
+    "avg_salary": "$165K",
+    "sponsor_status": "Strong",
+    "career_url": "https://jobs.paloaltonetworks.com/en/jobs/"
+  },
+  {
+    "rank": 20,
+    "company": "CrowdStrike",
+    "sector": "Cybersecurity, AI",
+    "h1b_or_funding": "High",
+    "avg_salary": "$160K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.crowdstrike.com/en-us/careers/jobs/"
+  },
+  {
+    "rank": 21,
+    "company": "Okta",
+    "sector": "Identity, Zero Trust",
+    "h1b_or_funding": "High",
+    "avg_salary": "$150K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.okta.com/company/careers/"
+  },
+  {
+    "rank": 22,
+    "company": "Datadog",
+    "sector": "Cloud Observability",
+    "h1b_or_funding": "High",
+    "avg_salary": "$165K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.datadoghq.com/"
+  },
+  {
+    "rank": 23,
+    "company": "Splunk (Cisco)",
+    "sector": "Security, Observability",
+    "h1b_or_funding": "High",
+    "avg_salary": "$145K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.splunk.com/en_us/careers/search-jobs.html"
+  },
+  {
+    "rank": 24,
+    "company": "Arista Networks",
+    "sector": "Cloud Networking",
+    "h1b_or_funding": "122",
+    "avg_salary": "$152K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.arista.com/en/careers"
+  },
+  {
+    "rank": 25,
+    "company": "NetApp",
+    "sector": "Data Infrastructure",
+    "h1b_or_funding": "121",
+    "avg_salary": "$184K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.netapp.com/company/careers/"
+  },
+  {
+    "rank": 26,
+    "company": "Juniper Networks",
+    "sector": "Networking",
+    "h1b_or_funding": "116",
+    "avg_salary": "$155K",
+    "sponsor_status": "Strong",
+    "career_url": "https://jobs.juniper.net/"
+  },
+  {
+    "rank": 27,
+    "company": "Western Digital",
+    "sector": "Storage, Semiconductors",
+    "h1b_or_funding": "High",
+    "avg_salary": "$145K",
+    "sponsor_status": "Strong",
+    "career_url": "https://jobs.smartrecruiters.com/WesternDigital"
+  },
+  {
+    "rank": 28,
+    "company": "Micron Technology",
+    "sector": "Memory, Semiconductors",
+    "h1b_or_funding": "High",
+    "avg_salary": "$121K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.micron.com/about/careers/job-search"
+  },
+  {
+    "rank": 29,
+    "company": "Advanced Micro Devices (AMD)",
+    "sector": "Semiconductors",
+    "h1b_or_funding": "High",
+    "avg_salary": "$161K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.amd.com/careers-home/jobs"
+  },
+  {
+    "rank": 30,
+    "company": "KLA Corporation",
+    "sector": "Semiconductor Equipment",
+    "h1b_or_funding": "63",
+    "avg_salary": "$160K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.kla.com/careers"
+  },
+  {
+    "rank": 31,
+    "company": "MathWorks",
+    "sector": "Engineering Software",
+    "h1b_or_funding": "40",
+    "avg_salary": "$151K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.mathworks.com/company/jobs/opportunities/search/"
+  },
+  {
+    "rank": 32,
+    "company": "Veeva Systems",
+    "sector": "Life Sciences SaaS",
+    "h1b_or_funding": "37",
+    "avg_salary": "$135K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.veeva.com/"
+  },
+  {
+    "rank": 33,
+    "company": "Docusign",
+    "sector": "eSignature SaaS",
+    "h1b_or_funding": "62",
+    "avg_salary": "$179K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.docusign.com/jobs"
+  },
+  {
+    "rank": 34,
+    "company": "Intuit",
+    "sector": "Fintech, Tax SaaS",
+    "h1b_or_funding": "55",
+    "avg_salary": "$151K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.intuit.com/careers/search-jobs/"
+  },
+  {
+    "rank": 35,
+    "company": "Block (Square/Cash App)",
+    "sector": "Fintech",
+    "h1b_or_funding": "65",
+    "avg_salary": "$212K",
+    "sponsor_status": "Strong",
+    "career_url": "https://block.xyz/careers/jobs"
+  },
+  {
+    "rank": 36,
+    "company": "Stripe",
+    "sector": "Payments API",
+    "h1b_or_funding": "109",
+    "avg_salary": "$172K",
+    "sponsor_status": "Strong",
+    "career_url": "https://stripe.com/jobs/search"
+  },
+  {
+    "rank": 37,
+    "company": "Coinbase",
+    "sector": "Crypto Exchange",
+    "h1b_or_funding": "55",
+    "avg_salary": "$166K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.coinbase.com/careers/positions"
+  },
+  {
+    "rank": 38,
+    "company": "Robinhood Markets",
+    "sector": "Fintech, Trading",
+    "h1b_or_funding": "32",
+    "avg_salary": "$180K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.robinhood.com/jobs/"
+  },
+  {
+    "rank": 39,
+    "company": "PayPal",
+    "sector": "Payments",
+    "h1b_or_funding": "36",
+    "avg_salary": "$145K",
+    "sponsor_status": "Strong",
+    "career_url": "https://paypal.eightfold.ai/careers"
+  },
+  {
+    "rank": 40,
+    "company": "Visa Technology & Ops",
+    "sector": "Payments Tech",
+    "h1b_or_funding": "High",
+    "avg_salary": "$150K",
+    "sponsor_status": "Strong",
+    "career_url": "https://usa.visa.com/careers.html"
+  },
+  {
+    "rank": 41,
+    "company": "Mastercard International",
+    "sector": "Payments Tech",
+    "h1b_or_funding": "High",
+    "avg_salary": "$147K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.mastercard.com/us/en/search-results"
+  },
+  {
+    "rank": 42,
+    "company": "American Express",
+    "sector": "Financial Services",
+    "h1b_or_funding": "High",
+    "avg_salary": "$140K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.americanexpress.com/en-us/careers/"
+  },
+  {
+    "rank": 43,
+    "company": "Bloomberg LP",
+    "sector": "Financial Data",
+    "h1b_or_funding": "65",
+    "avg_salary": "$204K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.bloomberg.com/job/search"
+  },
+  {
+    "rank": 44,
+    "company": "Two Sigma Investments",
+    "sector": "Quant Finance, AI",
+    "h1b_or_funding": "34",
+    "avg_salary": "$219K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.twosigma.com/careers/"
+  },
+  {
+    "rank": 45,
+    "company": "DoorDash",
+    "sector": "Delivery Logistics",
+    "h1b_or_funding": "269",
+    "avg_salary": "$211K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.doordash.com/jobs/"
+  },
+  {
+    "rank": 46,
+    "company": "Uber Technologies",
+    "sector": "Mobility, Delivery",
+    "h1b_or_funding": "176",
+    "avg_salary": "$175K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.uber.com/us/en/careers/list/"
+  },
+  {
+    "rank": 47,
+    "company": "Lyft",
+    "sector": "Mobility",
+    "h1b_or_funding": "50",
+    "avg_salary": "$181K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.lyft.com/careers"
+  },
+  {
+    "rank": 48,
+    "company": "Airbnb",
+    "sector": "Travel Marketplace",
+    "h1b_or_funding": "31",
+    "avg_salary": "$185K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.airbnb.com/positions/"
+  },
+  {
+    "rank": 49,
+    "company": "Expedia Group",
+    "sector": "Travel Tech",
+    "h1b_or_funding": "High",
+    "avg_salary": "$149K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.expediagroup.com/jobs/"
+  },
+  {
+    "rank": 50,
+    "company": "Wayfair",
+    "sector": "E-commerce, Home",
+    "h1b_or_funding": "High",
+    "avg_salary": "$156K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.wayfair.com/careers/jobs"
+  },
+  {
+    "rank": 51,
+    "company": "eBay",
+    "sector": "E-commerce",
+    "h1b_or_funding": "High",
+    "avg_salary": "$166K",
+    "sponsor_status": "Strong",
+    "career_url": "https://jobs.ebayinc.com/us/en/search-results"
+  },
+  {
+    "rank": 52,
+    "company": "Waymo",
+    "sector": "Autonomous Vehicles",
+    "h1b_or_funding": "156",
+    "avg_salary": "$210K",
+    "sponsor_status": "Strong",
+    "career_url": "https://waymo.com/careers/"
+  },
+  {
+    "rank": 53,
+    "company": "Zoox (Amazon)",
+    "sector": "Autonomous Vehicles",
+    "h1b_or_funding": "60",
+    "avg_salary": "$198K",
+    "sponsor_status": "Strong",
+    "career_url": "https://zoox.com/careers/"
+  },
+  {
+    "rank": 54,
+    "company": "Applied Intuition",
+    "sector": "ADAS, Simulation",
+    "h1b_or_funding": "50",
+    "avg_salary": "$186K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.appliedintuition.com/careers"
+  },
+  {
+    "rank": 55,
+    "company": "WeRide",
+    "sector": "Autonomous Vehicles",
+    "h1b_or_funding": "30",
+    "avg_salary": "$153K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.weride.ai/career"
+  },
+  {
+    "rank": 56,
+    "company": "Netflix",
+    "sector": "Streaming, AI",
+    "h1b_or_funding": "164",
+    "avg_salary": "$225K",
+    "sponsor_status": "Strong",
+    "career_url": "https://explore.jobs.netflix.net/careers"
+  },
+  {
+    "rank": 57,
+    "company": "Dropbox",
+    "sector": "Cloud Storage",
+    "h1b_or_funding": "56",
+    "avg_salary": "$213K",
+    "sponsor_status": "Strong",
+    "career_url": "https://jobs.dropbox.com/listing"
+  },
+  {
+    "rank": 58,
+    "company": "Qualtrics",
+    "sector": "XM SaaS",
+    "h1b_or_funding": "48",
+    "avg_salary": "$169K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.qualtrics.com/careers/us/en/search-results"
+  },
+  {
+    "rank": 59,
+    "company": "Figma",
+    "sector": "Design Tools",
+    "h1b_or_funding": "27",
+    "avg_salary": "$225K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.figma.com/careers/"
+  },
+  {
+    "rank": 60,
+    "company": "Zoom Video",
+    "sector": "Communications",
+    "h1b_or_funding": "28",
+    "avg_salary": "$148K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.zoom.us/jobs/search"
+  },
+  {
+    "rank": 61,
+    "company": "Verkada",
+    "sector": "Physical Security SaaS",
+    "h1b_or_funding": "28",
+    "avg_salary": "$208K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.verkada.com/careers/"
+  },
+  {
+    "rank": 62,
+    "company": "Rubrik",
+    "sector": "Cyber / Cloud Security",
+    "h1b_or_funding": "61",
+    "avg_salary": "$175K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.rubrik.com/company/careers"
+  },
+  {
+    "rank": 63,
+    "company": "Indeed (Recruit Holdings)",
+    "sector": "HR Tech, Job Board",
+    "h1b_or_funding": "74",
+    "avg_salary": "$145K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.indeed.jobs/"
+  },
+  {
+    "rank": 64,
+    "company": "LinkedIn (Microsoft)",
+    "sector": "Professional Network",
+    "h1b_or_funding": "49",
+    "avg_salary": "$172K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.linkedin.com/"
+  },
+  {
+    "rank": 65,
+    "company": "Bytedance / TikTok",
+    "sector": "Social, AI",
+    "h1b_or_funding": "250",
+    "avg_salary": "$210K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.tiktok.com/"
+  },
+  {
+    "rank": 66,
+    "company": "Rivian Automotive",
+    "sector": "Electric Vehicles",
+    "h1b_or_funding": "High",
+    "avg_salary": "$144K",
+    "sponsor_status": "Strong",
+    "career_url": "https://rivian.com/careers"
+  },
+  {
+    "rank": 67,
+    "company": "Tesla",
+    "sector": "EV, AI, Robotics",
+    "h1b_or_funding": "54",
+    "avg_salary": "$153K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.tesla.com/careers/search"
+  },
+  {
+    "rank": 68,
+    "company": "Ford Motor (Software)",
+    "sector": "Auto, Software Defined",
+    "h1b_or_funding": "74",
+    "avg_salary": "$143K",
+    "sponsor_status": "Strong",
+    "career_url": "https://efds.fa.em5.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/requisitions"
+  },
+  {
+    "rank": 69,
+    "company": "General Motors / OnStar",
+    "sector": "Auto, AI",
+    "h1b_or_funding": "37",
+    "avg_salary": "$128K",
+    "sponsor_status": "Strong",
+    "career_url": "https://search-careers.gm.com/en/jobs/"
+  },
+  {
+    "rank": 70,
+    "company": "Nike (Tech)",
+    "sector": "Retail Digital",
+    "h1b_or_funding": "64",
+    "avg_salary": "$162K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.nike.com/jobs"
+  },
+  {
+    "rank": 71,
+    "company": "Costco Wholesale (Tech)",
+    "sector": "Retail Tech",
+    "h1b_or_funding": "64",
+    "avg_salary": "$157K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.costco.com/jobs.html"
+  },
+  {
+    "rank": 72,
+    "company": "Lowe's Companies (Tech)",
+    "sector": "Retail Tech",
+    "h1b_or_funding": "61",
+    "avg_salary": "$118K",
+    "sponsor_status": "Strong",
+    "career_url": "https://talent.lowes.com/us/en/search-results"
+  },
+  {
+    "rank": 73,
+    "company": "Walmart Global Tech",
+    "sector": "Retail Tech",
+    "h1b_or_funding": "High",
+    "avg_salary": "$140K",
+    "sponsor_status": "Strong",
+    "career_url": "https://tech.walmart.com/content/walmart-global-tech/en_us/careers.html"
+  },
+  {
+    "rank": 74,
+    "company": "T-Mobile USA",
+    "sector": "Telecom",
+    "h1b_or_funding": "High",
+    "avg_salary": "$137K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.t-mobile.com/careers/job-search"
+  },
+  {
+    "rank": 75,
+    "company": "Comcast / NBCUniversal",
+    "sector": "Telecom, Media",
+    "h1b_or_funding": "High",
+    "avg_salary": "$129K",
+    "sponsor_status": "Strong",
+    "career_url": "https://jobs.comcast.com/"
+  },
+  {
+    "rank": 76,
+    "company": "Charter / Spectrum",
+    "sector": "Telecom",
+    "h1b_or_funding": "High",
+    "avg_salary": "$129K",
+    "sponsor_status": "Strong",
+    "career_url": "https://jobs.spectrum.com/"
+  },
+  {
+    "rank": 77,
+    "company": "JPMorgan Chase (JPMC)",
+    "sector": "Investment Banking, Tech",
+    "h1b_or_funding": "High",
+    "avg_salary": "$160K",
+    "sponsor_status": "\u2705 99.88%",
+    "career_url": "https://careers.jpmorgan.com/us/en/students/programs?search=&tags=location__Americas__UnitedStatesofAmerica"
+  },
+  {
+    "rank": 78,
+    "company": "Goldman Sachs Engineering",
+    "sector": "Finance, AI",
+    "h1b_or_funding": "High",
+    "avg_salary": "$135K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.goldmansachs.com/careers/"
+  },
+  {
+    "rank": 79,
+    "company": "Morgan Stanley",
+    "sector": "Finance, Tech",
+    "h1b_or_funding": "High",
+    "avg_salary": "$151K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.morganstanley.com/people-opportunities/career-opportunities-search"
+  },
+  {
+    "rank": 80,
+    "company": "Bank of America",
+    "sector": "Banking, Tech",
+    "h1b_or_funding": "High",
+    "avg_salary": "$143K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.bankofamerica.com/en-us/job-search"
+  },
+  {
+    "rank": 81,
+    "company": "Citigroup",
+    "sector": "Banking, FinTech",
+    "h1b_or_funding": "High",
+    "avg_salary": "$140K",
+    "sponsor_status": "Strong",
+    "career_url": "https://jobs.citi.com/"
+  },
+  {
+    "rank": 82,
+    "company": "U.S. Bank National Assoc.",
+    "sector": "Banking, Tech",
+    "h1b_or_funding": "241",
+    "avg_salary": "$125K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.usbank.com/global/en/search-results"
+  },
+  {
+    "rank": 83,
+    "company": "Wells Fargo (Tech)",
+    "sector": "Banking",
+    "h1b_or_funding": "High",
+    "avg_salary": "$120K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.wellsfargojobs.com/en/jobs/"
+  },
+  {
+    "rank": 84,
+    "company": "Barclays Services",
+    "sector": "Banking, Tech",
+    "h1b_or_funding": "27",
+    "avg_salary": "$136K",
+    "sponsor_status": "Strong",
+    "career_url": "https://search.jobs.barclays/"
+  },
+  {
+    "rank": 85,
+    "company": "BlackRock Financial Mgmt",
+    "sector": "Asset Management",
+    "h1b_or_funding": "High",
+    "avg_salary": "$120K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.blackrock.com/job-search-results/"
+  },
+  {
+    "rank": 86,
+    "company": "Charles Schwab",
+    "sector": "Brokerage, FinTech",
+    "h1b_or_funding": "High",
+    "avg_salary": "$144K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.schwabjobs.com/search-jobs"
+  },
+  {
+    "rank": 87,
+    "company": "Fidelity Investments (Tech)",
+    "sector": "Financial Services",
+    "h1b_or_funding": "High",
+    "avg_salary": "$130K",
+    "sponsor_status": "Strong",
+    "career_url": "https://jobs.fidelity.com/en/jobs/"
+  },
+  {
+    "rank": 88,
+    "company": "Capital One Technology",
+    "sector": "FinTech, Cloud",
+    "h1b_or_funding": "High",
+    "avg_salary": "$150K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.capitalonecareers.com/search-jobs"
+  },
+  {
+    "rank": 89,
+    "company": "FIS Management Services",
+    "sector": "Financial Tech",
+    "h1b_or_funding": "High",
+    "avg_salary": "$122K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.fisglobal.com/us/en/search-results"
+  },
+  {
+    "rank": 90,
+    "company": "Fiserv Solutions",
+    "sector": "Payments Tech",
+    "h1b_or_funding": "High",
+    "avg_salary": "$134K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.careers.fiserv.com/jobs"
+  },
+  {
+    "rank": 91,
+    "company": "UnitedHealth Group (UHG)",
+    "sector": "Healthcare Insurance",
+    "h1b_or_funding": "High",
+    "avg_salary": "$130K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.unitedhealthgroup.com/job-search-results/"
+  },
+  {
+    "rank": 92,
+    "company": "Optum Services (UHG)",
+    "sector": "Healthcare Tech",
+    "h1b_or_funding": "36",
+    "avg_salary": "$130K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.optum.com/job-search-results/"
+  },
+  {
+    "rank": 93,
+    "company": "Anthem / Elevance Health",
+    "sector": "Health Insurance",
+    "h1b_or_funding": "High",
+    "avg_salary": "$117K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.elevancehealth.com/jobs"
+  },
+  {
+    "rank": 94,
+    "company": "CVS Health / Aetna",
+    "sector": "Healthcare, Pharmacy",
+    "h1b_or_funding": "High",
+    "avg_salary": "$120K",
+    "sponsor_status": "Strong",
+    "career_url": "https://jobs.cvshealth.com/us/en/search-results"
+  },
+  {
+    "rank": 95,
+    "company": "Humana (Tech)",
+    "sector": "Healthcare",
+    "h1b_or_funding": "High",
+    "avg_salary": "$115K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.humana.com/search-jobs"
+  },
+  {
+    "rank": 96,
+    "company": "Cigna Group (Tech)",
+    "sector": "Healthcare",
+    "h1b_or_funding": "High",
+    "avg_salary": "$118K",
+    "sponsor_status": "Strong",
+    "career_url": "https://jobs.thecignagroup.com/us/en/search-results"
+  },
+  {
+    "rank": 97,
+    "company": "Cerner (Oracle)",
+    "sector": "Healthcare IT",
+    "h1b_or_funding": "High",
+    "avg_salary": "$89K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.oracle.com/jobs/"
+  },
+  {
+    "rank": 98,
+    "company": "Epic Systems",
+    "sector": "Healthcare EHR",
+    "h1b_or_funding": "High",
+    "avg_salary": "$100K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.epic.com/Jobs"
+  },
+  {
+    "rank": 99,
+    "company": "McKesson Corporation",
+    "sector": "Healthcare Supply",
+    "h1b_or_funding": "High",
+    "avg_salary": "$105K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.mckesson.com/en/jobs/"
+  },
+  {
+    "rank": 100,
+    "company": "Thermo Fisher Scientific",
+    "sector": "Life Sciences",
+    "h1b_or_funding": "High",
+    "avg_salary": "$110K",
+    "sponsor_status": "Strong",
+    "career_url": "https://jobs.thermofisher.com/global/en/search-results"
+  },
+  {
+    "rank": 101,
+    "company": "OpenAI",
+    "sector": "Foundation Models, ChatGPT",
+    "h1b_or_funding": "$40B raised",
+    "avg_salary": "$200K+",
+    "sponsor_status": "Active",
+    "career_url": "https://openai.com/careers/search/"
+  },
+  {
+    "rank": 102,
+    "company": "Anthropic",
+    "sector": "AI Safety, Claude",
+    "h1b_or_funding": "$7.3B raised",
+    "avg_salary": "$190K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.anthropic.com/jobs"
+  },
+  {
+    "rank": 103,
+    "company": "xAI (Elon Musk)",
+    "sector": "Foundation Models, Grok",
+    "h1b_or_funding": "$20B raised",
+    "avg_salary": "$200K+",
+    "sponsor_status": "Active",
+    "career_url": "https://x.ai/careers"
+  },
+  {
+    "rank": 104,
+    "company": "Anysphere (Cursor)",
+    "sector": "AI Coding Tools",
+    "h1b_or_funding": "Billions 2025",
+    "avg_salary": "$180K+",
+    "sponsor_status": "Active",
+    "career_url": "https://anysphere.co/careers"
+  },
+  {
+    "rank": 105,
+    "company": "Cohere",
+    "sector": "Enterprise AI",
+    "h1b_or_funding": "Series D",
+    "avg_salary": "$170K+",
+    "sponsor_status": "Active",
+    "career_url": "https://cohere.com/careers"
+  },
+  {
+    "rank": 106,
+    "company": "Mistral AI",
+    "sector": "Foundation Models",
+    "h1b_or_funding": "Series B",
+    "avg_salary": "$165K+",
+    "sponsor_status": "Active",
+    "career_url": "https://mistral.ai/careers"
+  },
+  {
+    "rank": 107,
+    "company": "Perplexity AI",
+    "sector": "AI Search",
+    "h1b_or_funding": "Series C $500M",
+    "avg_salary": "$170K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.perplexity.ai/hub/careers"
+  },
+  {
+    "rank": 108,
+    "company": "Harvey AI",
+    "sector": "Legal AI",
+    "h1b_or_funding": "Series C",
+    "avg_salary": "$180K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.harvey.ai/careers"
+  },
+  {
+    "rank": 109,
+    "company": "Glean",
+    "sector": "Enterprise Search AI",
+    "h1b_or_funding": "$150M Series F ($7.2B)",
+    "avg_salary": "$175K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.glean.com/careers"
+  },
+  {
+    "rank": 110,
+    "company": "Writer",
+    "sector": "Enterprise GenAI",
+    "h1b_or_funding": "Series C",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://writer.com/company/careers/"
+  },
+  {
+    "rank": 111,
+    "company": "Abridge",
+    "sector": "Healthcare AI",
+    "h1b_or_funding": "$5.3B valuation",
+    "avg_salary": "$170K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.abridge.com/careers"
+  },
+  {
+    "rank": 112,
+    "company": "Scale AI",
+    "sector": "Data Labeling, AI",
+    "h1b_or_funding": "$14B valuation",
+    "avg_salary": "$175K+",
+    "sponsor_status": "Active",
+    "career_url": "https://scale.com/careers"
+  },
+  {
+    "rank": 113,
+    "company": "Sierra AI",
+    "sector": "Customer Service AI",
+    "h1b_or_funding": "Series B",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://sierra.ai/careers"
+  },
+  {
+    "rank": 114,
+    "company": "Cognition AI (Devin)",
+    "sector": "AI Dev Tools",
+    "h1b_or_funding": "Series B",
+    "avg_salary": "$170K+",
+    "sponsor_status": "Active",
+    "career_url": "https://cognition.ai/careers"
+  },
+  {
+    "rank": 115,
+    "company": "Shield AI",
+    "sector": "Defense AI",
+    "h1b_or_funding": "$2B raised",
+    "avg_salary": "$170K+",
+    "sponsor_status": "Active",
+    "career_url": "https://shield.ai/careers/"
+  },
+  {
+    "rank": 116,
+    "company": "Saronic",
+    "sector": "Autonomous Naval",
+    "h1b_or_funding": "$600M raised",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.saronic.com/careers"
+  },
+  {
+    "rank": 117,
+    "company": "Skild AI",
+    "sector": "Robotics AI",
+    "h1b_or_funding": "$1.4B raised",
+    "avg_salary": "$175K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.skild.ai/careers"
+  },
+  {
+    "rank": 118,
+    "company": "Inflection AI",
+    "sector": "Enterprise AI",
+    "h1b_or_funding": "High growth",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://inflection.ai/careers"
+  },
+  {
+    "rank": 119,
+    "company": "Runway ML",
+    "sector": "Generative Video AI",
+    "h1b_or_funding": "Series C",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://runwayml.com/careers/"
+  },
+  {
+    "rank": 120,
+    "company": "ElevenLabs",
+    "sector": "AI Voice / Audio",
+    "h1b_or_funding": "Series B",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://elevenlabs.io/careers"
+  },
+  {
+    "rank": 121,
+    "company": "Luma AI",
+    "sector": "3D/Video AI",
+    "h1b_or_funding": "Series B",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://lumalabs.ai/careers"
+  },
+  {
+    "rank": 122,
+    "company": "Synthesia",
+    "sector": "AI Video Platform",
+    "h1b_or_funding": "Series D",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.synthesia.io/careers"
+  },
+  {
+    "rank": 123,
+    "company": "Character.AI",
+    "sector": "Conversational AI",
+    "h1b_or_funding": "$2.7B raised",
+    "avg_salary": "$165K+",
+    "sponsor_status": "Active",
+    "career_url": "https://character.ai/careers"
+  },
+  {
+    "rank": 124,
+    "company": "Midjourney",
+    "sector": "AI Image Generation",
+    "h1b_or_funding": "Profitable, growing",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.midjourney.com/careers"
+  },
+  {
+    "rank": 125,
+    "company": "Stability AI",
+    "sector": "Open AI Models",
+    "h1b_or_funding": "New leadership",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://stability.ai/careers"
+  },
+  {
+    "rank": 126,
+    "company": "Hugging Face",
+    "sector": "AI Model Hub",
+    "h1b_or_funding": "Series D $235M",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://huggingface.co/jobs"
+  },
+  {
+    "rank": 127,
+    "company": "LangChain",
+    "sector": "AI Developer Tools",
+    "h1b_or_funding": "Series A",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.langchain.com/careers"
+  },
+  {
+    "rank": 128,
+    "company": "Pinecone",
+    "sector": "Vector Database",
+    "h1b_or_funding": "Series B",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.pinecone.io/careers/"
+  },
+  {
+    "rank": 129,
+    "company": "Weaviate",
+    "sector": "Vector Search AI",
+    "h1b_or_funding": "Series B",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://weaviate.io/company/careers"
+  },
+  {
+    "rank": 130,
+    "company": "Together AI",
+    "sector": "AI Infrastructure",
+    "h1b_or_funding": "Series A",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.together.ai/careers"
+  },
+  {
+    "rank": 131,
+    "company": "Ramp",
+    "sector": "Corporate Spend AI",
+    "h1b_or_funding": "Series D, high growth",
+    "avg_salary": "$170K+",
+    "sponsor_status": "Active",
+    "career_url": "https://ramp.com/careers"
+  },
+  {
+    "rank": 132,
+    "company": "Brex",
+    "sector": "Corporate Cards, FinTech",
+    "h1b_or_funding": "High growth",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.brex.com/careers"
+  },
+  {
+    "rank": 133,
+    "company": "Rippling",
+    "sector": "HR/IT SaaS",
+    "h1b_or_funding": "Series F $13.4B",
+    "avg_salary": "$165K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.rippling.com/careers/open-roles"
+  },
+  {
+    "rank": 134,
+    "company": "Plaid",
+    "sector": "Financial Data API",
+    "h1b_or_funding": "High growth",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://plaid.com/careers/openings/"
+  },
+  {
+    "rank": 135,
+    "company": "Chime",
+    "sector": "Neobank",
+    "h1b_or_funding": "Series G",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://careers.chime.com/jobs"
+  },
+  {
+    "rank": 136,
+    "company": "Navan (TripActions)",
+    "sector": "Expense/Travel Mgmt",
+    "h1b_or_funding": "Pre-IPO",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://navan.com/careers/openings"
+  },
+  {
+    "rank": 137,
+    "company": "Carta",
+    "sector": "Equity Management",
+    "h1b_or_funding": "Series G",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://carta.com/careers/"
+  },
+  {
+    "rank": 138,
+    "company": "Deel",
+    "sector": "Global Payroll/HR",
+    "h1b_or_funding": "$12B valuation",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.deel.com/careers/"
+  },
+  {
+    "rank": 139,
+    "company": "Gusto",
+    "sector": "Payroll, SMB HR",
+    "h1b_or_funding": "Series E",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://gusto.com/about/careers"
+  },
+  {
+    "rank": 140,
+    "company": "Klarna",
+    "sector": "BNPL, FinTech",
+    "h1b_or_funding": "IPO 2025",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.klarna.com/careers/jobs/"
+  },
+  {
+    "rank": 141,
+    "company": "Affirm",
+    "sector": "BNPL, Lending",
+    "h1b_or_funding": "Public, high growth",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.affirm.com/careers"
+  },
+  {
+    "rank": 142,
+    "company": "Marqeta",
+    "sector": "Card Issuing Platform",
+    "h1b_or_funding": "Public, expanding",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.marqeta.com/careers"
+  },
+  {
+    "rank": 143,
+    "company": "Circle",
+    "sector": "Stablecoin (USDC), Web3",
+    "h1b_or_funding": "IPO June 2025",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.circle.com/en/careers"
+  },
+  {
+    "rank": 144,
+    "company": "Cedar",
+    "sector": "Healthcare Payments",
+    "h1b_or_funding": "Series D",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.cedar.com/careers/"
+  },
+  {
+    "rank": 145,
+    "company": "Betterment",
+    "sector": "Robo-advisory",
+    "h1b_or_funding": "High growth",
+    "avg_salary": "$140K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.betterment.com/careers"
+  },
+  {
+    "rank": 146,
+    "company": "Palantir Technologies",
+    "sector": "Gov AI, Data Analytics",
+    "h1b_or_funding": "Public, fast growing",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.palantir.com/careers/"
+  },
+  {
+    "rank": 147,
+    "company": "Booz Allen Hamilton",
+    "sector": "Gov IT, Cyber, AI",
+    "h1b_or_funding": "High gov hiring",
+    "avg_salary": "$130K",
+    "sponsor_status": "Active",
+    "career_url": "https://careers.boozallen.com/jobs/search"
+  },
+  {
+    "rank": 148,
+    "company": "Leidos",
+    "sector": "Defense, Health IT",
+    "h1b_or_funding": "High gov hiring",
+    "avg_salary": "$120K",
+    "sponsor_status": "Active",
+    "career_url": "https://careers.leidos.com/search/jobs"
+  },
+  {
+    "rank": 149,
+    "company": "SAIC",
+    "sector": "Defense, Gov IT",
+    "h1b_or_funding": "High gov hiring",
+    "avg_salary": "$115K",
+    "sponsor_status": "Active",
+    "career_url": "https://jobs.saic.com/jobs/search"
+  },
+  {
+    "rank": 150,
+    "company": "ManTech International",
+    "sector": "Cyber, Gov IT",
+    "h1b_or_funding": "High gov hiring",
+    "avg_salary": "$115K",
+    "sponsor_status": "Active",
+    "career_url": "https://mantech.avature.net/careers"
+  },
+  {
+    "rank": 151,
+    "company": "Peraton",
+    "sector": "National Security Tech",
+    "h1b_or_funding": "High gov hiring",
+    "avg_salary": "$118K",
+    "sponsor_status": "Active",
+    "career_url": "https://careers.peraton.com/search-jobs"
+  },
+  {
+    "rank": 152,
+    "company": "CACI International",
+    "sector": "Gov, Cyber, AI",
+    "h1b_or_funding": "High gov hiring",
+    "avg_salary": "$120K",
+    "sponsor_status": "Active",
+    "career_url": "https://careers.caci.com/global/en/search-results"
+  },
+  {
+    "rank": 153,
+    "company": "Maximus Federal",
+    "sector": "Gov Services Tech",
+    "h1b_or_funding": "High gov hiring",
+    "avg_salary": "$110K",
+    "sponsor_status": "Active",
+    "career_url": "https://maximus.com/careers"
+  },
+  {
+    "rank": 154,
+    "company": "Tyler Technologies",
+    "sector": "Gov SaaS",
+    "h1b_or_funding": "Public, expanding",
+    "avg_salary": "$110K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.tylertech.com/careers"
+  },
+  {
+    "rank": 155,
+    "company": "Granicus",
+    "sector": "Gov CX SaaS",
+    "h1b_or_funding": "Expanding",
+    "avg_salary": "$115K",
+    "sponsor_status": "Active",
+    "career_url": "https://granicus.com/careers/"
+  },
+  {
+    "rank": 156,
+    "company": "Accela",
+    "sector": "Gov Licensing SaaS",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$110K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.accela.com/careers/"
+  },
+  {
+    "rank": 157,
+    "company": "Salesforce Gov Cloud",
+    "sector": "Gov CRM SaaS",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$140K",
+    "sponsor_status": "Active",
+    "career_url": "https://careers.salesforce.com/en/jobs/"
+  },
+  {
+    "rank": 158,
+    "company": "Microsoft Azure Gov",
+    "sector": "Gov Cloud",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$160K",
+    "sponsor_status": "Active",
+    "career_url": "https://jobs.careers.microsoft.com/"
+  },
+  {
+    "rank": 159,
+    "company": "AWS GovCloud",
+    "sector": "Gov Cloud",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$155K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.amazon.jobs/"
+  },
+  {
+    "rank": 160,
+    "company": "Socrata / Tyler Data",
+    "sector": "Open Data Gov",
+    "h1b_or_funding": "Active",
+    "avg_salary": "$110K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.tylertech.com/careers"
+  },
+  {
+    "rank": 161,
+    "company": "Deloitte (Technology)",
+    "sector": "Consulting, AI",
+    "h1b_or_funding": "High",
+    "avg_salary": "$130K",
+    "sponsor_status": "Strong",
+    "career_url": "https://apply.deloitte.com/careers/SearchJobs"
+  },
+  {
+    "rank": 162,
+    "company": "Accenture (Tech)",
+    "sector": "Consulting, Cloud, AI",
+    "h1b_or_funding": "High",
+    "avg_salary": "$125K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.accenture.com/us-en/careers/jobsearch"
+  },
+  {
+    "rank": 163,
+    "company": "McKinsey & Company",
+    "sector": "Management Consulting",
+    "h1b_or_funding": "High",
+    "avg_salary": "$167K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.mckinsey.com/careers/search-jobs"
+  },
+  {
+    "rank": 164,
+    "company": "Boston Consulting Group",
+    "sector": "Consulting, Digital",
+    "h1b_or_funding": "High",
+    "avg_salary": "$178K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.bcg.com/global/en/search-results"
+  },
+  {
+    "rank": 165,
+    "company": "PricewaterhouseCoopers",
+    "sector": "Consulting, Tax, AI",
+    "h1b_or_funding": "High",
+    "avg_salary": "$165K",
+    "sponsor_status": "Strong",
+    "career_url": "https://jobs.us.pwc.com/"
+  },
+  {
+    "rank": 166,
+    "company": "KPMG",
+    "sector": "Audit, Advisory, AI",
+    "h1b_or_funding": "High",
+    "avg_salary": "$141K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.kpmguscareers.com/job-search-results/"
+  },
+  {
+    "rank": 167,
+    "company": "EY (Ernst & Young)",
+    "sector": "Consulting, Tax, Tech",
+    "h1b_or_funding": "High",
+    "avg_salary": "$120K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.ey.com/ey/search/"
+  },
+  {
+    "rank": 168,
+    "company": "Capgemini",
+    "sector": "IT Consulting, Cloud",
+    "h1b_or_funding": "High",
+    "avg_salary": "$110K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.capgemini.com/careers/join-us/"
+  },
+  {
+    "rank": 169,
+    "company": "Cognizant",
+    "sector": "IT Services, AI",
+    "h1b_or_funding": "High",
+    "avg_salary": "$95K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.cognizant.com/global/en/search-results"
+  },
+  {
+    "rank": 170,
+    "company": "Infosys",
+    "sector": "IT Services, Consulting",
+    "h1b_or_funding": "High",
+    "avg_salary": "$90K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.infosys.com/careers/apply.html"
+  },
+  {
+    "rank": 171,
+    "company": "TCS (Tata Consultancy)",
+    "sector": "IT Services",
+    "h1b_or_funding": "High",
+    "avg_salary": "$88K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.tcs.com/careers"
+  },
+  {
+    "rank": 172,
+    "company": "Wipro",
+    "sector": "IT Consulting",
+    "h1b_or_funding": "High",
+    "avg_salary": "$85K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.wipro.com/careers-home/jobs"
+  },
+  {
+    "rank": 173,
+    "company": "HCL Technologies",
+    "sector": "IT Services",
+    "h1b_or_funding": "High",
+    "avg_salary": "$90K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.hcltech.com/careers/careers-in-us"
+  },
+  {
+    "rank": 174,
+    "company": "Tech Mahindra",
+    "sector": "IT Services, Telecom",
+    "h1b_or_funding": "88",
+    "avg_salary": "$113K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.techmahindra.com/en-in/careers/"
+  },
+  {
+    "rank": 175,
+    "company": "Mphasis",
+    "sector": "IT Services",
+    "h1b_or_funding": "842",
+    "avg_salary": "$121K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.mphasis.com/home/careers.html"
+  },
+  {
+    "rank": 176,
+    "company": "Hexaware Technologies",
+    "sector": "IT Services",
+    "h1b_or_funding": "High",
+    "avg_salary": "$92K",
+    "sponsor_status": "Strong",
+    "career_url": "https://hexaware.com/careers/"
+  },
+  {
+    "rank": 177,
+    "company": "NTT Data",
+    "sector": "IT Services",
+    "h1b_or_funding": "High",
+    "avg_salary": "$118K",
+    "sponsor_status": "Strong",
+    "career_url": "https://careers.nttdata.com/"
+  },
+  {
+    "rank": 178,
+    "company": "Slalom Consulting",
+    "sector": "Business Tech Consulting",
+    "h1b_or_funding": "High",
+    "avg_salary": "$148K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.slalom.com/careers"
+  },
+  {
+    "rank": 179,
+    "company": "Synechron",
+    "sector": "FinTech Consulting",
+    "h1b_or_funding": "High",
+    "avg_salary": "$107K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.synechron.com/careers/"
+  },
+  {
+    "rank": 180,
+    "company": "Virtusa",
+    "sector": "Digital Engineering",
+    "h1b_or_funding": "High",
+    "avg_salary": "$110K",
+    "sponsor_status": "Strong",
+    "career_url": "https://www.virtusa.com/careers"
+  },
+  {
+    "rank": 231,
+    "company": "Kforce Technology",
+    "sector": "IT Staffing",
+    "h1b_or_funding": "851 LCA",
+    "avg_salary": "$140K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.kforce.com/find-work/search-jobs/"
+  },
+  {
+    "rank": 232,
+    "company": "Randstad Technologies",
+    "sector": "IT Staffing",
+    "h1b_or_funding": "777 LCA",
+    "avg_salary": "$127K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.randstadusa.com/jobs/"
+  },
+  {
+    "rank": 233,
+    "company": "Slalom",
+    "sector": "Tech Consulting",
+    "h1b_or_funding": "630 LCA",
+    "avg_salary": "$148K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.slalom.com/careers"
+  },
+  {
+    "rank": 234,
+    "company": "Collabera",
+    "sector": "IT Staffing",
+    "h1b_or_funding": "28 LCA",
+    "avg_salary": "$147K",
+    "sponsor_status": "Active",
+    "career_url": "https://collabera.com/job-search/"
+  },
+  {
+    "rank": 235,
+    "company": "Mitchell Martin",
+    "sector": "IT Staffing",
+    "h1b_or_funding": "64 LCA",
+    "avg_salary": "$146K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.mitchellmartin.com/jobs/"
+  },
+  {
+    "rank": 236,
+    "company": "Innova Solutions",
+    "sector": "IT Staffing",
+    "h1b_or_funding": "35 LCA",
+    "avg_salary": "$111K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.innovasolutions.com/careers/"
+  },
+  {
+    "rank": 237,
+    "company": "HCL Global Systems",
+    "sector": "IT Services",
+    "h1b_or_funding": "35 LCA",
+    "avg_salary": "$105K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.hclglobal.com/careers/"
+  },
+  {
+    "rank": 238,
+    "company": "Speridian Technologies",
+    "sector": "IT Staffing",
+    "h1b_or_funding": "73 LCA",
+    "avg_salary": "$94K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.speridian.com/careers/"
+  },
+  {
+    "rank": 239,
+    "company": "Infovision",
+    "sector": "IT Services",
+    "h1b_or_funding": "76 LCA",
+    "avg_salary": "$109K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.infovision.com/careers/"
+  },
+  {
+    "rank": 240,
+    "company": "Concentrix / CVG",
+    "sector": "BPO, Tech",
+    "h1b_or_funding": "80 LCA",
+    "avg_salary": "$129K",
+    "sponsor_status": "Active",
+    "career_url": "https://jobs.concentrix.com/global/en/search-results"
+  },
+  {
+    "rank": 241,
+    "company": "Intraedge",
+    "sector": "IT Staffing",
+    "h1b_or_funding": "98 LCA",
+    "avg_salary": "$106K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.intraedge.com/careers/"
+  },
+  {
+    "rank": 242,
+    "company": "MSR Technology Group",
+    "sector": "IT Staffing",
+    "h1b_or_funding": "87 LCA",
+    "avg_salary": "$108K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.msrtechnologies.com/careers/"
+  },
+  {
+    "rank": 243,
+    "company": "System Soft Technologies",
+    "sector": "IT Staffing",
+    "h1b_or_funding": "27 LCA",
+    "avg_salary": "$130K",
+    "sponsor_status": "Active",
+    "career_url": "https://sstech.us/careers/"
+  },
+  {
+    "rank": 244,
+    "company": "Dotcom-Monitor / Team",
+    "sector": "IT Services",
+    "h1b_or_funding": "27 LCA",
+    "avg_salary": "$138K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.google.com/search?q=Dotcom-Monitor%20official%20careers%20jobs"
+  },
+  {
+    "rank": 245,
+    "company": "CGI Technologies",
+    "sector": "IT Services, Gov",
+    "h1b_or_funding": "69 LCA",
+    "avg_salary": "$127K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.cgi.com/us/en-us/careers"
+  },
+  {
+    "rank": 246,
+    "company": "Atos Syntel",
+    "sector": "IT Services",
+    "h1b_or_funding": "74 LCA",
+    "avg_salary": "$85K",
+    "sponsor_status": "Active",
+    "career_url": "https://atos.net/en/careers"
+  },
+  {
+    "rank": 247,
+    "company": "NTT Data Services",
+    "sector": "IT Services",
+    "h1b_or_funding": "561 LCA",
+    "avg_salary": "$118K",
+    "sponsor_status": "Active",
+    "career_url": "https://careers.nttdata.com/"
+  },
+  {
+    "rank": 248,
+    "company": "UST Global",
+    "sector": "Digital Transform",
+    "h1b_or_funding": "636 LCA",
+    "avg_salary": "$95K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.ust.com/en/careers"
+  },
+  {
+    "rank": 249,
+    "company": "Hitachi Digital Services",
+    "sector": "IT Services",
+    "h1b_or_funding": "42 LCA",
+    "avg_salary": "$100K",
+    "sponsor_status": "Active",
+    "career_url": "https://hitachids.com/careers/"
+  },
+  {
+    "rank": 250,
+    "company": "Panasonic Avionics",
+    "sector": "Aviation Tech",
+    "h1b_or_funding": "29 LCA",
+    "avg_salary": "$141K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.panasonic.aero/careers/"
+  },
+  {
+    "rank": 211,
+    "company": "Microsoft (Dynamics/M365)",
+    "sector": "ERP, CRM, Cloud SaaS",
+    "h1b_or_funding": ".NET native",
+    "avg_salary": "$160K",
+    "sponsor_status": "Active",
+    "career_url": "https://jobs.careers.microsoft.com/"
+  },
+  {
+    "rank": 214,
+    "company": "Epicor Software",
+    "sector": "ERP for Manufacturing",
+    "h1b_or_funding": ".NET stack",
+    "avg_salary": "$115K",
+    "sponsor_status": "Active",
+    "career_url": "https://careers.epicor.com/"
+  },
+  {
+    "rank": 215,
+    "company": "Infor",
+    "sector": "Cloud ERP",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$120K",
+    "sponsor_status": "Active",
+    "career_url": "https://careers.infor.com/"
+  },
+  {
+    "rank": 216,
+    "company": "Verint Systems",
+    "sector": "Customer Engagement",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$115K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.verint.com/careers/"
+  },
+  {
+    "rank": 217,
+    "company": "Nuance (Microsoft)",
+    "sector": "AI Healthcare",
+    "h1b_or_funding": "Integrated",
+    "avg_salary": "$130K",
+    "sponsor_status": "Active",
+    "career_url": "https://jobs.careers.microsoft.com/"
+  },
+  {
+    "rank": 218,
+    "company": "Hyland Software",
+    "sector": "Content Management",
+    "h1b_or_funding": ".NET heavy",
+    "avg_salary": "$110K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.hyland.com/en/company/careers"
+  },
+  {
+    "rank": 219,
+    "company": "OpenText",
+    "sector": "Enterprise Info Mgmt",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$115K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.opentext.com/about/careers"
+  },
+  {
+    "rank": 220,
+    "company": "Kofax",
+    "sector": "Intelligent Automation",
+    "h1b_or_funding": ".NET stack",
+    "avg_salary": "$110K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.tungstenautomation.com/company/careers"
+  },
+  {
+    "rank": 221,
+    "company": "Laserfiche",
+    "sector": "ECM, Gov SaaS",
+    "h1b_or_funding": ".NET stack",
+    "avg_salary": "$110K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.laserfiche.com/careers/"
+  },
+  {
+    "rank": 222,
+    "company": "Trimble",
+    "sector": "Construction/GIS Tech",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$120K",
+    "sponsor_status": "Active",
+    "career_url": "https://trimblecareers.trimble.com/careers"
+  },
+  {
+    "rank": 223,
+    "company": "Bentley Systems",
+    "sector": "Infrastructure Eng",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$115K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.bentley.com/company/careers/"
+  },
+  {
+    "rank": 224,
+    "company": "Autodesk",
+    "sector": "Design, BIM, CAD",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$140K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.autodesk.com/careers/job-results"
+  },
+  {
+    "rank": 225,
+    "company": "PTC",
+    "sector": "PLM, IoT",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$125K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.ptc.com/en/careers"
+  },
+  {
+    "rank": 226,
+    "company": "Sitecore",
+    "sector": "CMS, Digital Exp",
+    "h1b_or_funding": ".NET/CMS",
+    "avg_salary": "$115K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.sitecore.com/company/careers"
+  },
+  {
+    "rank": 227,
+    "company": "Progress Software",
+    "sector": "App Dev Platform",
+    "h1b_or_funding": ".NET tools",
+    "avg_salary": "$110K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.progress.com/company/careers"
+  },
+  {
+    "rank": 228,
+    "company": "Telerik (Progress)",
+    "sector": "Dev Tools .NET",
+    "h1b_or_funding": ".NET native",
+    "avg_salary": "$120K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.progress.com/company/careers"
+  },
+  {
+    "rank": 229,
+    "company": "Syncfusion",
+    "sector": ".NET Components",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$105K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.syncfusion.com/company/careers"
+  },
+  {
+    "rank": 230,
+    "company": "Devexpress",
+    "sector": "Dev Tools .NET",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$110K",
+    "sponsor_status": "Active",
+    "career_url": "https://www.devexpress.com/aboutus/jobs.xml"
+  },
+  {
+    "rank": 181,
+    "company": "Anduril Industries",
+    "sector": "Defense, AI, Hardware",
+    "h1b_or_funding": "$14B valuation",
+    "avg_salary": "$175K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.anduril.com/careers/"
+  },
+  {
+    "rank": 182,
+    "company": "Joby Aviation",
+    "sector": "eVTOL / Air Mobility",
+    "h1b_or_funding": "Pre-revenue, growing",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.jobyaviation.com/careers/"
+  },
+  {
+    "rank": 183,
+    "company": "Archer Aviation",
+    "sector": "eVTOL",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.archer.com/careers"
+  },
+  {
+    "rank": 184,
+    "company": "SpaceX (Starlink)",
+    "sector": "Aerospace, AI",
+    "h1b_or_funding": "Very high growth",
+    "avg_salary": "$175K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.spacex.com/careers/"
+  },
+  {
+    "rank": 185,
+    "company": "Relativity Space",
+    "sector": "3D Printing, Aerospace",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.relativityspace.com/careers"
+  },
+  {
+    "rank": 187,
+    "company": "Samsara",
+    "sector": "IoT Fleet Management",
+    "h1b_or_funding": "Public, growing",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.samsara.com/company/careers/roles"
+  },
+  {
+    "rank": 189,
+    "company": "Asana",
+    "sector": "Work Management SaaS",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://asana.com/jobs"
+  },
+  {
+    "rank": 190,
+    "company": "Monday.com",
+    "sector": "Work OS",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://monday.com/careers"
+  },
+  {
+    "rank": 191,
+    "company": "Notion",
+    "sector": "Productivity, AI",
+    "h1b_or_funding": "Series C, fast growing",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.notion.com/careers"
+  },
+  {
+    "rank": 192,
+    "company": "Linear",
+    "sector": "Dev Project Mgmt",
+    "h1b_or_funding": "Fast growing",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://linear.app/careers"
+  },
+  {
+    "rank": 193,
+    "company": "Loom (Atlassian)",
+    "sector": "Video Communication",
+    "h1b_or_funding": "Acquired, scaling",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.atlassian.com/company/careers/all-jobs"
+  },
+  {
+    "rank": 194,
+    "company": "Atlassian",
+    "sector": "Dev Tools, Cloud",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.atlassian.com/company/careers/all-jobs"
+  },
+  {
+    "rank": 195,
+    "company": "HashiCorp (IBM)",
+    "sector": "DevOps, Infra",
+    "h1b_or_funding": "Acquired",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.hashicorp.com/careers"
+  },
+  {
+    "rank": 196,
+    "company": "Elastic",
+    "sector": "Search, Observability",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.elastic.co/careers"
+  },
+  {
+    "rank": 197,
+    "company": "Confluent",
+    "sector": "Real-time Data (Kafka)",
+    "h1b_or_funding": "Public, growing",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.confluent.io/careers/"
+  },
+  {
+    "rank": 198,
+    "company": "dbt Labs",
+    "sector": "Data Transformation",
+    "h1b_or_funding": "Series D",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.getdbt.com/careers"
+  },
+  {
+    "rank": 199,
+    "company": "Monte Carlo",
+    "sector": "Data Observability",
+    "h1b_or_funding": "Series D",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.montecarlodata.com/careers/"
+  },
+  {
+    "rank": 200,
+    "company": "Grafana Labs",
+    "sector": "Observability, Monitoring",
+    "h1b_or_funding": "Series D",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://grafana.com/about/careers/open-positions/"
+  },
+  {
+    "rank": 201,
+    "company": "Chronosphere",
+    "sector": "Cloud-native Monitoring",
+    "h1b_or_funding": "Series C",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://chronosphere.io/careers/"
+  },
+  {
+    "rank": 202,
+    "company": "Pulumi",
+    "sector": "Cloud IaC",
+    "h1b_or_funding": "Series C",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.pulumi.com/careers/"
+  },
+  {
+    "rank": 203,
+    "company": "Temporal Technologies",
+    "sector": "Workflow Engine",
+    "h1b_or_funding": "Series B",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://temporal.io/careers"
+  },
+  {
+    "rank": 204,
+    "company": "Argo AI / Valeo",
+    "sector": "Autonomous Vehicles",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.valeo.com/en/careers/"
+  },
+  {
+    "rank": 205,
+    "company": "Nuro",
+    "sector": "Autonomous Delivery",
+    "h1b_or_funding": "Series D",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.nuro.ai/careers"
+  },
+  {
+    "rank": 206,
+    "company": "Matterport",
+    "sector": "Digital Twins, 3D",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$140K+",
+    "sponsor_status": "Active",
+    "career_url": "https://matterport.com/careers"
+  },
+  {
+    "rank": 207,
+    "company": "Sila Nanotechnologies",
+    "sector": "Battery Tech",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.silanano.com/careers"
+  },
+  {
+    "rank": 208,
+    "company": "Northvolt",
+    "sector": "Battery Manufacturing",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$140K+",
+    "sponsor_status": "Active",
+    "career_url": "https://northvolt.com/career/"
+  },
+  {
+    "rank": 209,
+    "company": "Form Energy",
+    "sector": "Grid Storage",
+    "h1b_or_funding": "Series E",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://formenergy.com/careers/"
+  },
+  {
+    "rank": 210,
+    "company": "Commonwealth Fusion",
+    "sector": "Nuclear Energy",
+    "h1b_or_funding": "Series B",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://cfs.energy/careers"
+  },
+  {
+    "rank": 251,
+    "company": "Zoom Communications",
+    "sector": "Video SaaS",
+    "h1b_or_funding": "28 LCA",
+    "avg_salary": "$148K",
+    "sponsor_status": "Active",
+    "career_url": "https://careers.zoom.us/jobs/search"
+  },
+  {
+    "rank": 253,
+    "company": "Loop Robotics",
+    "sector": "Manufacturing Robots",
+    "h1b_or_funding": "$33M Series A",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.looprobots.com/careers"
+  },
+  {
+    "rank": 254,
+    "company": "Glean (Enterprise AI)",
+    "sector": "Work AI Search",
+    "h1b_or_funding": "$7.2B val",
+    "avg_salary": "$175K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.glean.com/careers"
+  },
+  {
+    "rank": 255,
+    "company": "Socure",
+    "sector": "Digital Identity AI",
+    "h1b_or_funding": "Series E",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.socure.com/careers"
+  },
+  {
+    "rank": 256,
+    "company": "Vanta",
+    "sector": "Compliance Automation",
+    "h1b_or_funding": "Series C",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.vanta.com/careers"
+  },
+  {
+    "rank": 257,
+    "company": "Drata",
+    "sector": "GRC SaaS",
+    "h1b_or_funding": "Series C",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://drata.com/careers"
+  },
+  {
+    "rank": 258,
+    "company": "Lacework",
+    "sector": "Cloud Security",
+    "h1b_or_funding": "Series D",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.lacework.com/careers"
+  },
+  {
+    "rank": 259,
+    "company": "Wiz",
+    "sector": "Cloud Security",
+    "h1b_or_funding": "$12B valuation",
+    "avg_salary": "$175K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.wiz.io/careers"
+  },
+  {
+    "rank": 260,
+    "company": "Orca Security",
+    "sector": "Cloud Security",
+    "h1b_or_funding": "Series C",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://orca.security/careers/"
+  },
+  {
+    "rank": 261,
+    "company": "Snyk",
+    "sector": "Dev Security",
+    "h1b_or_funding": "Series G",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://snyk.io/careers/"
+  },
+  {
+    "rank": 262,
+    "company": "Semgrep",
+    "sector": "Code Security",
+    "h1b_or_funding": "Series C",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://semgrep.dev/careers/"
+  },
+  {
+    "rank": 263,
+    "company": "Cybereason",
+    "sector": "Endpoint Security",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$140K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.cybereason.com/careers"
+  },
+  {
+    "rank": 264,
+    "company": "SentinelOne",
+    "sector": "Cybersecurity AI",
+    "h1b_or_funding": "Public, growing",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.sentinelone.com/careers/"
+  },
+  {
+    "rank": 265,
+    "company": "Zscaler",
+    "sector": "Zero Trust, Cloud",
+    "h1b_or_funding": "Public, growing",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.zscaler.com/careers/search-jobs"
+  },
+  {
+    "rank": 266,
+    "company": "Cloudflare",
+    "sector": "CDN, Security, AI",
+    "h1b_or_funding": "Public, growing",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.cloudflare.com/careers/jobs/"
+  },
+  {
+    "rank": 267,
+    "company": "Fastly",
+    "sector": "Edge Cloud, CDN",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.fastly.com/about/careers/current-openings"
+  },
+  {
+    "rank": 268,
+    "company": "Sumo Logic",
+    "sector": "Log Analytics",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$140K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.sumologic.com/company/careers/"
+  },
+  {
+    "rank": 269,
+    "company": "New Relic",
+    "sector": "Observability",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://newrelic.com/careers"
+  },
+  {
+    "rank": 270,
+    "company": "PagerDuty",
+    "sector": "Incident Mgmt",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$140K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.pagerduty.com/careers/"
+  },
+  {
+    "rank": 271,
+    "company": "OpsRamp (HPE)",
+    "sector": "AIOps",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$140K+",
+    "sponsor_status": "Active",
+    "career_url": "https://careers.hpe.com/us/en/search-results"
+  },
+  {
+    "rank": 272,
+    "company": "Moogsoft",
+    "sector": "AIOps",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$135K+",
+    "sponsor_status": "Active",
+    "career_url": "https://careers.ifs.com/jobs"
+  },
+  {
+    "rank": 273,
+    "company": "Sentry",
+    "sector": "Error Monitoring",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$140K+",
+    "sponsor_status": "Active",
+    "career_url": "https://sentry.io/careers/"
+  },
+  {
+    "rank": 274,
+    "company": "LaunchDarkly",
+    "sector": "Feature Flags",
+    "h1b_or_funding": "Series D",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://launchdarkly.com/careers/"
+  },
+  {
+    "rank": 275,
+    "company": "Harness",
+    "sector": "DevOps Platform",
+    "h1b_or_funding": "Series D",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.harness.io/careers"
+  },
+  {
+    "rank": 276,
+    "company": "GitLab",
+    "sector": "DevOps, AI",
+    "h1b_or_funding": "Public, growing",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://about.gitlab.com/jobs/all-jobs/"
+  },
+  {
+    "rank": 277,
+    "company": "GitHub (Microsoft)",
+    "sector": "DevOps, Copilot",
+    "h1b_or_funding": "High growth",
+    "avg_salary": "$170K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.github.careers/careers-home/jobs"
+  },
+  {
+    "rank": 278,
+    "company": "JFrog",
+    "sector": "DevOps, Artifactory",
+    "h1b_or_funding": "Public",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://join.jfrog.com/"
+  },
+  {
+    "rank": 279,
+    "company": "CircleCI (Sonatype)",
+    "sector": "CI/CD",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$140K+",
+    "sponsor_status": "Active",
+    "career_url": "https://circleci.com/careers/jobs/"
+  },
+  {
+    "rank": 280,
+    "company": "Buildkite",
+    "sector": "CI/CD",
+    "h1b_or_funding": "Series B",
+    "avg_salary": "$140K+",
+    "sponsor_status": "Active",
+    "career_url": "https://buildkite.com/careers"
+  },
+  {
+    "rank": 281,
+    "company": "Retool",
+    "sector": "Internal Tools Dev",
+    "h1b_or_funding": "Series C",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://retool.com/careers"
+  },
+  {
+    "rank": 282,
+    "company": "Airtable",
+    "sector": "Low-code Data Mgmt",
+    "h1b_or_funding": "Series F",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.airtable.com/careers"
+  },
+  {
+    "rank": 283,
+    "company": "Coda",
+    "sector": "Collaborative Docs, AI",
+    "h1b_or_funding": "Series D",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://coda.io/careers"
+  },
+  {
+    "rank": 284,
+    "company": "Clickup",
+    "sector": "Project Mgmt SaaS",
+    "h1b_or_funding": "Series C",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://clickup.com/careers"
+  },
+  {
+    "rank": 285,
+    "company": "Smartsheet",
+    "sector": "Work Mgmt SaaS",
+    "h1b_or_funding": "Public",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.smartsheet.com/careers"
+  },
+  {
+    "rank": 286,
+    "company": "Miro",
+    "sector": "Visual Collab",
+    "h1b_or_funding": "Series C",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://miro.com/careers/"
+  },
+  {
+    "rank": 287,
+    "company": "Lucid Software",
+    "sector": "Visual Work",
+    "h1b_or_funding": "Series E",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://lucid.co/careers"
+  },
+  {
+    "rank": 288,
+    "company": "Zendesk (Permira)",
+    "sector": "Customer Support SaaS",
+    "h1b_or_funding": "Private, growing",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.zendesk.com/company/careers/"
+  },
+  {
+    "rank": 289,
+    "company": "Intercom",
+    "sector": "Customer Messaging AI",
+    "h1b_or_funding": "Series D",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.intercom.com/careers"
+  },
+  {
+    "rank": 290,
+    "company": "Freshworks",
+    "sector": "CRM, SaaS",
+    "h1b_or_funding": "Public, growing",
+    "avg_salary": "$140K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.freshworks.com/company/careers/"
+  },
+  {
+    "rank": 291,
+    "company": "HubSpot",
+    "sector": "CRM, Marketing SaaS",
+    "h1b_or_funding": "Public, growing",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.hubspot.com/careers/jobs"
+  },
+  {
+    "rank": 292,
+    "company": "Amplitude",
+    "sector": "Product Analytics",
+    "h1b_or_funding": "Public",
+    "avg_salary": "$140K+",
+    "sponsor_status": "Active",
+    "career_url": "https://amplitude.com/careers"
+  },
+  {
+    "rank": 293,
+    "company": "Mixpanel",
+    "sector": "Product Analytics",
+    "h1b_or_funding": "Series C",
+    "avg_salary": "$140K+",
+    "sponsor_status": "Active",
+    "career_url": "https://mixpanel.com/careers/jobs/"
+  },
+  {
+    "rank": 294,
+    "company": "Heap (Contentsquare)",
+    "sector": "Digital Analytics",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$140K+",
+    "sponsor_status": "Active",
+    "career_url": "https://contentsquare.com/careers/"
+  },
+  {
+    "rank": 295,
+    "company": "FullStory",
+    "sector": "DX Analytics",
+    "h1b_or_funding": "Series E",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.fullstory.com/careers/"
+  },
+  {
+    "rank": 296,
+    "company": "Segment (Twilio)",
+    "sector": "CDP Platform",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.twilio.com/en-us/company/jobs"
+  },
+  {
+    "rank": 297,
+    "company": "Braze",
+    "sector": "Customer Engagement",
+    "h1b_or_funding": "Public, growing",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.braze.com/careers"
+  },
+  {
+    "rank": 298,
+    "company": "Klaviyo",
+    "sector": "Email/SMS Marketing",
+    "h1b_or_funding": "Public 2023",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.klaviyo.com/careers/jobs"
+  },
+  {
+    "rank": 299,
+    "company": "Postman",
+    "sector": "API Dev Platform",
+    "h1b_or_funding": "Series D",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.postman.com/company/careers/"
+  },
+  {
+    "rank": 300,
+    "company": "Kong",
+    "sector": "API Gateway",
+    "h1b_or_funding": "Series E",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://konghq.com/careers"
+  },
+  {
+    "rank": 301,
+    "company": "Apigee (Google)",
+    "sector": "API Management",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.google.com/about/careers/applications/jobs/results/"
+  },
+  {
+    "rank": 302,
+    "company": "MuleSoft (Salesforce)",
+    "sector": "Integration Platform",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://careers.salesforce.com/en/jobs/"
+  },
+  {
+    "rank": 303,
+    "company": "Boomi",
+    "sector": "iPaaS",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$140K+",
+    "sponsor_status": "Active",
+    "career_url": "https://boomi.com/careers/"
+  },
+  {
+    "rank": 304,
+    "company": "Celigo",
+    "sector": "iPaaS",
+    "h1b_or_funding": "Series C",
+    "avg_salary": "$135K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.celigo.com/careers/"
+  },
+  {
+    "rank": 305,
+    "company": "Workato",
+    "sector": "Enterprise Automation",
+    "h1b_or_funding": "Series E",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.workato.com/careers/"
+  },
+  {
+    "rank": 306,
+    "company": "UiPath",
+    "sector": "RPA, AI Automation",
+    "h1b_or_funding": "Public, growing",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.uipath.com/careers/jobs"
+  },
+  {
+    "rank": 307,
+    "company": "Automation Anywhere",
+    "sector": "RPA, AI",
+    "h1b_or_funding": "Series B",
+    "avg_salary": "$140K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.automationanywhere.com/company/careers"
+  },
+  {
+    "rank": 308,
+    "company": "Blue Prism (SS&C)",
+    "sector": "RPA",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$130K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.blueprism.com/careers/"
+  },
+  {
+    "rank": 309,
+    "company": "Power Automate (Microsoft)",
+    "sector": "Low-code Automation",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$155K+",
+    "sponsor_status": "Active",
+    "career_url": "https://jobs.careers.microsoft.com/"
+  },
+  {
+    "rank": 310,
+    "company": "OutSystems",
+    "sector": "Low-code Dev",
+    "h1b_or_funding": "Series C",
+    "avg_salary": "$135K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.outsystems.com/careers/"
+  },
+  {
+    "rank": 311,
+    "company": "Mendix (Siemens)",
+    "sector": "Low-code",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$135K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.mendix.com/careers/"
+  },
+  {
+    "rank": 312,
+    "company": "Appian",
+    "sector": "Low-code, BPM",
+    "h1b_or_funding": "Public, growing",
+    "avg_salary": "$130K+",
+    "sponsor_status": "Active",
+    "career_url": "https://appian.com/careers/search-jobs"
+  },
+  {
+    "rank": 313,
+    "company": "ServiceMax",
+    "sector": "Field Service SaaS",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$130K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.servicemax.com/about-us/careers"
+  },
+  {
+    "rank": 314,
+    "company": "ClickSoftware (Salesforce)",
+    "sector": "Field Service",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$140K+",
+    "sponsor_status": "Active",
+    "career_url": "https://careers.salesforce.com/en/jobs/"
+  },
+  {
+    "rank": 315,
+    "company": "IFS",
+    "sector": "ERP, FSM",
+    "h1b_or_funding": "Growing",
+    "avg_salary": "$120K+",
+    "sponsor_status": "Active",
+    "career_url": "https://careers.ifs.com/jobs"
+  }
+]

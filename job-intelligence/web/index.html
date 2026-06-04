@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="amethyst">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Job Intelligence Platform</title>
-    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="stylesheet" href="/static/styles.css?v=job-themes" />
   </head>
   <body>
     <div class="app-shell">
@@ -40,6 +40,11 @@
             <h2 id="viewTitle">Overview</h2>
           </div>
           <div class="quick-actions">
+            <div class="theme-switcher" aria-label="Theme selector">
+              <button class="theme-button active" data-theme-button="amethyst" type="button">Amethyst</button>
+              <button class="theme-button" data-theme-button="light" type="button">Light</button>
+              <button class="theme-button" data-theme-button="dark" type="button">Dark</button>
+            </div>
             <button class="icon-button" id="refreshButton" type="button" title="Reload stored database data">
               Refresh Stored
             </button>
@@ -124,6 +129,19 @@
                 </select>
               </label>
               <label>
+                Visa Status
+                <select id="visaStatusInput" name="visa_status">
+                  <option value="">Any visa status</option>
+                </select>
+              </label>
+              <label>
+                Job Type
+                <select id="jobTypeInput" name="job_type">
+                  <option value="">Any type</option>
+                  <option value="fulltime">Full-time</option>
+                </select>
+              </label>
+              <label>
                 Remote
                 <select id="remoteInput" name="remote">
                   <option value="">Any</option>
@@ -157,6 +175,7 @@
                     <th>Location</th>
                     <th>Source</th>
                     <th>Visa Status</th>
+                    <th>Posted</th>
                     <th>Salary</th>
                     <th></th>
                   </tr>
@@ -173,10 +192,27 @@
               <h3>Run Collection</h3>
               <span>Scrapes fresh data and stores it locally</span>
             </div>
+            <div class="preset-row">
+              <button class="secondary-button" data-linkedin-latest-hours="0.5" id="linkedinLatest30Button" type="button">
+                LinkedIn Latest 30m
+              </button>
+              <button class="secondary-button" data-linkedin-latest-hours="24" id="linkedinLatest24Button" type="button">
+                LinkedIn Latest 24h
+              </button>
+              <button class="secondary-button" data-linkedin-latest-hours="1" id="linkedinLatest1Button" type="button">
+                LinkedIn Latest 1h
+              </button>
+              <button class="secondary-button" id="linkedinCompanyTargetsButton" type="button">
+                LinkedIn Companies 24h
+              </button>
+              <button class="secondary-button" id="visaFriendlyCompaniesButton" type="button">
+                Visa-Friendly Companies 24h
+              </button>
+            </div>
             <form class="collect-grid" id="collectForm">
               <label>
                 Search Term
-                <input id="collectSearchTerm" required value="Senior .NET Developer" />
+                <input id="collectSearchTerm" required value="developer contract or full-time" />
               </label>
               <label>
                 Location
@@ -184,22 +220,54 @@
               </label>
               <label>
                 Results Wanted
-                <input id="collectResults" max="1000" min="1" type="number" value="50" />
+                <input id="collectResults" max="1000" min="1" type="number" value="100" />
               </label>
               <label>
                 Country
                 <input id="collectCountry" value="usa" />
               </label>
+              <label>
+                Hours Old
+                <input id="collectHoursOld" min="0.5" step="0.5" type="number" value="24" />
+              </label>
+              <label>
+                Freshness
+                <select id="freshnessPreset">
+                  <option value="0.5">Last 30 minutes</option>
+                  <option value="1">Last 1 hour</option>
+                  <option selected value="24">Last 24 hours</option>
+                  <option value="168">Last 7 days</option>
+                </select>
+              </label>
+              <label>
+                Job Type
+                <select id="collectJobType">
+                  <option value="">Any type</option>
+                  <option value="fulltime">Full-time</option>
+                </select>
+              </label>
+              <label>
+                Company List Limit
+                <input id="companyTargetLimit" max="100" min="1" type="number" value="25" />
+              </label>
               <fieldset>
                 <legend>Sources</legend>
                 <label><input checked type="checkbox" value="linkedin" /> LinkedIn</label>
-                <label><input checked type="checkbox" value="indeed" /> Indeed</label>
+                <label><input type="checkbox" value="indeed" /> Indeed</label>
                 <label><input type="checkbox" value="google" /> Google Jobs</label>
                 <label><input type="checkbox" value="zip_recruiter" /> ZipRecruiter</label>
                 <label><input type="checkbox" value="glassdoor" /> Glassdoor</label>
                 <label><input type="checkbox" value="careerbuilder" /> CareerBuilder <span class="source-note">blocked/experimental</span></label>
                 <label><input type="checkbox" value="remotely" /> Remotely.jobs</label>
                 <label><input type="checkbox" value="weworkremotely" /> We Work Remotely <span class="source-note">blocked/experimental</span></label>
+                <label><input type="checkbox" value="career_page" /> Career Pages</label>
+                <label><input type="checkbox" value="jobright_h1b" /> Jobright H1B</label>
+                <label><input type="checkbox" value="simplify_new_grad" /> Simplify New Grad</label>
+                <label><input type="checkbox" value="github_internships" /> GitHub Internships</label>
+                <label><input type="checkbox" value="dice" /> Dice <span class="source-note">experimental</span></label>
+                <label><input type="checkbox" value="wellfound" /> Wellfound <span class="source-note">experimental</span></label>
+                <label><input type="checkbox" value="yc_jobs" /> YC Jobs <span class="source-note">experimental</span></label>
+                <label><input type="checkbox" value="college_recruiter" /> College Recruiter <span class="source-note">experimental</span></label>
               </fieldset>
               <p class="source-warning">
                 CareerBuilder and We Work Remotely currently block direct automated collection with JavaScript challenges.
@@ -207,6 +275,14 @@
               <label class="checkbox-row">
                 <input id="collectRemote" type="checkbox" />
                 Remote only
+              </label>
+              <label class="checkbox-row company-target-row">
+                <input id="useCompanyTargets" type="checkbox" />
+                Include companies from hiring document
+              </label>
+              <label class="checkbox-row company-target-row">
+                <input id="visaFriendlyOnly" type="checkbox" />
+                Visa-friendly companies only
               </label>
               <button class="primary-button" id="collectButton" type="submit">Start Collection</button>
             </form>
@@ -237,6 +313,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="/static/app.js" defer></script>
+    <script src="/static/app.js?v=all-source-filter" defer></script>
   </body>
 </html>

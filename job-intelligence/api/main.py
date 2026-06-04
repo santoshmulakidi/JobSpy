@@ -9,9 +9,10 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from analytics import AnalyticsEngine
-from api.schemas import AnalyticsOut, CollectRequest, CollectResponse, CompanyOut, JobOut, SearchRequest
+from api.schemas import AnalyticsOut, CollectRequest, CollectResponse, CompanyOut, CompanyTargetOut, JobOut, SearchRequest
 from api.services import CollectionService
 from collectors import CollectionRequest
+from collectors.company_targets import load_company_targets
 from search import SearchEngine
 from storage.config import get_settings
 from storage.database import get_session, init_database
@@ -47,12 +48,19 @@ def dashboard() -> FileResponse:
     return FileResponse(WEB_ROOT / "index.html")
 
 
+@app.get("/admin", include_in_schema=False)
+def admin_dashboard() -> FileResponse:
+    return FileResponse(WEB_ROOT / "admin.html")
+
+
 @app.get("/jobs", response_model=list[JobOut])
 def get_jobs(
     keyword: str | None = None,
     company: str | None = None,
     location: str | None = None,
     source: str | None = None,
+    visa_status: str | None = None,
+    job_type: str | None = None,
     remote: bool | None = None,
     min_salary: float | None = None,
     max_salary: float | None = None,
@@ -65,6 +73,8 @@ def get_jobs(
         company=company,
         location=location,
         source=source,
+        visa_status=visa_status,
+        job_type=job_type,
         remote=remote,
         min_salary=min_salary,
         max_salary=max_salary,
@@ -88,6 +98,11 @@ def get_companies(
     session: Session = Depends(get_session),
 ):
     return JobRepository(session).list_companies(limit=limit, offset=offset)
+
+
+@app.get("/company-targets", response_model=list[CompanyTargetOut])
+def get_company_targets(limit: int = Query(default=25, ge=1, le=100)):
+    return load_company_targets()[:limit]
 
 
 @app.get("/analytics", response_model=AnalyticsOut)
