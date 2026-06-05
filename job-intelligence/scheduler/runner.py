@@ -23,6 +23,7 @@ def run_collection() -> None:
             location="Texas",
             sites=settings.default_site_list,
             results_wanted=100,
+            hours_old=1,
         )
         run, result = CollectionService(session).collect(request)
         NotificationDispatcher.from_settings(settings).send(

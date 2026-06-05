@@ -27,10 +27,14 @@ def test_collection_service_partitions_non_jobspy_sources_from_jobspy():
     session = make_session()
     jobspy = FakeJobSpyCollector()
     careerbuilder = FakeCareerBuilderCollector()
+    governmentjobs = FakeCareerBuilderCollector()
+    usajobs = FakeCareerBuilderCollector()
     remotely = FakeCareerBuilderCollector()
     weworkremotely = FakeCareerBuilderCollector()
     service = CollectionService(session, collector=jobspy)
     service.careerbuilder_collector = careerbuilder
+    service.governmentjobs_collector = governmentjobs
+    service.usajobs_collector = usajobs
     service.remotely_collector = remotely
     service.weworkremotely_collector = weworkremotely
 
@@ -38,12 +42,21 @@ def test_collection_service_partitions_non_jobspy_sources_from_jobspy():
         CollectionRequest(
             search_term="Engineer",
             location="Dallas, TX",
-            sites=["linkedin", "careerbuilder", "remotely", "weworkremotely"],
+            sites=[
+                "linkedin",
+                "careerbuilder",
+                "governmentjobs",
+                "usajobs_api",
+                "remotely",
+                "weworkremotely",
+            ],
         )
     )
 
     assert jobspy.requests[0].sites == ["linkedin"]
     assert careerbuilder.requests[0].sites == ["careerbuilder"]
+    assert governmentjobs.requests[0].sites == ["governmentjobs"]
+    assert usajobs.requests[0].sites == ["usajobs_api"]
     assert remotely.requests[0].sites == ["remotely"]
     assert weworkremotely.requests[0].sites == ["weworkremotely"]
 

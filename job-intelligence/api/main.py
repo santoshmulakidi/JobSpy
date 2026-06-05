@@ -9,10 +9,21 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from analytics import AnalyticsEngine
-from api.schemas import AnalyticsOut, CollectRequest, CollectResponse, CompanyOut, CompanyTargetOut, JobOut, SearchRequest
+from api.schemas import (
+    AnalyticsOut,
+    CollectRequest,
+    CollectResponse,
+    CompanyOut,
+    CompanyTargetOut,
+    JobOut,
+    SchedulerStatusOut,
+    SearchRequest,
+    StatsOut,
+)
 from api.services import CollectionService
 from collectors import CollectionRequest
 from collectors.company_targets import load_company_targets
+from scheduler.hourly import hourly_refresh_scheduler
 from search import SearchEngine
 from storage.config import get_settings
 from storage.database import get_session, init_database
@@ -61,6 +72,7 @@ def get_jobs(
     source: str | None = None,
     visa_status: str | None = None,
     job_type: str | None = None,
+    work_mode: str | None = None,
     remote: bool | None = None,
     min_salary: float | None = None,
     max_salary: float | None = None,
@@ -75,6 +87,7 @@ def get_jobs(
         source=source,
         visa_status=visa_status,
         job_type=job_type,
+        work_mode=work_mode,
         remote=remote,
         min_salary=min_salary,
         max_salary=max_salary,
@@ -101,7 +114,7 @@ def get_companies(
 
 
 @app.get("/company-targets", response_model=list[CompanyTargetOut])
-def get_company_targets(limit: int = Query(default=25, ge=1, le=100)):
+def get_company_targets(limit: int = Query(default=100, ge=1, le=500)):
     return load_company_targets()[:limit]
 
 
@@ -110,6 +123,16 @@ def get_analytics(session: Session = Depends(get_session)):
     overview = AnalyticsEngine(session).overview()
     overview["hiring_velocity"] = []
     return overview
+
+
+@app.get("/stats", response_model=StatsOut)
+def get_stats(session: Session = Depends(get_session)):
+    repository = JobRepository(session)
+    return StatsOut(
+        total_jobs=repository.count_jobs(),
+        remote_jobs=repository.count_remote_jobs(),
+        companies=repository.count_companies(),
+    )
 
 
 @app.post("/collect", response_model=CollectResponse)
@@ -129,3 +152,19 @@ def refresh_jobs(payload: CollectRequest, session: Session = Depends(get_session
 @app.post("/search", response_model=list[JobOut])
 def search_jobs(payload: SearchRequest, session: Session = Depends(get_session)):
     return SearchEngine(session).search(**payload.model_dump())
+
+
+@app.get("/scheduler/status", response_model=SchedulerStatusOut)
+def scheduler_status():
+    return hourly_refresh_scheduler.status()
+
+
+@app.post("/scheduler/start", response_model=SchedulerStatusOut)
+def scheduler_start(payload: CollectRequest):
+    request = CollectionRequest(**payload.model_dump())
+    return hourly_refresh_scheduler.start(request)
+
+
+@app.post("/scheduler/stop", response_model=SchedulerStatusOut)
+def scheduler_stop():
+    return hourly_refresh_scheduler.stop()

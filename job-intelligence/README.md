@@ -31,7 +31,10 @@ modern glass-themed dashboard.
   - We Work Remotely
   - CareerBuilder
 - H1B/visa status classification
+- Visa score and apply-priority ranking
+- Remote, Hybrid, and On-site job modes with latest-first sorting
 - Company-targeted searches from `data/company_targets.json`
+- In-app hourly refresh controls and a command-line hourly scheduler
 - Source-specific company query templates
 - Direct career page collection for Greenhouse and Lever, with HTML fallback for other ATS pages
 - Local SQLite database by default
@@ -158,13 +161,19 @@ python -m pytest tests
 5. Go to **Jobs**
 6. Filter by keyword, company, source, visa status, job type, remote, and salary
 
-Useful presets:
+The Jobs page is sorted latest-first by posting date and then by the latest time
+the job was seen. Use the **All Latest**, **Remote**, **Hybrid**, and **On-site**
+tabs to split jobs by work mode.
 
-- LinkedIn Latest 30m
-- LinkedIn Latest 1h
-- LinkedIn Latest 24h
-- LinkedIn Companies 24h
-- Visa-Friendly Companies 24h
+Useful collect controls:
+
+- **Select All Sources**
+- **Deselect All**
+- **LinkedIn Only**
+- **Visa-Friendly Sources**
+- **Search time** dropdown: Last 30 minutes, Last 1 hour, Last 2 hours, Last 24 hours
+- **Run LinkedIn Latest**
+- **LinkedIn Companies**
 
 ## H1B and Visa-Friendly Workflow
 
@@ -184,7 +193,7 @@ Visa status values include:
 - W2 only
 - Work authorization required
 
-The **Visa-Friendly Companies 24h** preset uses:
+The **Visa-Friendly Sources** preset uses:
 
 - LinkedIn
 - Google Jobs
@@ -193,7 +202,46 @@ The **Visa-Friendly Companies 24h** preset uses:
 - Dice
 
 It also prioritizes companies from `data/company_targets.json` that show strong
-or active sponsorship signals.
+or active sponsorship signals. The target list includes product companies with
+visa-friendly signals such as Roku, Pinterest, Snap, Instacart, Reddit, MongoDB,
+Nutanix, Roblox, Toast, The Trade Desk, Twilio, Box, and SoFi.
+
+## Hourly Refresh
+
+From the dashboard, open **Collect**, choose the search term, location, sources,
+freshness, and company-target options you want, then click **Start Hourly
+Refresh**. The app schedules an immediate run and then refreshes every hour while
+the FastAPI process is running. Click **Stop** to disable it.
+
+You can also run the command-line scheduler.
+
+macOS/Linux:
+
+```bash
+cd /Users/santoshmulakidi/JobSpy/job-intelligence
+source ../.venv/bin/activate
+python -m scheduler.runner
+```
+
+Windows PowerShell:
+
+```powershell
+cd C:\path\to\JobSpy\job-intelligence
+..\.venv\Scripts\Activate.ps1
+python -m scheduler.runner
+```
+
+The scheduler defaults to every 1 hour. You can override it:
+
+```bash
+export JOB_INTELLIGENCE_SCHEDULER_HOURS=1
+export JOB_INTELLIGENCE_DEFAULT_SITES="linkedin,indeed,google,career_page,jobright_h1b,dice"
+```
+
+```powershell
+$env:JOB_INTELLIGENCE_SCHEDULER_HOURS="1"
+$env:JOB_INTELLIGENCE_DEFAULT_SITES="linkedin,indeed,google,career_page,jobright_h1b,dice"
+```
 
 ## API Endpoints
 
@@ -208,6 +256,9 @@ or active sponsorship signals.
 - `POST /collect`
 - `POST /refresh`
 - `POST /search`
+- `GET /scheduler/status`
+- `POST /scheduler/start`
+- `POST /scheduler/stop`
 
 Example collection request:
 

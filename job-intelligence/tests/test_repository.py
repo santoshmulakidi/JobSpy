@@ -361,3 +361,159 @@ def test_list_jobs_filters_fulltime_job_type():
     jobs = repository.list_jobs(job_type="fulltime")
     assert len(jobs) == 1
     assert jobs[0].source_job_id == "fulltime"
+
+
+def test_job_computes_visa_score_and_apply_priority():
+    session = make_session()
+    repository = JobRepository(session)
+    run = repository.create_search_run(
+        search_term="Engineer",
+        location="Remote",
+        sites=["jobright_h1b"],
+        results_wanted=10,
+        started_at=__import__("datetime").datetime.now(__import__("datetime").UTC),
+    )
+
+    repository.upsert_jobs(
+        [
+            {
+                "site": "jobright_h1b",
+                "id": "h1b-1",
+                "title": "Backend Engineer",
+                "company": "Sponsor Co",
+                "location": "Remote",
+                "job_url": "https://example.com/h1b-1",
+                "date_posted": date.today(),
+                "description": "H1B sponsor friendly team.",
+            }
+        ],
+        run,
+    )
+    session.commit()
+
+    job = repository.list_jobs()[0]
+    assert job.visa_score == "High"
+    assert job.apply_priority == "High"
+
+
+def test_no_sponsorship_job_has_low_visa_score():
+    session = make_session()
+    repository = JobRepository(session)
+    run = repository.create_search_run(
+        search_term="Engineer",
+        location="Texas",
+        sites=["indeed"],
+        results_wanted=10,
+        started_at=__import__("datetime").datetime.now(__import__("datetime").UTC),
+    )
+
+    repository.upsert_jobs(
+        [
+            {
+                "site": "indeed",
+                "id": "low-visa",
+                "title": "Hybrid Engineer",
+                "company": "Acme",
+                "location": "Dallas, TX",
+                "job_url": "https://example.com/low-visa",
+                "description": "This role does not offer employment sponsorship.",
+            }
+        ],
+        run,
+    )
+    session.commit()
+
+    job = repository.list_jobs()[0]
+    assert job.visa_score == "Low"
+    assert job.apply_priority == "Low"
+
+
+def test_job_computes_remote_hybrid_and_onsite_work_modes():
+    session = make_session()
+    repository = JobRepository(session)
+    run = repository.create_search_run(
+        search_term="Engineer",
+        location="Texas",
+        sites=["linkedin"],
+        results_wanted=10,
+        started_at=__import__("datetime").datetime.now(__import__("datetime").UTC),
+    )
+
+    repository.upsert_jobs(
+        [
+            {
+                "site": "linkedin",
+                "id": "remote-mode",
+                "title": "Remote Engineer",
+                "company": "Remote Co",
+                "location": "Remote",
+                "job_url": "https://example.com/remote-mode",
+                "is_remote": True,
+            },
+            {
+                "site": "linkedin",
+                "id": "hybrid-mode",
+                "title": "Platform Engineer",
+                "company": "Hybrid Co",
+                "location": "Dallas, TX",
+                "job_url": "https://example.com/hybrid-mode",
+                "description": "Hybrid role with three days in office.",
+            },
+            {
+                "site": "linkedin",
+                "id": "onsite-mode",
+                "title": "Systems Engineer",
+                "company": "Office Co",
+                "location": "Plano, TX",
+                "job_url": "https://example.com/onsite-mode",
+                "description": "Build distributed systems from the Plano office.",
+            },
+        ],
+        run,
+    )
+    session.commit()
+
+    modes = {job.source_job_id: job.work_mode for job in repository.list_jobs()}
+    assert modes["remote-mode"] == "Remote"
+    assert modes["hybrid-mode"] == "Hybrid"
+    assert modes["onsite-mode"] == "On-site"
+
+
+def test_list_jobs_filters_by_work_mode():
+    session = make_session()
+    repository = JobRepository(session)
+    run = repository.create_search_run(
+        search_term="Engineer",
+        location="Texas",
+        sites=["linkedin"],
+        results_wanted=10,
+        started_at=__import__("datetime").datetime.now(__import__("datetime").UTC),
+    )
+
+    repository.upsert_jobs(
+        [
+            {
+                "site": "linkedin",
+                "id": "hybrid-filter",
+                "title": "Hybrid Engineer",
+                "company": "Hybrid Co",
+                "location": "Dallas, TX",
+                "job_url": "https://example.com/hybrid-filter",
+                "description": "Hybrid schedule.",
+            },
+            {
+                "site": "linkedin",
+                "id": "onsite-filter",
+                "title": "Engineer",
+                "company": "Office Co",
+                "location": "Dallas, TX",
+                "job_url": "https://example.com/onsite-filter",
+            },
+        ],
+        run,
+    )
+    session.commit()
+
+    jobs = repository.list_jobs(work_mode="Hybrid")
+    assert len(jobs) == 1
+    assert jobs[0].source_job_id == "hybrid-filter"

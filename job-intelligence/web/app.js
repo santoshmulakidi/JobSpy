@@ -1,8 +1,12 @@
 const state = {
   jobs: [],
   companies: [],
+  companyTargets: [],
   analytics: null,
+  stats: null,
   currentView: "overview",
+  activeWorkMode: "",
+  expandedJobIds: new Set(),
 };
 
 const themeButtons = document.querySelectorAll("[data-theme-button]");
@@ -32,13 +36,20 @@ const supportedSources = [
   "glassdoor",
   "career_page",
   "jobright_h1b",
+  "dice",
+  "governmentjobs",
+  "usajobs_api",
+  "hiringcafe",
+  "yc_jobs",
+  "remotely",
   "simplify_new_grad",
   "github_internships",
-  "dice",
+  "jobsh1b",
+  "visafriendly",
+  "glever",
+  "jobsgrep",
   "wellfound",
-  "yc_jobs",
   "college_recruiter",
-  "remotely",
   "weworkremotely",
   "careerbuilder",
 ];
@@ -50,19 +61,30 @@ const els = {
   totalJobs: document.querySelector("#totalJobs"),
   remoteJobs: document.querySelector("#remoteJobs"),
   companyCount: document.querySelector("#companyCount"),
-  avgSalary: document.querySelector("#avgSalary"),
+  visaScoreJobs: document.querySelector("#visaScoreJobs"),
   companyChart: document.querySelector("#companyChart"),
   locationChart: document.querySelector("#locationChart"),
   skillCloud: document.querySelector("#skillCloud"),
   latestJobs: document.querySelector("#latestJobs"),
   jobsTableBody: document.querySelector("#jobsTableBody"),
   jobCountLabel: document.querySelector("#jobCountLabel"),
+  sourceHealthGrid: document.querySelector("#sourceHealthGrid"),
+  sourceHealthLabel: document.querySelector("#sourceHealthLabel"),
+  companyTargetsGrid: document.querySelector("#companyTargetsGrid"),
+  companyTargetCountLabel: document.querySelector("#companyTargetCountLabel"),
   companiesGrid: document.querySelector("#companiesGrid"),
   companyCountLabel: document.querySelector("#companyCountLabel"),
   collectOutput: document.querySelector("#collectOutput"),
   collectButton: document.querySelector("#collectButton"),
   quickCollectButton: document.querySelector("#quickCollectButton"),
-  linkedinLatestButtons: document.querySelectorAll("[data-linkedin-latest-hours]"),
+  selectAllSourcesButton: document.querySelector("#selectAllSourcesButton"),
+  clearAllSourcesButton: document.querySelector("#clearAllSourcesButton"),
+  linkedinOnlyButton: document.querySelector("#linkedinOnlyButton"),
+  linkedinLatestButton: document.querySelector("#linkedinLatestButton"),
+  linkedinLatestHoursSelect: document.querySelector("#linkedinLatestHoursSelect"),
+  startHourlyRefreshButton: document.querySelector("#startHourlyRefreshButton"),
+  stopHourlyRefreshButton: document.querySelector("#stopHourlyRefreshButton"),
+  schedulerStatusText: document.querySelector("#schedulerStatusText"),
   linkedinCompanyTargetsButton: document.querySelector("#linkedinCompanyTargetsButton"),
   visaFriendlyCompaniesButton: document.querySelector("#visaFriendlyCompaniesButton"),
   toast: document.querySelector("#toast"),
@@ -114,6 +136,16 @@ function shortDate(value) {
   return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+function shortDateTime(value) {
+  if (!value) return "Not scheduled";
+  return new Date(value).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -124,6 +156,18 @@ function escapeHtml(value) {
 
 function empty(container, message) {
   container.innerHTML = `<div class="empty-state">${escapeHtml(message)}</div>`;
+}
+
+function scoreClass(value) {
+  return `score-${String(value || "unknown").toLowerCase()}`;
+}
+
+function priorityClass(value) {
+  return `priority-${String(value || "low").toLowerCase()}`;
+}
+
+function workModeClass(value) {
+  return `mode-${String(value || "on-site").toLowerCase().replace(/[^a-z]/g, "")}`;
 }
 
 function renderBars(container, rows, labelKey) {
@@ -169,14 +213,14 @@ function renderSkills() {
 
 function renderOverview() {
   const jobs = state.jobs;
-  const salary = state.analytics?.salary_trends || {};
-  const avgMin = salary.average_min_salary ? Math.round(salary.average_min_salary).toLocaleString() : null;
-  const avgMax = salary.average_max_salary ? Math.round(salary.average_max_salary).toLocaleString() : null;
+  const stats = state.stats || {};
 
-  els.totalJobs.textContent = jobs.length.toLocaleString();
-  els.remoteJobs.textContent = jobs.filter((job) => job.is_remote).length.toLocaleString();
-  els.companyCount.textContent = state.companies.length.toLocaleString();
-  els.avgSalary.textContent = avgMin && avgMax ? `$${avgMin}-$${avgMax}` : "N/A";
+  els.totalJobs.textContent = (stats.total_jobs ?? jobs.length).toLocaleString();
+  els.remoteJobs.textContent = (
+    stats.remote_jobs ?? jobs.filter((job) => job.is_remote).length
+  ).toLocaleString();
+  els.companyCount.textContent = (stats.companies ?? state.companies.length).toLocaleString();
+  els.visaScoreJobs.textContent = jobs.filter((job) => job.visa_score === "High").length.toLocaleString();
 
   renderBars(els.companyChart, state.analytics?.trending_companies || [], "company");
   renderBars(els.locationChart, state.analytics?.location_trends || [], "location");
@@ -203,35 +247,141 @@ function renderJobs() {
   els.jobCountLabel.textContent = `${state.jobs.length} jobs`;
   if (!state.jobs.length) {
     els.jobsTableBody.innerHTML = `
-      <tr><td colspan="8" class="empty-state">No matching jobs found.</td></tr>
+      <div class="empty-state">No matching jobs found.</div>
     `;
     return;
   }
 
   els.jobsTableBody.innerHTML = state.jobs
-    .map(
-      (job) => `
-      <tr>
-        <td>
-          <div class="role-cell">
-            <strong>${escapeHtml(job.title)}</strong>
-            <span class="tag">${job.is_remote ? "Remote" : "Location based"}</span>
+    .map((job) => {
+      const isExpanded = state.expandedJobIds.has(String(job.id));
+      return `
+      <article class="feed-job-card">
+        <div class="feed-card-topline">
+          <span class="feed-time">${escapeHtml(shortDate(job.date_posted))}</span>
+          <div class="feed-actions">
+            <span class="tag source-chip">${escapeHtml(sourceLabel(job.source))}</span>
+            <button class="link-button muted-action" type="button" data-job-details-id="${job.id}" aria-expanded="${isExpanded}">
+              ${isExpanded ? "Hide" : "Details"}
+            </button>
+            ${
+              job.job_url
+                ? `<a class="link-button muted-action" href="${escapeHtml(job.job_url)}" target="_blank" rel="noreferrer">Open</a>`
+                : ""
+            }
           </div>
-        </td>
-        <td>${escapeHtml(job.company_name || "Unknown")}</td>
-        <td>${escapeHtml(job.location || "Unknown")}</td>
-        <td>${escapeHtml(job.source)}</td>
-        <td><span class="tag visa-tag">${escapeHtml(job.visa_status || "Not specified")}</span></td>
-        <td>${escapeHtml(shortDate(job.date_posted))}</td>
-        <td>${escapeHtml(formatSalary(job))}</td>
-        <td><button class="link-button" type="button" data-job-id="${job.id}">Details</button></td>
-      </tr>
-    `
-    )
+        </div>
+        <div class="feed-job-main">
+          <h3>${escapeHtml(job.title)}</h3>
+          <p>${escapeHtml(job.company_name || "Unknown company")}</p>
+          <p class="feed-location">${escapeHtml(job.location || "Unknown location")}</p>
+        </div>
+        <div class="feed-chip-row">
+          <span class="tag ${workModeClass(job.work_mode)}">${escapeHtml(job.work_mode || (job.is_remote ? "Remote" : "On-site"))}</span>
+          <span class="tag">${escapeHtml(job.job_type || "Type not listed")}</span>
+          <span class="tag">${escapeHtml(formatSalary(job))}</span>
+          <span class="tag ${scoreClass(job.visa_score)}">${escapeHtml(job.visa_score || "Unknown")} visa</span>
+          <span class="tag visa-tag">${escapeHtml(job.visa_status || "Not specified")}</span>
+          <span class="tag ${priorityClass(job.apply_priority)}">${escapeHtml(job.apply_priority || "Low")} priority</span>
+        </div>
+        ${isExpanded ? renderInlineJobDetails(job) : ""}
+      </article>
+    `;
+    })
+    .join("");
+}
+
+function renderInlineJobDetails(job) {
+  return `
+    <div class="inline-job-details">
+      <div class="inline-detail-header">
+        <div>
+          <strong>${escapeHtml(job.title)}</strong>
+          <span>${escapeHtml(job.company_name || "Unknown company")} | ${escapeHtml(job.location || "Unknown location")}</span>
+        </div>
+        <a class="secondary-button" href="${escapeHtml(job.job_url || "#")}" target="_blank" rel="noreferrer">Open Job</a>
+      </div>
+      <p>${escapeHtml(job.description || "No description captured yet.")}</p>
+    </div>
+  `;
+}
+
+function companyTargetVisaScore(target) {
+  const text = `${target.sponsor_status || ""} ${target.h1b_or_funding || ""}`.toLowerCase();
+  if (text.includes("strong") || text.includes("active") || /\d/.test(text)) return "High";
+  if (text.includes("possible") || text.includes("funding")) return "Medium";
+  return "Unknown";
+}
+
+function renderCompanyTargets() {
+  els.companyTargetCountLabel.textContent = `${state.companyTargets.length} target companies`;
+  if (!state.companyTargets.length) {
+    empty(els.companyTargetsGrid, "No company target data loaded.");
+    return;
+  }
+  els.companyTargetsGrid.innerHTML = state.companyTargets
+    .map((target) => {
+      const score = companyTargetVisaScore(target);
+      return `
+        <article class="target-card">
+          <div>
+            <strong>${escapeHtml(target.company)}</strong>
+            <span>${escapeHtml(target.sector || "Sector not listed")}</span>
+          </div>
+          <span class="tag ${scoreClass(score)}">${escapeHtml(score)} visa signal</span>
+          <p>${escapeHtml(target.sponsor_status || "Sponsor status not listed")}</p>
+          <small>${escapeHtml(target.h1b_or_funding || "H1B/funding data not listed")}</small>
+          ${
+            target.career_url
+              ? `<a class="link-button" href="${escapeHtml(target.career_url)}" target="_blank" rel="noreferrer">Career page</a>`
+              : ""
+          }
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderSourceHealth() {
+  const counts = state.jobs.reduce((acc, job) => {
+    acc[job.source] = (acc[job.source] || 0) + 1;
+    return acc;
+  }, {});
+  const experimentalSources = new Set([
+    "careerbuilder",
+    "weworkremotely",
+    "dice",
+    "wellfound",
+    "yc_jobs",
+    "college_recruiter",
+    "jobsh1b",
+    "visafriendly",
+    "glever",
+    "jobsgrep",
+    "hiringcafe",
+    "usajobs_api",
+  ]);
+  els.sourceHealthLabel.textContent = `${supportedSources.length} sources`;
+  els.sourceHealthGrid.innerHTML = supportedSources
+    .map((source) => {
+      const count = counts[source] || 0;
+      const status = count > 0 ? "Data stored" : experimentalSources.has(source) ? "Experimental" : "Ready";
+      const score = count > 0 ? "High" : experimentalSources.has(source) ? "Medium" : "Unknown";
+      return `
+        <article class="source-health-card">
+          <div>
+            <strong>${escapeHtml(sourceLabel(source))}</strong>
+            <span>${escapeHtml(status)}</span>
+          </div>
+          <span class="tag ${scoreClass(score)}">${count.toLocaleString()} jobs</span>
+        </article>
+      `;
+    })
     .join("");
 }
 
 function renderCompanies() {
+  if (!els.companyCountLabel || !els.companiesGrid) return;
   els.companyCountLabel.textContent = `${state.companies.length} companies`;
   if (!state.companies.length) {
     empty(els.companiesGrid, "No companies stored yet.");
@@ -252,27 +402,57 @@ function renderCompanies() {
 function renderAll() {
   renderOverview();
   renderJobs();
-  renderCompanies();
+  renderSourceHealth();
+  if (state.currentView === "targets") {
+    renderCompanyTargets();
+  }
 }
 
 async function loadData() {
   try {
     await api("/health");
     setApiStatus(true);
-    const [jobs, companies, analytics] = await Promise.all([
-      api("/jobs?limit=100"),
-      api("/companies?limit=500"),
-      api("/analytics"),
-    ]);
+    const jobs = await api("/jobs?limit=100");
     state.jobs = jobs;
-    state.companies = companies;
-    state.analytics = analytics;
+    state.expandedJobIds.clear();
     populateSourceFilter(jobs);
     populateVisaStatusFilter(jobs);
     renderAll();
+    await refreshSchedulerStatus();
+    loadStats();
+    loadSecondaryData();
   } catch (error) {
     setApiStatus(false);
     showToast("Could not load local API data.");
+  }
+}
+
+async function loadStats() {
+  try {
+    state.stats = await api("/stats");
+    renderOverview();
+  } catch (error) {
+    showToast("Database totals are still unavailable.");
+  }
+}
+
+async function loadSecondaryData() {
+  try {
+    const [companies, analytics, companyTargets] = await Promise.all([
+      api("/companies?limit=500"),
+      api("/analytics"),
+      api("/company-targets?limit=500"),
+    ]);
+    state.companies = companies;
+    state.analytics = analytics;
+    state.companyTargets = companyTargets;
+    renderOverview();
+    renderSourceHealth();
+    if (state.currentView === "targets") {
+      renderCompanyTargets();
+    }
+  } catch (error) {
+    showToast("Analytics panels are still unavailable.");
   }
 }
 
@@ -283,13 +463,20 @@ function sourceLabel(source) {
     college_recruiter: "College Recruiter",
     dice: "Dice",
     glassdoor: "Glassdoor",
+    governmentjobs: "GovernmentJobs",
     github_internships: "GitHub Internships",
+    glever: "Glever",
     google: "Google Jobs",
+    hiringcafe: "HiringCafe",
     indeed: "Indeed",
+    jobsgrep: "JobsGrep",
     jobright_h1b: "Jobright H1B",
+    jobsh1b: "JobsH1B",
     linkedin: "LinkedIn",
     remotely: "Remotely.jobs",
     simplify_new_grad: "Simplify New Grad",
+    usajobs_api: "USAJOBS",
+    visafriendly: "VisaFriendly",
     wellfound: "Wellfound",
     weworkremotely: "We Work Remotely",
     yc_jobs: "YC Jobs",
@@ -343,13 +530,18 @@ function populateVisaStatusFilter(jobs) {
 }
 
 function getCollectPayload() {
+  const isRemote = document.querySelector("#collectRemote").checked;
+  const locationInput = document.querySelector("#collectLocation").value.trim();
+  const location = isRemote && (!locationInput || locationInput.toLowerCase() === "texas")
+    ? "United States"
+    : locationInput || null;
   return {
     search_term: document.querySelector("#collectSearchTerm").value,
-    location: document.querySelector("#collectLocation").value || null,
+    location,
     sites: selectedSites(),
     results_wanted: Number(document.querySelector("#collectResults").value || 100),
     country_indeed: document.querySelector("#collectCountry").value || "usa",
-    is_remote: document.querySelector("#collectRemote").checked,
+    is_remote: isRemote,
     job_type: document.querySelector("#collectJobType").value || null,
     hours_old: document.querySelector("#collectHoursOld").value
       ? Number(document.querySelector("#collectHoursOld").value)
@@ -361,6 +553,13 @@ function getCollectPayload() {
 }
 
 function switchView(view) {
+  const titles = {
+    collect: "Collect",
+    jobs: "Jobs",
+    overview: "Overview",
+    sources: "Sources",
+    targets: "Company Targets",
+  };
   state.currentView = view;
   document.querySelectorAll(".view").forEach((node) => {
     node.classList.toggle("is-visible", node.id === `${view}View`);
@@ -368,7 +567,10 @@ function switchView(view) {
   document.querySelectorAll(".nav-item").forEach((node) => {
     node.classList.toggle("is-active", node.dataset.view === view);
   });
-  els.viewTitle.textContent = view[0].toUpperCase() + view.slice(1);
+  els.viewTitle.textContent = titles[view] || view[0].toUpperCase() + view.slice(1);
+  if (view === "targets") {
+    renderCompanyTargets();
+  }
 }
 
 function getSearchPayload() {
@@ -380,13 +582,8 @@ function getSearchPayload() {
     source: document.querySelector("#sourceInput").value || null,
     visa_status: document.querySelector("#visaStatusInput").value || null,
     job_type: document.querySelector("#jobTypeInput").value || null,
-    remote: remoteValue === "" ? null : remoteValue === "true",
-    min_salary: document.querySelector("#minSalaryInput").value
-      ? Number(document.querySelector("#minSalaryInput").value)
-      : null,
-    max_salary: document.querySelector("#maxSalaryInput").value
-      ? Number(document.querySelector("#maxSalaryInput").value)
-      : null,
+    work_mode: state.activeWorkMode || null,
+    remote: state.activeWorkMode ? null : remoteValue === "" ? null : remoteValue === "true",
     limit: 100,
     offset: 0,
   };
@@ -394,11 +591,16 @@ function getSearchPayload() {
 
 async function searchJobs(event) {
   event.preventDefault();
+  await runSearch();
+}
+
+async function runSearch() {
   try {
     state.jobs = await api("/search", {
       method: "POST",
       body: JSON.stringify(getSearchPayload()),
     });
+    state.expandedJobIds.clear();
     renderOverview();
     renderJobs();
     switchView("jobs");
@@ -406,6 +608,14 @@ async function searchJobs(event) {
   } catch (error) {
     showToast("Search failed.");
   }
+}
+
+async function setWorkMode(workMode) {
+  state.activeWorkMode = workMode;
+  document.querySelectorAll(".work-mode-tab").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.workMode === workMode);
+  });
+  await runSearch();
 }
 
 function selectedSites() {
@@ -417,6 +627,18 @@ function setSelectedSites(sites) {
   document.querySelectorAll("#collectForm fieldset input[type='checkbox']").forEach((input) => {
     input.checked = siteSet.has(input.value);
   });
+}
+
+function setAllSources(checked) {
+  document.querySelectorAll("#collectForm fieldset input[type='checkbox']").forEach((input) => {
+    input.checked = checked;
+  });
+  showToast(checked ? "All sources selected." : "All sources deselected.");
+}
+
+function selectLinkedInOnly() {
+  setSelectedSites(["linkedin"]);
+  showToast("LinkedIn selected.");
 }
 
 function applyLinkedInLatestPreset(hoursOld) {
@@ -440,6 +662,11 @@ async function collectLinkedInLatest(hoursOld) {
   await collectJobs();
 }
 
+async function collectSelectedLinkedInLatest() {
+  const hoursOld = Number(els.linkedinLatestHoursSelect.value || 1);
+  await collectLinkedInLatest(hoursOld);
+}
+
 async function collectLinkedInCompanyTargets() {
   applyLinkedInLatestPreset(24);
   document.querySelector("#useCompanyTargets").checked = true;
@@ -453,7 +680,7 @@ async function collectVisaFriendlyCompanies() {
   document.querySelector("#useCompanyTargets").checked = true;
   document.querySelector("#visaFriendlyOnly").checked = true;
   document.querySelector("#companyTargetLimit").value = "50";
-  setSelectedSites(["linkedin", "google", "career_page", "jobright_h1b", "dice"]);
+  setSelectedSites(["linkedin", "google", "career_page", "jobright_h1b", "jobsh1b", "visafriendly", "dice", "governmentjobs"]);
   showToast("Collecting visa-friendly company jobs.");
   await collectJobs();
 }
@@ -472,11 +699,9 @@ async function collectJobs(event) {
 
   els.collectButton.disabled = true;
   els.quickCollectButton.disabled = true;
+  els.linkedinLatestButton.disabled = true;
   els.linkedinCompanyTargetsButton.disabled = true;
   els.visaFriendlyCompaniesButton.disabled = true;
-  els.linkedinLatestButtons.forEach((button) => {
-    button.disabled = true;
-  });
   els.collectOutput.textContent = "Collecting latest jobs from selected job boards. This can take a few minutes.";
   try {
     const result = await api("/collect", {
@@ -498,11 +723,68 @@ async function collectJobs(event) {
   } finally {
     els.collectButton.disabled = false;
     els.quickCollectButton.disabled = false;
+    els.linkedinLatestButton.disabled = false;
     els.linkedinCompanyTargetsButton.disabled = false;
     els.visaFriendlyCompaniesButton.disabled = false;
-    els.linkedinLatestButtons.forEach((button) => {
-      button.disabled = false;
+  }
+}
+
+function renderSchedulerStatus(status) {
+  const parts = [];
+  parts.push(status.running ? "Running every hour" : "Stopped");
+  if (status.next_run_at) parts.push(`next ${shortDateTime(status.next_run_at)}`);
+  if (status.last_run_at) {
+    parts.push(`last run ${shortDateTime(status.last_run_at)}`);
+    parts.push(`${status.last_jobs_seen || 0} jobs`);
+    parts.push(`${status.last_error_count || 0} errors`);
+  }
+  els.schedulerStatusText.textContent = parts.join(" | ");
+}
+
+async function refreshSchedulerStatus() {
+  try {
+    const status = await api("/scheduler/status");
+    renderSchedulerStatus(status);
+  } catch (error) {
+    els.schedulerStatusText.textContent = "Scheduler status unavailable";
+  }
+}
+
+async function startHourlyRefresh() {
+  const payload = {
+    ...getCollectPayload(),
+    hours_old: 1,
+    results_wanted: Number(document.querySelector("#collectResults").value || 100),
+  };
+  if (!payload.sites.length) {
+    showToast("Select at least one source before starting hourly refresh.");
+    return;
+  }
+  els.startHourlyRefreshButton.disabled = true;
+  try {
+    const status = await api("/scheduler/start", {
+      method: "POST",
+      body: JSON.stringify(payload),
     });
+    renderSchedulerStatus(status);
+    showToast("Hourly refresh started.");
+  } catch (error) {
+    showToast("Could not start hourly refresh.");
+  } finally {
+    els.startHourlyRefreshButton.disabled = false;
+  }
+}
+
+async function stopHourlyRefresh() {
+  els.stopHourlyRefreshButton.disabled = true;
+  try {
+    const status = await api("/scheduler/stop", { method: "POST" });
+    renderSchedulerStatus(status);
+    showToast("Hourly refresh stopped.");
+  } catch (error) {
+    showToast("Could not stop hourly refresh.");
+  } finally {
+    els.stopHourlyRefreshButton.disabled = false;
   }
 }
 
@@ -515,9 +797,11 @@ function openDrawer(jobId) {
   els.drawerMeta.innerHTML = [
     formatSalary(job),
     job.visa_status || "Not specified",
+    `Visa score ${job.visa_score || "Unknown"}`,
+    `Priority ${job.apply_priority || "Low"}`,
     job.job_type || "Type not listed",
     `Posted ${shortDate(job.date_posted)}`,
-    job.is_remote ? "Remote" : "Location based",
+    job.work_mode || (job.is_remote ? "Remote" : "On-site"),
   ]
     .map((item) => `<span class="tag">${escapeHtml(item)}</span>`)
     .join("");
@@ -525,6 +809,16 @@ function openDrawer(jobId) {
   els.drawerLink.href = job.job_url || "#";
   els.drawer.classList.add("is-open");
   els.drawer.setAttribute("aria-hidden", "false");
+}
+
+function toggleInlineDetails(jobId) {
+  const key = String(jobId);
+  if (state.expandedJobIds.has(key)) {
+    state.expandedJobIds.delete(key);
+  } else {
+    state.expandedJobIds.add(key);
+  }
+  renderJobs();
 }
 
 function closeDrawer() {
@@ -541,8 +835,14 @@ document.querySelector("#refreshButton").addEventListener("click", async () => {
   showToast("Stored data refreshed.");
 });
 els.quickCollectButton.addEventListener("click", collectJobs);
-els.linkedinLatestButtons.forEach((button) => {
-  button.addEventListener("click", () => collectLinkedInLatest(Number(button.dataset.linkedinLatestHours)));
+els.selectAllSourcesButton.addEventListener("click", () => setAllSources(true));
+els.clearAllSourcesButton.addEventListener("click", () => setAllSources(false));
+els.linkedinOnlyButton.addEventListener("click", selectLinkedInOnly);
+els.linkedinLatestButton.addEventListener("click", collectSelectedLinkedInLatest);
+els.startHourlyRefreshButton.addEventListener("click", startHourlyRefresh);
+els.stopHourlyRefreshButton.addEventListener("click", stopHourlyRefresh);
+document.querySelectorAll(".work-mode-tab").forEach((button) => {
+  button.addEventListener("click", () => setWorkMode(button.dataset.workMode));
 });
 els.linkedinCompanyTargetsButton.addEventListener("click", collectLinkedInCompanyTargets);
 els.visaFriendlyCompaniesButton.addEventListener("click", collectVisaFriendlyCompanies);
@@ -560,6 +860,11 @@ document.querySelector("#collectForm").addEventListener("submit", collectJobs);
 document.querySelector("#drawerClose").addEventListener("click", closeDrawer);
 
 document.body.addEventListener("click", (event) => {
+  const detailsTarget = event.target.closest("[data-job-details-id]");
+  if (detailsTarget) {
+    toggleInlineDetails(detailsTarget.dataset.jobDetailsId);
+    return;
+  }
   const target = event.target.closest("[data-job-id]");
   if (target) openDrawer(target.dataset.jobId);
 });

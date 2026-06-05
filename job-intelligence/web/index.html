@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Job Intelligence Platform</title>
-    <link rel="stylesheet" href="/static/styles.css?v=job-themes" />
+    <link rel="stylesheet" href="/static/styles.css?v=hiring-cafe-layout" />
   </head>
   <body>
     <div class="app-shell">
@@ -21,7 +21,8 @@
           <button class="nav-item is-active" data-view="overview" type="button">Overview</button>
           <button class="nav-item" data-view="jobs" type="button">Jobs</button>
           <button class="nav-item" data-view="collect" type="button">Collect</button>
-          <button class="nav-item" data-view="companies" type="button">Companies</button>
+          <button class="nav-item" data-view="sources" type="button">Sources</button>
+          <button class="nav-item" data-view="targets" type="button">Company Targets</button>
         </nav>
 
         <div class="system-card">
@@ -70,8 +71,8 @@
               <strong id="companyCount">0</strong>
             </article>
             <article class="metric">
-              <span>Avg Salary Range</span>
-              <strong id="avgSalary">N/A</strong>
+              <span>High Visa Score</span>
+              <strong id="visaScoreJobs">0</strong>
             </article>
           </div>
 
@@ -108,7 +109,7 @@
         </section>
 
         <section class="view" id="jobsView">
-          <section class="panel">
+          <section class="panel search-panel">
             <form class="filter-grid" id="searchForm">
               <label>
                 Keyword
@@ -149,40 +150,22 @@
                   <option value="false">On-site or hybrid</option>
                 </select>
               </label>
-              <label>
-                Min Salary
-                <input id="minSalaryInput" min="0" name="min_salary" placeholder="90000" type="number" />
-              </label>
-              <label>
-                Max Salary
-                <input id="maxSalaryInput" min="0" name="max_salary" placeholder="180000" type="number" />
-              </label>
               <button class="primary-button" type="submit">Search</button>
             </form>
+            <div class="work-mode-tabs" aria-label="Work mode filters">
+              <button class="work-mode-tab is-active" data-work-mode="" type="button">All Latest</button>
+              <button class="work-mode-tab" data-work-mode="Remote" type="button">Remote</button>
+              <button class="work-mode-tab" data-work-mode="Hybrid" type="button">Hybrid</button>
+              <button class="work-mode-tab" data-work-mode="On-site" type="button">On-site</button>
+            </div>
           </section>
 
-          <section class="panel table-panel">
+          <section class="panel table-panel job-feed-panel">
             <div class="panel-header">
-              <h3>Job Explorer</h3>
+              <h3>Latest jobs</h3>
               <span id="jobCountLabel">0 jobs</span>
             </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Role</th>
-                    <th>Company</th>
-                    <th>Location</th>
-                    <th>Source</th>
-                    <th>Visa Status</th>
-                    <th>Posted</th>
-                    <th>Salary</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody id="jobsTableBody"></tbody>
-              </table>
-            </div>
+            <div class="job-feed" id="jobsTableBody"></div>
           </section>
         </section>
 
@@ -192,22 +175,49 @@
               <h3>Run Collection</h3>
               <span>Scrapes fresh data and stores it locally</span>
             </div>
-            <div class="preset-row">
-              <button class="secondary-button" data-linkedin-latest-hours="0.5" id="linkedinLatest30Button" type="button">
-                LinkedIn Latest 30m
-              </button>
-              <button class="secondary-button" data-linkedin-latest-hours="24" id="linkedinLatest24Button" type="button">
-                LinkedIn Latest 24h
-              </button>
-              <button class="secondary-button" data-linkedin-latest-hours="1" id="linkedinLatest1Button" type="button">
-                LinkedIn Latest 1h
-              </button>
-              <button class="secondary-button" id="linkedinCompanyTargetsButton" type="button">
-                LinkedIn Companies 24h
-              </button>
-              <button class="secondary-button" id="visaFriendlyCompaniesButton" type="button">
-                Visa-Friendly Companies 24h
-              </button>
+            <div class="scheduler-card">
+              <div>
+                <strong>Hourly refresh</strong>
+                <span id="schedulerStatusText">Checking scheduler</span>
+              </div>
+              <div class="scheduler-actions">
+                <button class="secondary-button" id="startHourlyRefreshButton" type="button">
+                  Start Hourly Refresh
+                </button>
+                <button class="icon-button" id="stopHourlyRefreshButton" type="button">
+                  Stop
+                </button>
+              </div>
+            </div>
+            <div class="collect-control-grid">
+              <div class="collect-control-card">
+                <strong>Sources</strong>
+                <div class="source-actions">
+                  <button class="secondary-button" id="selectAllSourcesButton" type="button">Select All Sources</button>
+                  <button class="icon-button" id="clearAllSourcesButton" type="button">Deselect All</button>
+                  <button class="secondary-button" id="linkedinOnlyButton" type="button">LinkedIn Only</button>
+                  <button class="secondary-button" id="visaFriendlyCompaniesButton" type="button">
+                    Visa-Friendly Sources
+                  </button>
+                </div>
+              </div>
+              <div class="collect-control-card">
+                <strong>Search time</strong>
+                <div class="freshness-actions">
+                  <select id="linkedinLatestHoursSelect">
+                    <option value="0.5">Last 30 minutes</option>
+                    <option value="1">Last 1 hour</option>
+                    <option value="2">Last 2 hours</option>
+                    <option value="24">Last 24 hours</option>
+                  </select>
+                  <button class="primary-button" id="linkedinLatestButton" type="button">
+                    Run LinkedIn Latest
+                  </button>
+                  <button class="secondary-button" id="linkedinCompanyTargetsButton" type="button">
+                    LinkedIn Companies
+                  </button>
+                </div>
+              </div>
             </div>
             <form class="collect-grid" id="collectForm">
               <label>
@@ -257,20 +267,27 @@
                 <label><input type="checkbox" value="google" /> Google Jobs</label>
                 <label><input type="checkbox" value="zip_recruiter" /> ZipRecruiter</label>
                 <label><input type="checkbox" value="glassdoor" /> Glassdoor</label>
-                <label><input type="checkbox" value="careerbuilder" /> CareerBuilder <span class="source-note">blocked/experimental</span></label>
-                <label><input type="checkbox" value="remotely" /> Remotely.jobs</label>
-                <label><input type="checkbox" value="weworkremotely" /> We Work Remotely <span class="source-note">blocked/experimental</span></label>
-                <label><input type="checkbox" value="career_page" /> Career Pages</label>
-                <label><input type="checkbox" value="jobright_h1b" /> Jobright H1B</label>
-                <label><input type="checkbox" value="simplify_new_grad" /> Simplify New Grad</label>
-                <label><input type="checkbox" value="github_internships" /> GitHub Internships</label>
-                <label><input type="checkbox" value="dice" /> Dice <span class="source-note">experimental</span></label>
-                <label><input type="checkbox" value="wellfound" /> Wellfound <span class="source-note">experimental</span></label>
-                <label><input type="checkbox" value="yc_jobs" /> YC Jobs <span class="source-note">experimental</span></label>
-                <label><input type="checkbox" value="college_recruiter" /> College Recruiter <span class="source-note">experimental</span></label>
+                <label><input type="checkbox" value="career_page" /> Career Pages <span class="source-note">targeted</span></label>
+                <label><input type="checkbox" value="jobright_h1b" /> Jobright H1B <span class="source-note source-note-good">verified</span></label>
+                <label><input type="checkbox" value="dice" /> Dice <span class="source-note source-note-good">verified</span></label>
+                <label><input type="checkbox" value="governmentjobs" /> GovernmentJobs <span class="source-note source-note-good">verified</span></label>
+                <label><input type="checkbox" value="hiringcafe" /> HiringCafe <span class="source-note source-note-good">verified</span></label>
+                <label><input type="checkbox" value="yc_jobs" /> YC Jobs <span class="source-note source-note-good">verified</span></label>
+                <label><input type="checkbox" value="remotely" /> Remotely.jobs <span class="source-note source-note-good">verified</span></label>
+                <label><input type="checkbox" value="usajobs_api" /> USAJOBS <span class="source-note">API key needed</span></label>
+                <label><input type="checkbox" value="simplify_new_grad" /> Simplify New Grad <span class="source-note">specialized</span></label>
+                <label><input type="checkbox" value="github_internships" /> GitHub Internships <span class="source-note">specialized</span></label>
+                <label><input type="checkbox" value="jobsh1b" /> JobsH1B <span class="source-note">no parse</span></label>
+                <label><input type="checkbox" value="visafriendly" /> VisaFriendly <span class="source-note">no parse</span></label>
+                <label><input type="checkbox" value="glever" /> Glever <span class="source-note">no parse</span></label>
+                <label><input type="checkbox" value="jobsgrep" /> JobsGrep <span class="source-note">HTTP 404</span></label>
+                <label><input type="checkbox" value="college_recruiter" /> College Recruiter <span class="source-note">HTTP 404</span></label>
+                <label><input type="checkbox" value="wellfound" /> Wellfound <span class="source-note">blocked</span></label>
+                <label><input type="checkbox" value="weworkremotely" /> We Work Remotely <span class="source-note">blocked</span></label>
+                <label><input type="checkbox" value="careerbuilder" /> CareerBuilder <span class="source-note">blocked</span></label>
               </fieldset>
               <p class="source-warning">
-                CareerBuilder and We Work Remotely currently block direct automated collection with JavaScript challenges.
+                Verified sources returned jobs in the latest smoke test. Blocked/no-parse sources stay available but are lower priority.
               </p>
               <label class="checkbox-row">
                 <input id="collectRemote" type="checkbox" />
@@ -290,15 +307,26 @@
           </section>
         </section>
 
-        <section class="view" id="companiesView">
+        <section class="view" id="sourcesView">
           <section class="panel table-panel">
             <div class="panel-header">
-              <h3>Companies</h3>
-              <span id="companyCountLabel">0 companies</span>
+              <h3>Source Health</h3>
+              <span id="sourceHealthLabel">0 sources</span>
             </div>
-            <div class="company-grid" id="companiesGrid"></div>
+            <div class="source-health-grid" id="sourceHealthGrid"></div>
           </section>
         </section>
+
+        <section class="view" id="targetsView">
+          <section class="panel table-panel">
+            <div class="panel-header">
+              <h3>Company Targets</h3>
+              <span id="companyTargetCountLabel">0 target companies</span>
+            </div>
+            <div class="target-grid" id="companyTargetsGrid"></div>
+          </section>
+        </section>
+
       </main>
     </div>
 
@@ -313,6 +341,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=all-source-filter" defer></script>
+    <script src="/static/app.js?v=hiring-cafe-layout" defer></script>
   </body>
 </html>

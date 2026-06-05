@@ -5,7 +5,7 @@ from datetime import date, datetime
 import math
 from typing import Any
 
-from sqlalchemy import Select, and_, func, or_, select
+from sqlalchemy import Select, and_, func, not_, or_, select
 from sqlalchemy.orm import Session
 
 from collectors.dedup import fingerprint_job
@@ -118,6 +118,7 @@ class JobRepository:
         source: str | None = None,
         visa_status: str | None = None,
         job_type: str | None = None,
+        work_mode: str | None = None,
         remote: bool | None = None,
         min_salary: float | None = None,
         max_salary: float | None = None,
@@ -130,13 +131,22 @@ class JobRepository:
             location=location,
             source=source,
             job_type=job_type,
+            work_mode=work_mode,
             remote=remote,
             min_salary=min_salary,
             max_salary=max_salary,
         )
         statement = statement.order_by(Job.date_posted.desc().nullslast(), Job.last_seen_at.desc())
-        if visa_status:
-            jobs = [job for job in self.session.scalars(statement).all() if job.visa_status == visa_status]
+        if visa_status or work_mode:
+            if work_mode:
+                candidate_limit = max((offset + limit) * 20, 500)
+                jobs = list(self.session.scalars(statement.limit(candidate_limit)))
+            else:
+                jobs = list(self.session.scalars(statement).all())
+            if visa_status:
+                jobs = [job for job in jobs if job.visa_status == visa_status]
+            if work_mode:
+                jobs = [job for job in jobs if job.work_mode.lower() == work_mode.lower()]
             return jobs[offset : offset + limit]
         statement = statement.limit(limit).offset(offset)
         return list(self.session.scalars(statement))
@@ -150,6 +160,21 @@ class JobRepository:
                 select(Company).order_by(Company.name.asc()).limit(limit).offset(offset)
             )
         )
+
+    def count_jobs(self) -> int:
+        return self.session.scalar(
+            select(func.count(Job.id)).where(Job.status == JobStatus.ACTIVE)
+        ) or 0
+
+    def count_remote_jobs(self) -> int:
+        return self.session.scalar(
+            select(func.count(Job.id)).where(
+                and_(Job.status == JobStatus.ACTIVE, Job.is_remote.is_(True))
+            )
+        ) or 0
+
+    def count_companies(self) -> int:
+        return self.session.scalar(select(func.count(Company.id))) or 0
 
     def company_counts(self, limit: int = 20) -> list[tuple[str, int]]:
         return list(
@@ -192,6 +217,7 @@ class JobRepository:
         location: str | None,
         source: str | None,
         job_type: str | None,
+        work_mode: str | None,
         remote: bool | None,
         min_salary: float | None,
         max_salary: float | None,
@@ -218,6 +244,19 @@ class JobRepository:
                 )
             else:
                 statement = statement.where(Job.job_type.ilike(f"%{job_type}%"))
+        if work_mode:
+            mode = work_mode.lower()
+            hybrid_filter = self._light_text_matches(("hybrid", "in office", "in-office", "onsite/remote", "on-site/remote"))
+            remote_filter = or_(
+                Job.is_remote.is_(True),
+                self._light_text_matches(("remote", "work from home", "wfh")),
+            )
+            if mode == "remote":
+                statement = statement.where(remote_filter).where(not_(hybrid_filter))
+            elif mode == "hybrid":
+                statement = statement.where(hybrid_filter)
+            elif mode in {"on-site", "onsite"}:
+                statement = statement.where(Job.is_remote.is_not(True)).where(not_(hybrid_filter))
         if remote is not None:
             statement = statement.where(Job.is_remote == remote)
         if min_salary is not None:
@@ -225,6 +264,35 @@ class JobRepository:
         if max_salary is not None:
             statement = statement.where(or_(Job.min_amount.is_(None), Job.min_amount <= max_salary))
         return statement
+
+    @staticmethod
+    def _text_matches(tokens: tuple[str, ...]):
+        conditions = []
+        for token in tokens:
+            pattern = f"%{token}%"
+            conditions.extend(
+                [
+                    Job.title.ilike(pattern),
+                    Job.description.ilike(pattern),
+                    Job.location.ilike(pattern),
+                    Job.job_type.ilike(pattern),
+                ]
+            )
+        return or_(*conditions)
+
+    @staticmethod
+    def _light_text_matches(tokens: tuple[str, ...]):
+        conditions = []
+        for token in tokens:
+            pattern = f"%{token}%"
+            conditions.extend(
+                [
+                    Job.title.ilike(pattern),
+                    Job.location.ilike(pattern),
+                    Job.job_type.ilike(pattern),
+                ]
+            )
+        return or_(*conditions)
 
     def _create_job(self, normalized: dict[str, Any], search_run: SearchRun | None) -> Job:
         company = self._get_or_create_company(normalized.get("company_name"))

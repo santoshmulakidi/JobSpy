@@ -2788,5 +2788,122 @@
     "avg_salary": "$120K+",
     "sponsor_status": "Active",
     "career_url": "https://careers.ifs.com/jobs"
+  },
+  {
+    "rank": 316,
+    "company": "Roku",
+    "sector": "Streaming Platform, Ads, Devices",
+    "h1b_or_funding": "H1B sponsor signal",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.weareroku.com/jobs"
+  },
+  {
+    "rank": 317,
+    "company": "Pinterest",
+    "sector": "Consumer Social, Ads, AI",
+    "h1b_or_funding": "H1B sponsor signal",
+    "avg_salary": "$170K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.pinterestcareers.com/jobs/"
+  },
+  {
+    "rank": 318,
+    "company": "Snap Inc.",
+    "sector": "Consumer Social, AR, Ads",
+    "h1b_or_funding": "H1B sponsor signal",
+    "avg_salary": "$170K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.snap.com/jobs"
+  },
+  {
+    "rank": 319,
+    "company": "Instacart",
+    "sector": "Marketplace, Retail Tech",
+    "h1b_or_funding": "H1B sponsor signal",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.instacart.com/company/careers"
+  },
+  {
+    "rank": 320,
+    "company": "Reddit",
+    "sector": "Consumer Social, Ads, AI",
+    "h1b_or_funding": "H1B sponsor signal",
+    "avg_salary": "$160K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.redditinc.com/careers"
+  },
+  {
+    "rank": 321,
+    "company": "MongoDB",
+    "sector": "Developer Data Platform",
+    "h1b_or_funding": "H1B sponsor signal",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.mongodb.com/careers/jobs"
+  },
+  {
+    "rank": 322,
+    "company": "Nutanix",
+    "sector": "Hybrid Cloud Infrastructure",
+    "h1b_or_funding": "H1B sponsor signal",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.nutanix.com/company/careers"
+  },
+  {
+    "rank": 323,
+    "company": "Roblox",
+    "sector": "Gaming Platform, Creator Economy",
+    "h1b_or_funding": "H1B sponsor signal",
+    "avg_salary": "$180K+",
+    "sponsor_status": "Active",
+    "career_url": "https://careers.roblox.com/jobs"
+  },
+  {
+    "rank": 324,
+    "company": "Toast",
+    "sector": "Restaurant SaaS, Fintech",
+    "h1b_or_funding": "H1B sponsor signal",
+    "avg_salary": "$145K+",
+    "sponsor_status": "Active",
+    "career_url": "https://careers.toasttab.com/jobs"
+  },
+  {
+    "rank": 325,
+    "company": "The Trade Desk",
+    "sector": "AdTech, Data Platform",
+    "h1b_or_funding": "H1B sponsor signal",
+    "avg_salary": "$170K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.thetradedesk.com/us/careers/open-positions"
+  },
+  {
+    "rank": 326,
+    "company": "Twilio",
+    "sector": "Communications API, Customer Engagement",
+    "h1b_or_funding": "H1B sponsor signal",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.twilio.com/en-us/company/jobs"
+  },
+  {
+    "rank": 327,
+    "company": "Box",
+    "sector": "Content Cloud, Enterprise SaaS",
+    "h1b_or_funding": "H1B sponsor signal",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.box.com/careers"
+  },
+  {
+    "rank": 328,
+    "company": "SoFi",
+    "sector": "Fintech, Banking Platform",
+    "h1b_or_funding": "H1B sponsor signal",
+    "avg_salary": "$150K+",
+    "sponsor_status": "Active",
+    "career_url": "https://www.sofi.com/careers/"
   }
 ]

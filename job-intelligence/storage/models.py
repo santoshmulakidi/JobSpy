@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 import re
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from sqlalchemy import (
     JSON,
@@ -162,6 +162,56 @@ class Job(Base):
         ):
             return "Work authorization required"
         return "Not specified"
+
+    @property
+    def visa_score(self) -> str:
+        status = self.visa_status
+        text = self._visa_text()
+        high_signal_sources = {"jobright_h1b", "visafriendly", "jobsh1b"}
+
+        if self.source in high_signal_sources:
+            return "High"
+        if status in {
+            "C2C accepted",
+            "H1B accepted",
+            "OPT/CPT accepted",
+            "Sponsorship available",
+            "TN visa",
+        }:
+            return "High"
+        if re.search(r"\b(strong sponsor|active sponsor|visa friendly|h1b sponsor|h-?1b sponsor)\b", text):
+            return "High"
+        if status in {"No C2C", "No sponsorship", "USC/GC required", "W2 only"}:
+            return "Low"
+        if status == "Work authorization required" or re.search(r"\b(h-?1b|tn visa|sponsor|visa)\b", text):
+            return "Medium"
+        return "Unknown"
+
+    @property
+    def work_mode(self) -> str:
+        text = self._visa_text()
+        if re.search(r"\b(hybrid|onsite/remote|on-site/remote|in office|in-office)\b", text):
+            return "Hybrid"
+        if self.is_remote or re.search(r"\b(remote|work from home|wfh)\b", text):
+            return "Remote"
+        return "On-site"
+
+    @property
+    def apply_priority(self) -> str:
+        score = self.visa_score
+        posted = self.date_posted
+        if isinstance(posted, datetime):
+            posted = posted.date()
+
+        fresh_days = None
+        if isinstance(posted, date):
+            fresh_days = max(0, (date.today() - posted).days)
+
+        if score == "High" and (fresh_days is None or fresh_days <= 7):
+            return "High"
+        if score == "High" or (score == "Medium" and (fresh_days is None or fresh_days <= 14)):
+            return "Medium"
+        return "Low"
 
     def _visa_text(self) -> str:
         values = [

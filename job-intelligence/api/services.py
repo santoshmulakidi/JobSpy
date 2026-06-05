@@ -7,31 +7,52 @@ from collectors import (
     CareerBuilderCollector,
     CollectionRequest,
     CollectionResult,
+    GovernmentJobsCollector,
     JobSpyCollector,
     MarkdownJobCollector,
     RemotelyJobsCollector,
     SimpleWebJobCollector,
+    USAJobsCollector,
     WeWorkRemotelyCollector,
 )
 from collectors.base import now_utc
 from collectors.company_targets import select_company_targets
 from collectors.query_templates import build_source_query
+from storage.config import get_settings
 from storage.repository import JobRepository
 
 
 class CollectionService:
     jobspy_sites = {"linkedin", "indeed", "zip_recruiter", "glassdoor", "google"}
     careerbuilder_sites = {"careerbuilder"}
+    governmentjobs_sites = {"governmentjobs"}
+    usajobs_sites = {"usajobs_api"}
     remotely_sites = {"remotely"}
     weworkremotely_sites = {"weworkremotely"}
     career_page_sites = {"career_page"}
     h1b_markdown_sites = {"jobright_h1b", "simplify_new_grad", "github_internships"}
-    simple_web_sites = {"dice", "wellfound", "yc_jobs", "college_recruiter"}
+    simple_web_sites = {
+        "college_recruiter",
+        "dice",
+        "glever",
+        "hiringcafe",
+        "jobsgrep",
+        "jobsh1b",
+        "visafriendly",
+        "wellfound",
+        "yc_jobs",
+    }
 
     def __init__(self, session: Session, collector: JobSpyCollector | None = None) -> None:
         self.session = session
         self.collector = collector or JobSpyCollector()
         self.careerbuilder_collector = CareerBuilderCollector()
+        self.governmentjobs_collector = GovernmentJobsCollector()
+        settings = get_settings()
+        self.usajobs_collector = USAJobsCollector(
+            api_key=settings.usajobs_api_key,
+            user_agent=settings.usajobs_user_agent,
+        )
         self.remotely_collector = RemotelyJobsCollector()
         self.weworkremotely_collector = WeWorkRemotelyCollector()
         self.career_page_collector = AtsCareerPageCollector()
@@ -70,6 +91,26 @@ class CollectionService:
                 source_name="college_recruiter",
                 search_url_template="https://www.collegerecruiter.com/jobs?keyword={query}&location={location}",
             ),
+            "jobsh1b": SimpleWebJobCollector(
+                source_name="jobsh1b",
+                search_url_template="https://jobsh1b.com/jobs?search={query}&location={location}",
+            ),
+            "visafriendly": SimpleWebJobCollector(
+                source_name="visafriendly",
+                search_url_template="https://www.visafriendly.com/jobs?search={query}&location={location}",
+            ),
+            "glever": SimpleWebJobCollector(
+                source_name="glever",
+                search_url_template="https://www.glever.co/search?q={query}&location={location}",
+            ),
+            "jobsgrep": SimpleWebJobCollector(
+                source_name="jobsgrep",
+                search_url_template="https://jobsgrep.com/jobs?query={query}&location={location}",
+            ),
+            "hiringcafe": SimpleWebJobCollector(
+                source_name="hiringcafe",
+                search_url_template="https://hiring.cafe/?search={query}&location={location}",
+            ),
         }
         self.repository = JobRepository(session)
 
@@ -100,6 +141,8 @@ class CollectionService:
 
         jobspy_sites = [site for site in request.sites if site in self.jobspy_sites]
         careerbuilder_sites = [site for site in request.sites if site in self.careerbuilder_sites]
+        governmentjobs_sites = [site for site in request.sites if site in self.governmentjobs_sites]
+        usajobs_sites = [site for site in request.sites if site in self.usajobs_sites]
         remotely_sites = [site for site in request.sites if site in self.remotely_sites]
         weworkremotely_sites = [site for site in request.sites if site in self.weworkremotely_sites]
         career_page_sites = [site for site in request.sites if site in self.career_page_sites]
@@ -108,6 +151,8 @@ class CollectionService:
         supported_sites = (
             self.jobspy_sites
             | self.careerbuilder_sites
+            | self.governmentjobs_sites
+            | self.usajobs_sites
             | self.remotely_sites
             | self.weworkremotely_sites
             | self.career_page_sites
@@ -160,6 +205,18 @@ class CollectionService:
             result = self.careerbuilder_collector.collect(
                 request.model_copy(update={"sites": careerbuilder_sites})
             )
+            jobs.extend(result.jobs)
+            errors.extend(result.errors)
+
+        if governmentjobs_sites:
+            result = self.governmentjobs_collector.collect(
+                request.model_copy(update={"sites": governmentjobs_sites})
+            )
+            jobs.extend(result.jobs)
+            errors.extend(result.errors)
+
+        if usajobs_sites:
+            result = self.usajobs_collector.collect(request.model_copy(update={"sites": usajobs_sites}))
             jobs.extend(result.jobs)
             errors.extend(result.errors)
 

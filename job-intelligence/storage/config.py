@@ -8,14 +8,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     database_url: str = "sqlite:///./job_intelligence.db"
     log_level: str = "INFO"
-    default_sites: str = (
-        "linkedin,indeed,google,zip_recruiter,glassdoor,careerbuilder,remotely,weworkremotely"
-    )
-    scheduler_hours: int = 4
+    default_sites: str = "linkedin,indeed,google,career_page,jobright_h1b,dice"
+    scheduler_hours: int = 1
     slack_webhook_url: str | None = None
     discord_webhook_url: str | None = None
     telegram_bot_token: str | None = None
     telegram_chat_id: str | None = None
+    usajobs_api_key: str | None = None
+    usajobs_user_agent: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -13,15 +13,27 @@ def test_local_dashboard_is_served():
     assert "data-theme=\"amethyst\"" in response.text
     assert "theme-switcher" in response.text
     assert "Visa Status" in response.text
+    assert "Visa Score" in response.text
+    assert "Latest jobs" in response.text
+    assert "Source Health" in response.text
+    assert "Company Targets" in response.text
+    assert "All Latest" in response.text
+    assert "Hybrid" in response.text
+    assert "On-site" in response.text
+    assert "Hourly refresh" in response.text
+    assert "Start Hourly Refresh" in response.text
+    assert "Select All Sources" in response.text
+    assert "Deselect All" in response.text
     assert "Any visa status" in response.text
     assert "Full-time" in response.text
-    assert "Posted" in response.text
+    assert "Job Type" in response.text
     assert "collectJobType" in response.text
-    assert "LinkedIn Latest 30m" in response.text
-    assert 'data-linkedin-latest-hours="0.5"' in response.text
-    assert "LinkedIn Latest 24h" in response.text
-    assert "LinkedIn Companies 24h" in response.text
-    assert "Visa-Friendly Companies 24h" in response.text
+    assert "Run LinkedIn Latest" in response.text
+    assert "Last 30 minutes" in response.text
+    assert "Last 2 hours" in response.text
+    assert "LinkedIn Companies" in response.text
+    assert "Visa-Friendly Sources" in response.text
+    assert "LinkedIn Only" in response.text
     assert "Last 7 days" in response.text
     assert "useCompanyTargets" in response.text
     assert "companyTargetLimit" in response.text
@@ -31,14 +43,27 @@ def test_local_dashboard_is_served():
     assert "Simplify New Grad" in response.text
     assert "GitHub Internships" in response.text
     assert "Dice" in response.text
+    assert "GovernmentJobs" in response.text
+    assert "USAJOBS" in response.text
+    assert "API key needed" in response.text
+    assert "verified" in response.text
+    assert "no parse" in response.text
+    assert "Verified sources returned jobs" in response.text
+    assert "JobsH1B" in response.text
+    assert "VisaFriendly" in response.text
+    assert "Glever" in response.text
+    assert "JobsGrep" in response.text
+    assert "HiringCafe" in response.text
     assert "Wellfound" in response.text
     assert "YC Jobs" in response.text
     assert "College Recruiter" in response.text
     assert "developer contract or full-time" in response.text
     assert "CareerBuilder" in response.text
-    assert "blocked/experimental" in response.text
+    assert "blocked" in response.text
     assert "Remotely.jobs" in response.text
     assert "We Work Remotely" in response.text
+    assert "minSalaryInput" not in response.text
+    assert "maxSalaryInput" not in response.text
 
 
 def test_static_assets_are_served():
@@ -51,12 +76,32 @@ def test_static_assets_are_served():
     assert "H1B accepted" in response.text
     assert "supportedSources" in response.text
     assert "jobright_h1b" in response.text
+    assert "governmentjobs" in response.text
+    assert "usajobs_api" in response.text
+    assert "sourceHealthGrid" in response.text
+    assert "companyTargetsGrid" in response.text
+    assert "visa_score" in response.text
+    assert "apply_priority" in response.text
+    assert "work_mode" in response.text
+    assert "setWorkMode" in response.text
+    assert "startHourlyRefresh" in response.text
+    assert "setAllSources" in response.text
+    assert "selectAllSourcesButton" in response.text
+    assert "/scheduler/status" in response.text
     assert "job-intelligence-theme" in response.text
     assert "data-theme-button" in response.text
     assert "applyLinkedInLatestPreset" in response.text
     assert "collectLinkedInLatest" in response.text
+    assert "collectSelectedLinkedInLatest" in response.text
     assert "collectLinkedInCompanyTargets" in response.text
     assert "collectVisaFriendlyCompanies" in response.text
+    assert "data-job-details-id" in response.text
+    assert "toggleInlineDetails" in response.text
+    assert "inline-job-details" in response.text
+    assert "/stats" in response.text
+    assert "United States" in response.text
+    assert "min_salary:" not in response.text
+    assert "max_salary:" not in response.text
 
 
 def test_admin_dashboard_is_served():
@@ -100,7 +145,11 @@ def test_refresh_endpoint_is_registered():
     paths = {route.path for route in app.routes}
 
     assert "/refresh" in paths
+    assert "/stats" in paths
     assert "/company-targets" in paths
+    assert "/scheduler/status" in paths
+    assert "/scheduler/start" in paths
+    assert "/scheduler/stop" in paths
 
 
 def test_company_targets_endpoint_returns_document_companies():
@@ -113,3 +162,16 @@ def test_company_targets_endpoint_returns_document_companies():
     assert len(targets) == 3
     assert targets[0]["company"] == "Amazon / AWS"
     assert targets[0]["career_url"] == "https://www.amazon.jobs/"
+
+
+def test_company_targets_endpoint_includes_added_product_companies():
+    client = TestClient(app)
+
+    response = client.get("/company-targets?limit=500")
+
+    assert response.status_code == 200
+    companies = {target["company"] for target in response.json()}
+    assert "Roku" in companies
+    assert "Pinterest" in companies
+    assert "MongoDB" in companies
+    assert "The Trade Desk" in companies

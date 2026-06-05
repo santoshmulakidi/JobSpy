@@ -33,6 +33,7 @@ class SearchRequest(BaseModel):
     source: str | None = None
     visa_status: str | None = None
     job_type: str | None = None
+    work_mode: str | None = None
     remote: bool | None = None
     min_salary: float | None = None
     max_salary: float | None = None
@@ -51,12 +52,15 @@ class JobOut(BaseModel):
     description: str | None
     job_type: str | None
     is_remote: bool | None
+    work_mode: str
     date_posted: date | None
     interval: str | None
     min_amount: float | None
     max_amount: float | None
     currency: str | None
     visa_status: str
+    visa_score: str
+    apply_priority: str
     status: str
     first_seen_at: datetime
     last_seen_at: datetime
@@ -88,3 +92,20 @@ class AnalyticsOut(BaseModel):
     most_requested_skills: list[dict[str, Any]]
     location_trends: list[dict[str, Any]]
     salary_trends: dict[str, Any]
+
+
+class StatsOut(BaseModel):
+    total_jobs: int
+    remote_jobs: int
+    companies: int
+
+
+class SchedulerStatusOut(BaseModel):
+    running: bool
+    interval_hours: int = 1
+    next_run_at: datetime | None = None
+    last_run_at: datetime | None = None
+    last_search_run_id: int | None = None
+    last_jobs_seen: int | None = None
+    last_error_count: int | None = None
+    last_errors: list[str] = Field(default_factory=list)
