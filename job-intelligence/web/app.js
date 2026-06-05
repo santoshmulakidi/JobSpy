@@ -4,6 +4,7 @@ const state = {
   companyTargets: [],
   analytics: null,
   stats: null,
+  sourceCounts: {},
   currentView: "overview",
   activeWorkMode: "",
   expandedJobIds: new Set(),
@@ -133,6 +134,13 @@ function formatSalary(job) {
 
 function shortDate(value) {
   if (!value) return "Unknown";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split("-").map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    });
+  }
   return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
@@ -144,6 +152,27 @@ function shortDateTime(value) {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function centralDateTime(value) {
+  if (!value) return "Not captured";
+  return new Date(value).toLocaleString(undefined, {
+    timeZone: "America/Chicago",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+}
+
+function postingTimestamp(job) {
+  if (!job.date_posted) return "Posting time not provided";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(job.date_posted)) {
+    return `Posted ${shortDate(job.date_posted)} (source date)`;
+  }
+  return `Posted ${centralDateTime(job.date_posted)}`;
 }
 
 function escapeHtml(value) {
@@ -256,17 +285,20 @@ function renderJobs() {
     .map((job) => {
       const isExpanded = state.expandedJobIds.has(String(job.id));
       return `
-      <article class="feed-job-card">
+      <article class="feed-job-card" data-job-card-id="${job.id}">
         <div class="feed-card-topline">
-          <span class="feed-time">${escapeHtml(shortDate(job.date_posted))}</span>
+          <div class="feed-time-group">
+            <span class="feed-time">${escapeHtml(`Collected ${centralDateTime(job.first_seen_at)}`)}</span>
+            <span class="feed-time">${escapeHtml(postingTimestamp(job))}</span>
+          </div>
           <div class="feed-actions">
-            <span class="tag source-chip">${escapeHtml(sourceLabel(job.source))}</span>
-            <button class="link-button muted-action" type="button" data-job-details-id="${job.id}" aria-expanded="${isExpanded}">
+            <span class="action-chip source-chip">${escapeHtml(sourceLabel(job.source))}</span>
+            <button class="link-button action-chip" type="button" data-job-details-id="${job.id}" aria-expanded="${isExpanded}">
               ${isExpanded ? "Hide" : "Details"}
             </button>
             ${
               job.job_url
-                ? `<a class="link-button muted-action" href="${escapeHtml(job.job_url)}" target="_blank" rel="noreferrer">Open</a>`
+                ? `<a class="link-button action-chip" href="${escapeHtml(job.job_url)}" target="_blank" rel="noreferrer">Open</a>`
                 : ""
             }
           </div>
@@ -298,8 +330,9 @@ function renderInlineJobDetails(job) {
         <div>
           <strong>${escapeHtml(job.title)}</strong>
           <span>${escapeHtml(job.company_name || "Unknown company")} | ${escapeHtml(job.location || "Unknown location")}</span>
+          <span>${escapeHtml(`Collected ${centralDateTime(job.first_seen_at)}`)} | ${escapeHtml(postingTimestamp(job))}</span>
         </div>
-        <a class="secondary-button" href="${escapeHtml(job.job_url || "#")}" target="_blank" rel="noreferrer">Open Job</a>
+        <a class="secondary-button" href="${escapeHtml(job.job_url || "#")}" target="_blank" rel="noreferrer">Open job</a>
       </div>
       <p>${escapeHtml(job.description || "No description captured yet.")}</p>
     </div>
@@ -343,10 +376,7 @@ function renderCompanyTargets() {
 }
 
 function renderSourceHealth() {
-  const counts = state.jobs.reduce((acc, job) => {
-    acc[job.source] = (acc[job.source] || 0) + 1;
-    return acc;
-  }, {});
+  const counts = state.sourceCounts;
   const experimentalSources = new Set([
     "careerbuilder",
     "weworkremotely",
@@ -429,8 +459,17 @@ async function loadData() {
 
 async function loadStats() {
   try {
-    state.stats = await api("/stats");
+    const [stats, sourceCounts] = await Promise.all([
+      api("/stats"),
+      api("/source-counts"),
+    ]);
+    state.stats = stats;
+    state.sourceCounts = sourceCounts.reduce((acc, row) => {
+      acc[row.source] = row.job_count;
+      return acc;
+    }, {});
     renderOverview();
+    renderSourceHealth();
   } catch (error) {
     showToast("Database totals are still unavailable.");
   }
@@ -547,7 +586,6 @@ function getCollectPayload() {
       ? Number(document.querySelector("#collectHoursOld").value)
       : null,
     use_company_targets: document.querySelector("#useCompanyTargets").checked,
-    company_target_limit: Number(document.querySelector("#companyTargetLimit").value || 25),
     visa_friendly_only: document.querySelector("#visaFriendlyOnly").checked,
   };
 }
@@ -558,7 +596,7 @@ function switchView(view) {
     jobs: "Jobs",
     overview: "Overview",
     sources: "Sources",
-    targets: "Company Targets",
+    targets: "Company targets",
   };
   state.currentView = view;
   document.querySelectorAll(".view").forEach((node) => {
@@ -642,7 +680,7 @@ function selectLinkedInOnly() {
 }
 
 function applyLinkedInLatestPreset(hoursOld) {
-  document.querySelector("#collectSearchTerm").value = "developer contract or full-time";
+  document.querySelector("#collectSearchTerm").value = ".NET developer or Java developer";
   document.querySelector("#collectLocation").value = "";
   document.querySelector("#collectResults").value = "100";
   document.querySelector("#collectCountry").value = "usa";
@@ -670,7 +708,6 @@ async function collectSelectedLinkedInLatest() {
 async function collectLinkedInCompanyTargets() {
   applyLinkedInLatestPreset(24);
   document.querySelector("#useCompanyTargets").checked = true;
-  document.querySelector("#companyTargetLimit").value = "25";
   showToast("Collecting LinkedIn jobs for document companies.");
   await collectJobs();
 }
@@ -679,7 +716,6 @@ async function collectVisaFriendlyCompanies() {
   applyLinkedInLatestPreset(24);
   document.querySelector("#useCompanyTargets").checked = true;
   document.querySelector("#visaFriendlyOnly").checked = true;
-  document.querySelector("#companyTargetLimit").value = "50";
   setSelectedSites(["linkedin", "google", "career_page", "jobright_h1b", "jobsh1b", "visafriendly", "dice", "governmentjobs"]);
   showToast("Collecting visa-friendly company jobs.");
   await collectJobs();
@@ -711,6 +747,7 @@ async function collectJobs(event) {
     els.collectOutput.textContent = [
       `Search run: ${result.search_run_id}`,
       `Jobs seen: ${result.jobs_seen}`,
+      `New jobs added: ${result.jobs_added}`,
       `Errors: ${result.errors.length}`,
       ...result.errors,
     ].join("\n");
@@ -800,7 +837,8 @@ function openDrawer(jobId) {
     `Visa score ${job.visa_score || "Unknown"}`,
     `Priority ${job.apply_priority || "Low"}`,
     job.job_type || "Type not listed",
-    `Posted ${shortDate(job.date_posted)}`,
+    `Collected ${centralDateTime(job.first_seen_at)}`,
+    postingTimestamp(job),
     job.work_mode || (job.is_remote ? "Remote" : "On-site"),
   ]
     .map((item) => `<span class="tag">${escapeHtml(item)}</span>`)
@@ -816,6 +854,7 @@ function toggleInlineDetails(jobId) {
   if (state.expandedJobIds.has(key)) {
     state.expandedJobIds.delete(key);
   } else {
+    state.expandedJobIds.clear();
     state.expandedJobIds.add(key);
   }
   renderJobs();
@@ -863,6 +902,11 @@ document.body.addEventListener("click", (event) => {
   const detailsTarget = event.target.closest("[data-job-details-id]");
   if (detailsTarget) {
     toggleInlineDetails(detailsTarget.dataset.jobDetailsId);
+    return;
+  }
+  const jobCardTarget = event.target.closest("[data-job-card-id]");
+  if (jobCardTarget && !event.target.closest("a, button")) {
+    toggleInlineDetails(jobCardTarget.dataset.jobCardId);
     return;
   }
   const target = event.target.closest("[data-job-id]");

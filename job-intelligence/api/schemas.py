@@ -23,6 +23,7 @@ class CollectRequest(BaseModel):
 class CollectResponse(BaseModel):
     search_run_id: int
     jobs_seen: int
+    jobs_added: int
     errors: list[str]
 
 
@@ -98,6 +99,11 @@ class StatsOut(BaseModel):
     total_jobs: int
     remote_jobs: int
     companies: int
+
+
+class SourceCountOut(BaseModel):
+    source: str
+    job_count: int
 
 
 class SchedulerStatusOut(BaseModel):

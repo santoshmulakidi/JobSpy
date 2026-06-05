@@ -12,31 +12,35 @@ def test_local_dashboard_is_served():
     assert "Job Intelligence Platform" in response.text
     assert "data-theme=\"amethyst\"" in response.text
     assert "theme-switcher" in response.text
-    assert "Visa Status" in response.text
-    assert "Visa Score" in response.text
+    assert "Visa status" in response.text
+    assert "High visa score" in response.text
     assert "Latest jobs" in response.text
-    assert "Source Health" in response.text
-    assert "Company Targets" in response.text
-    assert "All Latest" in response.text
+    assert "Source health" in response.text
+    assert "Company targets" in response.text
+    assert "All latest" in response.text
     assert "Hybrid" in response.text
     assert "On-site" in response.text
     assert "Hourly refresh" in response.text
-    assert "Start Hourly Refresh" in response.text
-    assert "Select All Sources" in response.text
-    assert "Deselect All" in response.text
+    assert "Start hourly refresh" in response.text
+    assert "Select all sources" in response.text
+    assert "Deselect all" in response.text
     assert "Any visa status" in response.text
     assert "Full-time" in response.text
-    assert "Job Type" in response.text
+    assert "Job type" in response.text
     assert "collectJobType" in response.text
-    assert "Run LinkedIn Latest" in response.text
+    assert "Run latest" in response.text
     assert "Last 30 minutes" in response.text
     assert "Last 2 hours" in response.text
-    assert "LinkedIn Companies" in response.text
-    assert "Visa-Friendly Sources" in response.text
-    assert "LinkedIn Only" in response.text
+    assert "LinkedIn companies" in response.text
+    assert "Visa-friendly sources" in response.text
+    assert "LinkedIn only" in response.text
     assert "Last 7 days" in response.text
     assert "useCompanyTargets" in response.text
-    assert "companyTargetLimit" in response.text
+    assert "Search keywords" in response.text
+    assert ".NET developer, Java developer, data engineer" in response.text
+    assert "Dallas, TX, Remote, or United States" in response.text
+    assert "Company list limit" not in response.text
+    assert "companyTargetLimit" not in response.text
     assert "visaFriendlyOnly" in response.text
     assert "Career Pages" in response.text
     assert "Jobright H1B" in response.text
@@ -57,7 +61,7 @@ def test_local_dashboard_is_served():
     assert "Wellfound" in response.text
     assert "YC Jobs" in response.text
     assert "College Recruiter" in response.text
-    assert "developer contract or full-time" in response.text
+    assert ".NET developer or Java developer" in response.text
     assert "CareerBuilder" in response.text
     assert "blocked" in response.text
     assert "Remotely.jobs" in response.text
@@ -96,9 +100,15 @@ def test_static_assets_are_served():
     assert "collectLinkedInCompanyTargets" in response.text
     assert "collectVisaFriendlyCompanies" in response.text
     assert "data-job-details-id" in response.text
+    assert "data-job-card-id" in response.text
     assert "toggleInlineDetails" in response.text
     assert "inline-job-details" in response.text
     assert "/stats" in response.text
+    assert "/source-counts" in response.text
+    assert "New jobs added" in response.text
+    assert "centralDateTime" in response.text
+    assert "America/Chicago" in response.text
+    assert "postingTimestamp" in response.text
     assert "United States" in response.text
     assert "min_salary:" not in response.text
     assert "max_salary:" not in response.text
@@ -146,6 +156,7 @@ def test_refresh_endpoint_is_registered():
 
     assert "/refresh" in paths
     assert "/stats" in paths
+    assert "/source-counts" in paths
     assert "/company-targets" in paths
     assert "/scheduler/status" in paths
     assert "/scheduler/start" in paths
@@ -175,3 +186,6 @@ def test_company_targets_endpoint_includes_added_product_companies():
     assert "Pinterest" in companies
     assert "MongoDB" in companies
     assert "The Trade Desk" in companies
+    assert "Fifth Third Bank" in companies
+    assert "WHOOP" in companies
+    assert "Skydio" in companies

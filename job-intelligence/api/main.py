@@ -18,6 +18,7 @@ from api.schemas import (
     JobOut,
     SchedulerStatusOut,
     SearchRequest,
+    SourceCountOut,
     StatsOut,
 )
 from api.services import CollectionService
@@ -27,6 +28,7 @@ from scheduler.hourly import hourly_refresh_scheduler
 from search import SearchEngine
 from storage.config import get_settings
 from storage.database import get_session, init_database
+from storage.models import ChangeType
 from storage.repository import JobRepository
 
 
@@ -135,18 +137,38 @@ def get_stats(session: Session = Depends(get_session)):
     )
 
 
+@app.get("/source-counts", response_model=list[SourceCountOut])
+def get_source_counts(session: Session = Depends(get_session)):
+    return [
+        SourceCountOut(source=source, job_count=job_count)
+        for source, job_count in JobRepository(session).source_counts()
+    ]
+
+
 @app.post("/collect", response_model=CollectResponse)
 def collect_jobs(payload: CollectRequest, session: Session = Depends(get_session)):
     request = CollectionRequest(**payload.model_dump())
     run, result = CollectionService(session).collect(request)
-    return CollectResponse(search_run_id=run.id, jobs_seen=result.count, errors=result.errors)
+    jobs_added = JobRepository(session).count_job_changes(run.id, ChangeType.NEW)
+    return CollectResponse(
+        search_run_id=run.id,
+        jobs_seen=result.count,
+        jobs_added=jobs_added,
+        errors=result.errors,
+    )
 
 
 @app.post("/refresh", response_model=CollectResponse)
 def refresh_jobs(payload: CollectRequest, session: Session = Depends(get_session)):
     request = CollectionRequest(**payload.model_dump())
     run, result = CollectionService(session).collect(request)
-    return CollectResponse(search_run_id=run.id, jobs_seen=result.count, errors=result.errors)
+    jobs_added = JobRepository(session).count_job_changes(run.id, ChangeType.NEW)
+    return CollectResponse(
+        search_run_id=run.id,
+        jobs_seen=result.count,
+        jobs_added=jobs_added,
+        errors=result.errors,
+    )
 
 
 @app.post("/search", response_model=list[JobOut])

@@ -176,6 +176,26 @@ class JobRepository:
     def count_companies(self) -> int:
         return self.session.scalar(select(func.count(Company.id))) or 0
 
+    def source_counts(self) -> list[tuple[str, int]]:
+        return list(
+            self.session.execute(
+                select(Job.source, func.count(Job.id))
+                .where(and_(Job.status == JobStatus.ACTIVE, Job.source.is_not(None)))
+                .group_by(Job.source)
+                .order_by(func.count(Job.id).desc())
+            )
+        )
+
+    def count_job_changes(self, search_run_id: int, change_type: ChangeType) -> int:
+        return self.session.scalar(
+            select(func.count(JobChange.id)).where(
+                and_(
+                    JobChange.search_run_id == search_run_id,
+                    JobChange.change_type == change_type,
+                )
+            )
+        ) or 0
+
     def company_counts(self, limit: int = 20) -> list[tuple[str, int]]:
         return list(
             self.session.execute(

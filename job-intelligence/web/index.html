@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Job Intelligence Platform</title>
-    <link rel="stylesheet" href="/static/styles.css?v=hiring-cafe-layout" />
+    <link rel="stylesheet" href="/static/styles.css?v=control-consistency" />
   </head>
   <body>
     <div class="app-shell">
@@ -22,7 +22,7 @@
           <button class="nav-item" data-view="jobs" type="button">Jobs</button>
           <button class="nav-item" data-view="collect" type="button">Collect</button>
           <button class="nav-item" data-view="sources" type="button">Sources</button>
-          <button class="nav-item" data-view="targets" type="button">Company Targets</button>
+          <button class="nav-item" data-view="targets" type="button">Company targets</button>
         </nav>
 
         <div class="system-card">
@@ -47,12 +47,12 @@
               <button class="theme-button" data-theme-button="dark" type="button">Dark</button>
             </div>
             <button class="icon-button" id="refreshButton" type="button" title="Reload stored database data">
-              Refresh Stored
+              Refresh stored
             </button>
             <button class="primary-button" id="quickCollectButton" type="button" title="Scrape latest jobs now">
-              Collect Latest
+              Collect latest
             </button>
-            <a class="secondary-button" href="/docs" target="_blank" rel="noreferrer">API Docs</a>
+            <a class="secondary-button" href="/docs" target="_blank" rel="noreferrer">API docs</a>
           </div>
         </header>
 
@@ -63,7 +63,7 @@
               <strong id="totalJobs">0</strong>
             </article>
             <article class="metric">
-              <span>Remote Roles</span>
+              <span>Remote roles</span>
               <strong id="remoteJobs">0</strong>
             </article>
             <article class="metric">
@@ -71,7 +71,7 @@
               <strong id="companyCount">0</strong>
             </article>
             <article class="metric">
-              <span>High Visa Score</span>
+              <span>High visa score</span>
               <strong id="visaScoreJobs">0</strong>
             </article>
           </div>
@@ -100,7 +100,7 @@
             </section>
             <section class="panel">
               <div class="panel-header">
-                <h3>Latest Jobs</h3>
+                <h3>Latest jobs</h3>
                 <span>Most recently seen</span>
               </div>
               <div class="compact-list" id="latestJobs"></div>
@@ -113,7 +113,7 @@
             <form class="filter-grid" id="searchForm">
               <label>
                 Keyword
-                <input id="keywordInput" name="keyword" placeholder="Python, .NET, React" />
+                <input id="keywordInput" name="keyword" placeholder="Role, skill, or keyword" />
               </label>
               <label>
                 Company
@@ -121,7 +121,7 @@
               </label>
               <label>
                 Location
-                <input id="locationInput" name="location" placeholder="Dallas, Remote, Texas" />
+                <input id="locationInput" name="location" placeholder="City, state, or remote" />
               </label>
               <label>
                 Source
@@ -130,13 +130,13 @@
                 </select>
               </label>
               <label>
-                Visa Status
+                Visa status
                 <select id="visaStatusInput" name="visa_status">
                   <option value="">Any visa status</option>
                 </select>
               </label>
               <label>
-                Job Type
+                Job type
                 <select id="jobTypeInput" name="job_type">
                   <option value="">Any type</option>
                   <option value="fulltime">Full-time</option>
@@ -153,7 +153,7 @@
               <button class="primary-button" type="submit">Search</button>
             </form>
             <div class="work-mode-tabs" aria-label="Work mode filters">
-              <button class="work-mode-tab is-active" data-work-mode="" type="button">All Latest</button>
+              <button class="work-mode-tab is-active" data-work-mode="" type="button">All latest</button>
               <button class="work-mode-tab" data-work-mode="Remote" type="button">Remote</button>
               <button class="work-mode-tab" data-work-mode="Hybrid" type="button">Hybrid</button>
               <button class="work-mode-tab" data-work-mode="On-site" type="button">On-site</button>
@@ -172,7 +172,7 @@
         <section class="view" id="collectView">
           <section class="panel collect-panel">
             <div class="panel-header">
-              <h3>Run Collection</h3>
+              <h3>Run collection</h3>
               <span>Scrapes fresh data and stores it locally</span>
             </div>
             <div class="scheduler-card">
@@ -182,7 +182,7 @@
               </div>
               <div class="scheduler-actions">
                 <button class="secondary-button" id="startHourlyRefreshButton" type="button">
-                  Start Hourly Refresh
+                  Start hourly refresh
                 </button>
                 <button class="icon-button" id="stopHourlyRefreshButton" type="button">
                   Stop
@@ -193,11 +193,11 @@
               <div class="collect-control-card">
                 <strong>Sources</strong>
                 <div class="source-actions">
-                  <button class="secondary-button" id="selectAllSourcesButton" type="button">Select All Sources</button>
-                  <button class="icon-button" id="clearAllSourcesButton" type="button">Deselect All</button>
-                  <button class="secondary-button" id="linkedinOnlyButton" type="button">LinkedIn Only</button>
+                  <button class="secondary-button" id="selectAllSourcesButton" type="button">Select all sources</button>
+                  <button class="icon-button" id="clearAllSourcesButton" type="button">Deselect all</button>
+                  <button class="secondary-button" id="linkedinOnlyButton" type="button">LinkedIn only</button>
                   <button class="secondary-button" id="visaFriendlyCompaniesButton" type="button">
-                    Visa-Friendly Sources
+                    Visa-friendly sources
                   </button>
                 </div>
               </div>
@@ -211,33 +211,38 @@
                     <option value="24">Last 24 hours</option>
                   </select>
                   <button class="primary-button" id="linkedinLatestButton" type="button">
-                    Run LinkedIn Latest
+                    Run latest
                   </button>
                   <button class="secondary-button" id="linkedinCompanyTargetsButton" type="button">
-                    LinkedIn Companies
+                    LinkedIn companies
                   </button>
                 </div>
               </div>
             </div>
             <form class="collect-grid" id="collectForm">
               <label>
-                Search Term
-                <input id="collectSearchTerm" required value="developer contract or full-time" />
+                Search keywords
+                <input
+                  id="collectSearchTerm"
+                  placeholder=".NET developer, Java developer, data engineer"
+                  required
+                  value=".NET developer or Java developer"
+                />
               </label>
               <label>
                 Location
-                <input id="collectLocation" value="Texas" />
+                <input id="collectLocation" placeholder="Dallas, TX, Remote, or United States" />
               </label>
               <label>
-                Results Wanted
-                <input id="collectResults" max="1000" min="1" type="number" value="100" />
+                Results wanted
+                <input id="collectResults" max="1000" min="1" placeholder="100" type="number" value="100" />
               </label>
               <label>
                 Country
                 <input id="collectCountry" value="usa" />
               </label>
               <label>
-                Hours Old
+                Hours old
                 <input id="collectHoursOld" min="0.5" step="0.5" type="number" value="24" />
               </label>
               <label>
@@ -250,15 +255,11 @@
                 </select>
               </label>
               <label>
-                Job Type
+                Job type
                 <select id="collectJobType">
                   <option value="">Any type</option>
                   <option value="fulltime">Full-time</option>
                 </select>
-              </label>
-              <label>
-                Company List Limit
-                <input id="companyTargetLimit" max="100" min="1" type="number" value="25" />
               </label>
               <fieldset>
                 <legend>Sources</legend>
@@ -301,7 +302,7 @@
                 <input id="visaFriendlyOnly" type="checkbox" />
                 Visa-friendly companies only
               </label>
-              <button class="primary-button" id="collectButton" type="submit">Start Collection</button>
+              <button class="primary-button" id="collectButton" type="submit">Start collection</button>
             </form>
             <div class="run-output" id="collectOutput">No collection run yet.</div>
           </section>
@@ -310,7 +311,7 @@
         <section class="view" id="sourcesView">
           <section class="panel table-panel">
             <div class="panel-header">
-              <h3>Source Health</h3>
+              <h3>Source health</h3>
               <span id="sourceHealthLabel">0 sources</span>
             </div>
             <div class="source-health-grid" id="sourceHealthGrid"></div>
@@ -320,7 +321,7 @@
         <section class="view" id="targetsView">
           <section class="panel table-panel">
             <div class="panel-header">
-              <h3>Company Targets</h3>
+              <h3>Company targets</h3>
               <span id="companyTargetCountLabel">0 target companies</span>
             </div>
             <div class="target-grid" id="companyTargetsGrid"></div>
@@ -337,10 +338,10 @@
       <p id="drawerCompany"></p>
       <div class="drawer-meta" id="drawerMeta"></div>
       <p id="drawerDescription"></p>
-      <a class="primary-button" id="drawerLink" href="#" target="_blank" rel="noreferrer">Open Job</a>
+      <a class="primary-button" id="drawerLink" href="#" target="_blank" rel="noreferrer">Open job</a>
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=hiring-cafe-layout" defer></script>
+    <script src="/static/app.js?v=single-job-details" defer></script>
   </body>
 </html>

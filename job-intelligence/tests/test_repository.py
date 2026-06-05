@@ -56,6 +56,8 @@ def test_upsert_creates_and_updates_job_changes():
     changes = session.query(JobChange).order_by(JobChange.id).all()
     assert len(jobs) == 1
     assert [change.change_type for change in changes] == [ChangeType.NEW, ChangeType.UPDATED]
+    assert repository.count_job_changes(run.id, ChangeType.NEW) == 1
+    assert repository.count_job_changes(run.id, ChangeType.UPDATED) == 1
 
 
 def test_upsert_sanitizes_change_history_json():
@@ -280,6 +282,51 @@ def test_list_jobs_filters_by_source():
     jobs = repository.list_jobs(source="remotely")
     assert len(jobs) == 1
     assert jobs[0].source == "remotely"
+
+
+def test_source_counts_returns_full_active_counts_by_source():
+    session = make_session()
+    repository = JobRepository(session)
+    run = repository.create_search_run(
+        search_term="Engineer",
+        location="Remote",
+        sites=["linkedin", "remotely"],
+        results_wanted=10,
+        started_at=__import__("datetime").datetime.now(__import__("datetime").UTC),
+    )
+
+    repository.upsert_jobs(
+        [
+            {
+                "site": "linkedin",
+                "id": "li-1",
+                "title": "LinkedIn Engineer",
+                "company": "Acme",
+                "location": "Dallas, TX",
+                "job_url": "https://example.com/li-1",
+            },
+            {
+                "site": "linkedin",
+                "id": "li-2",
+                "title": "LinkedIn Architect",
+                "company": "Acme",
+                "location": "Dallas, TX",
+                "job_url": "https://example.com/li-2",
+            },
+            {
+                "site": "remotely",
+                "id": "remote-1",
+                "title": "Remote Engineer",
+                "company": "Remote Co",
+                "location": "Remote",
+                "job_url": "https://example.com/remote-1",
+            },
+        ],
+        run,
+    )
+    session.commit()
+
+    assert dict(repository.source_counts()) == {"linkedin": 2, "remotely": 1}
 
 
 def test_list_jobs_orders_by_latest_posting_date():

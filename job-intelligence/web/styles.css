@@ -1411,8 +1411,19 @@ body {
   gap: 8px;
 }
 
+.feed-actions .action-chip {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
 .feed-card-topline {
   justify-content: space-between;
+}
+
+.feed-time-group {
+  display: grid;
+  gap: 4px;
 }
 
 .feed-time {
@@ -1443,20 +1454,30 @@ body {
   align-items: flex-start;
 }
 
-.source-chip {
-  background: color-mix(in srgb, var(--primary) 12%, var(--surface-soft));
-  color: var(--primary-strong);
-}
-
-.muted-action {
-  min-height: 30px;
+.action-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--surface-soft);
   color: var(--ink);
-  padding: 0 10px;
+  padding: 0 12px;
+  font-size: 13px;
+  line-height: 1;
   text-decoration: none;
   font-weight: 800;
+  white-space: nowrap;
+}
+
+.action-chip:hover {
+  border-color: var(--line-strong);
+}
+
+.source-chip {
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface-soft));
+  color: var(--primary-strong);
 }
 
 .inline-job-details {
@@ -1578,5 +1599,196 @@ body {
 
   .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Consistent controls and text rhythm */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+input,
+select,
+textarea {
+  color: var(--ink);
+  caret-color: var(--primary);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in srgb, var(--muted) 70%, transparent);
+  opacity: 1;
+}
+
+label {
+  line-height: 1.25;
+}
+
+.primary-button,
+.secondary-button,
+.icon-button,
+.action-chip,
+.work-mode-tab,
+.theme-button,
+.nav-item {
+  min-height: 40px;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.primary-button,
+.secondary-button,
+.icon-button,
+.action-chip {
+  gap: 8px;
+  padding: 0 16px;
+}
+
+.theme-button {
+  min-height: 32px;
+  padding: 0 12px;
+}
+
+.search-panel .filter-grid label {
+  align-content: center;
+  justify-content: stretch;
+  gap: 8px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.search-panel .filter-grid input,
+.search-panel .filter-grid select {
+  min-height: 28px;
+  width: 100%;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.search-panel .filter-grid input::placeholder {
+  font-weight: 800;
+}
+
+.search-panel .filter-grid select {
+  cursor: pointer;
+}
+
+.search-panel .filter-grid .primary-button {
+  min-height: 78px;
+  font-size: 15px;
+}
+
+.collect-grid label {
+  gap: 8px;
+  align-content: start;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.collect-grid > label input,
+.collect-grid > label select,
+.freshness-actions select {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.collect-grid > label input:focus,
+.collect-grid > label select:focus,
+.freshness-actions select:focus {
+  border-color: var(--primary);
+  background: var(--surface-strong);
+}
+
+.source-actions .secondary-button,
+.source-actions .icon-button,
+.freshness-actions .primary-button,
+.freshness-actions .secondary-button,
+.scheduler-actions .secondary-button,
+.scheduler-actions .icon-button {
+  min-height: 42px;
+}
+
+.collect-grid fieldset {
+  gap: 10px;
+}
+
+.collect-grid legend {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.collect-grid fieldset label,
+.checkbox-row {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.collect-grid .checkbox-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.source-note {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  line-height: 1;
+}
+
+.feed-job-main h3,
+.panel-header h3,
+.metric strong {
+  letter-spacing: 0;
+}
+
+.feed-job-main p,
+.feed-time,
+.panel-header span,
+.metric span,
+.scheduler-card span {
+  line-height: 1.35;
+}
+
+.empty-state {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+  .primary-button,
+  .secondary-button,
+  .icon-button,
+  .action-chip {
+    width: 100%;
+  }
+
+  .feed-actions .action-chip,
+  .feed-actions .source-chip {
+    width: auto;
+  }
+
+  .search-panel .filter-grid .primary-button {
+    min-height: 52px;
   }
 }
