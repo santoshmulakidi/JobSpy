@@ -9,3 +9,10 @@
 *.pyc
 .env
 dist
+
+# Local scraping experiments
+collect_jobs.py
+dallas_dotnet.py
+dallas_dotnet_jobs.csv
+jobs.csv
+test_jobspy.py
