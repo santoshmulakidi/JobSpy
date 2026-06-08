@@ -1547,6 +1547,7 @@ body {
 }
 
 .resume-lab-grid select,
+.resume-lab-grid input[type="file"],
 .resume-lab-grid textarea {
   width: 100%;
   border: 1px solid var(--line);
@@ -1555,6 +1556,12 @@ body {
   color: var(--ink);
   font: inherit;
   padding: 12px;
+}
+
+.field-hint {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .resume-lab-grid textarea {

@@ -1,3 +1,7 @@
+import base64
+import io
+import zipfile
+
 from fastapi.testclient import TestClient
 
 from api.main import app
@@ -40,6 +44,10 @@ def test_local_dashboard_is_served():
     assert "ATS match, keyword gaps, and recruiter credibility review" in response.text
     assert "Copy AI prompt" in response.text
     assert "Base resume notes" in response.text
+    assert "Attach resume" in response.text
+    assert "profileSelect" in response.text
+    assert "resumeFileInput" in response.text
+    assert "DOCX and TXT supported locally" in response.text
     assert "Download credibility report" in response.text
     assert "recruiter credibility review" in response.text
     assert "collectJobType" in response.text
@@ -147,7 +155,11 @@ def test_static_assets_are_served():
     assert "downloadAuthenticityReport" in response.text
     assert "Recruiter credibility" in response.text
     assert "job-intelligence-base-resume" in response.text
-    assert "ATS scan" in response.text
+    assert "job-intelligence-profile-store" in response.text
+    assert "/resume/parse" in response.text
+    assert "importResumeFile" in response.text
+    assert "data-job-resume-lab-id" in response.text
+    assert "Open this job in Resume Lab" in response.text
     assert "/saved-searches" in response.text
     assert "/profile" in response.text
     assert "/applications" in response.text
@@ -207,11 +219,49 @@ def test_refresh_endpoint_is_registered():
     assert "/profile" in paths
     assert "/applications" in paths
     assert "/jobs/{job_id}/apply" in paths
+    assert "/resume/parse" in paths
     assert "/saved-searches" in paths
     assert "/saved-searches/{saved_search_id}" in paths
     assert "/scheduler/status" in paths
     assert "/scheduler/start" in paths
     assert "/scheduler/stop" in paths
+
+
+def test_resume_parse_endpoint_reads_txt_and_docx():
+    client = TestClient(app)
+
+    txt_response = client.post(
+        "/resume/parse",
+        json={
+            "filename": "resume.txt",
+            "content_base64": base64.b64encode(b"Senior .NET Developer").decode(),
+        },
+    )
+
+    assert txt_response.status_code == 200
+    assert txt_response.json()["text"] == "Senior .NET Developer"
+
+    docx_buffer = io.BytesIO()
+    with zipfile.ZipFile(docx_buffer, "w") as archive:
+        archive.writestr(
+            "word/document.xml",
+            (
+                '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+                "<w:body><w:p><w:r><w:t>Azure AKS Developer</w:t></w:r></w:p></w:body>"
+                "</w:document>"
+            ),
+        )
+
+    docx_response = client.post(
+        "/resume/parse",
+        json={
+            "filename": "resume.docx",
+            "content_base64": base64.b64encode(docx_buffer.getvalue()).decode(),
+        },
+    )
+
+    assert docx_response.status_code == 200
+    assert docx_response.json()["text"] == "Azure AKS Developer"
 
 
 def test_company_targets_endpoint_returns_document_companies():

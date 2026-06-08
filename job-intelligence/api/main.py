@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import base64
+import io
 import logging
 from pathlib import Path
+import zipfile
+from xml.etree import ElementTree
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
@@ -20,6 +24,8 @@ from api.schemas import (
     JobOut,
     ProfileIn,
     ProfileOut,
+    ResumeParseRequest,
+    ResumeParseResponse,
     SavedSearchIn,
     SavedSearchOut,
     SchedulerStatusOut,
@@ -97,6 +103,24 @@ def _job_out(repository: JobRepository, job) -> JobOut:
 
 def _jobs_out(repository: JobRepository, jobs) -> list[JobOut]:
     return [_job_out(repository, job) for job in jobs]
+
+
+def _extract_docx_text(content: bytes) -> str:
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            xml = archive.read("word/document.xml")
+    except (KeyError, zipfile.BadZipFile) as exc:
+        raise HTTPException(status_code=400, detail="Could not read DOCX document text") from exc
+
+    root = ElementTree.fromstring(xml)
+    namespace = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    paragraphs: list[str] = []
+    for paragraph in root.iter(f"{namespace}p"):
+        text = "".join(node.text or "" for node in paragraph.iter(f"{namespace}t"))
+        text = " ".join(text.split())
+        if text:
+            paragraphs.append(text)
+    return "\n".join(paragraphs)
 
 
 @app.on_event("startup")
@@ -213,6 +237,27 @@ def mark_job_applied(job_id: int, payload: ApplicationIn, session: Session = Dep
         notes=application.notes,
         job=_job_out(repository, job),
     )
+
+
+@app.post("/resume/parse", response_model=ResumeParseResponse)
+def parse_resume(payload: ResumeParseRequest):
+    try:
+        content = base64.b64decode(payload.content_base64)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Resume file content is not valid base64") from exc
+
+    filename = payload.filename.lower()
+    if filename.endswith(".docx"):
+        text = _extract_docx_text(content)
+    elif filename.endswith(".txt"):
+        text = content.decode("utf-8", errors="ignore")
+    else:
+        raise HTTPException(status_code=400, detail="Only DOCX and TXT resume uploads are supported right now")
+
+    text = text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="No readable resume text found")
+    return ResumeParseResponse(filename=payload.filename, text=text)
 
 
 @app.get("/saved-searches", response_model=list[SavedSearchOut])

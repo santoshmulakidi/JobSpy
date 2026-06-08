@@ -184,8 +184,20 @@
             </div>
             <div class="resume-lab-grid">
               <label>
+                Profile
+                <select id="profileSelect">
+                  <option value="santosh">Santosh</option>
+                  <option value="wife">Wife</option>
+                </select>
+              </label>
+              <label>
                 Target job
                 <select id="resumeJobSelect"></select>
+              </label>
+              <label>
+                Attach resume
+                <input id="resumeFileInput" accept=".docx,.txt" type="file" />
+                <span class="field-hint" id="resumeImportStatus">DOCX and TXT supported locally.</span>
               </label>
               <label>
                 Base resume notes

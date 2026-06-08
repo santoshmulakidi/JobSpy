@@ -133,6 +133,16 @@ class SavedSearchOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ResumeParseRequest(BaseModel):
+    filename: str
+    content_base64: str
+
+
+class ResumeParseResponse(BaseModel):
+    filename: str
+    text: str
+
+
 class CompanyOut(BaseModel):
     id: int
     name: str

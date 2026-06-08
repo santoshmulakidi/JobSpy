@@ -14,6 +14,8 @@ const state = {
   expandedJobIds: new Set(),
   applicationTracker: JSON.parse(localStorage.getItem("job-intelligence-applications") || "{}"),
   baseResumeText: localStorage.getItem("job-intelligence-base-resume") || "",
+  activeProfileKey: localStorage.getItem("job-intelligence-active-profile") || "santosh",
+  profileStore: JSON.parse(localStorage.getItem("job-intelligence-profile-store") || "null"),
   preferences: JSON.parse(localStorage.getItem("job-intelligence-preferences") || "null") || {
     roles: ".NET Developer, Java Developer, Software Engineer",
     skills: "C#, Java, SQL, AWS, React, API",
@@ -22,6 +24,31 @@ const state = {
     visa: "H1B/TN/GC friendly",
   },
 };
+
+function defaultProfileStore() {
+  return {
+    santosh: {
+      label: "Santosh",
+      preferences: state.preferences,
+      baseResumeText: state.baseResumeText,
+    },
+    wife: {
+      label: "Wife",
+      preferences: {
+        roles: "Software Developer, QA Analyst, Business Analyst",
+        skills: "SQL, Java, Python, Excel, Testing, API, Agile",
+        locations: "Remote, United States",
+        experience: "Experienced",
+        visa: "H1B/TN/GC friendly",
+      },
+      baseResumeText: "",
+    },
+  };
+}
+
+if (!state.profileStore) {
+  state.profileStore = defaultProfileStore();
+}
 
 const themeButtons = document.querySelectorAll("[data-theme-button]");
 const savedTheme = localStorage.getItem("job-intelligence-theme");
@@ -81,7 +108,10 @@ const els = {
   trackerCountLabel: document.querySelector("#trackerCountLabel"),
   savedSearchesBody: document.querySelector("#savedSearchesBody"),
   savedSearchCountLabel: document.querySelector("#savedSearchCountLabel"),
+  profileSelect: document.querySelector("#profileSelect"),
   resumeJobSelect: document.querySelector("#resumeJobSelect"),
+  resumeFileInput: document.querySelector("#resumeFileInput"),
+  resumeImportStatus: document.querySelector("#resumeImportStatus"),
   baseResumeInput: document.querySelector("#baseResumeInput"),
   resumeLabOutput: document.querySelector("#resumeLabOutput"),
   refreshResumeLabButton: document.querySelector("#refreshResumeLabButton"),
@@ -583,6 +613,9 @@ function buildTailoringPrompt(job) {
 
 function renderResumeLab() {
   if (!els.resumeJobSelect || !els.resumeLabOutput) return;
+  if (els.profileSelect) {
+    els.profileSelect.value = state.activeProfileKey;
+  }
   if (els.baseResumeInput) {
     els.baseResumeInput.value = state.baseResumeText;
   }
@@ -708,6 +741,51 @@ function downloadAuthenticityReport() {
     buildAuthenticityReport(job),
   );
   showToast("Credibility report downloaded.");
+}
+
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+}
+
+async function importResumeFile(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (els.resumeImportStatus) {
+    els.resumeImportStatus.textContent = `Reading ${file.name}...`;
+  }
+  try {
+    const contentBase64 = arrayBufferToBase64(await file.arrayBuffer());
+    const parsed = await api("/resume/parse", {
+      method: "POST",
+      body: JSON.stringify({
+        filename: file.name,
+        content_base64: contentBase64,
+      }),
+    });
+    state.baseResumeText = parsed.text;
+    if (els.baseResumeInput) {
+      els.baseResumeInput.value = state.baseResumeText;
+    }
+    localStorage.setItem("job-intelligence-base-resume", state.baseResumeText);
+    saveActiveProfile();
+    renderResumeLab();
+    if (els.resumeImportStatus) {
+      els.resumeImportStatus.textContent = `Imported ${parsed.filename}.`;
+    }
+    showToast("Resume imported into Resume Lab.");
+  } catch (error) {
+    if (els.resumeImportStatus) {
+      els.resumeImportStatus.textContent = "Could not import resume.";
+    }
+    showToast("Resume import failed.");
+  } finally {
+    event.target.value = "";
+  }
 }
 
 function escapeHtml(value) {
@@ -852,7 +930,7 @@ function renderJobs() {
             <button class="link-button action-chip" type="button" data-job-details-id="${job.id}" aria-expanded="${isExpanded}">
               ${isExpanded ? "Hide" : "Details"}
             </button>
-            <button class="link-button action-chip" type="button" data-job-ats-id="${job.id}">ATS scan</button>
+            <button class="link-button action-chip" type="button" data-job-resume-lab-id="${job.id}" title="Open this job in Resume Lab">Resume Lab</button>
             <button class="link-button action-chip" type="button" data-job-resume-id="${job.id}">Send for resume</button>
             <button class="link-button action-chip" type="button" data-job-cover-letter-id="${job.id}">Cover letter</button>
             <button class="link-button action-chip ${applied ? "applied-chip" : ""}" type="button" data-job-applied-id="${job.id}">
@@ -1000,7 +1078,37 @@ function savePreferences(event) {
     visa: document.querySelector("#prefVisa").value,
   };
   localStorage.setItem("job-intelligence-preferences", JSON.stringify(state.preferences));
+  saveActiveProfile();
   saveProfileToApi();
+}
+
+function saveProfileStore() {
+  localStorage.setItem("job-intelligence-profile-store", JSON.stringify(state.profileStore));
+  localStorage.setItem("job-intelligence-active-profile", state.activeProfileKey);
+}
+
+function saveActiveProfile() {
+  state.profileStore[state.activeProfileKey] = {
+    ...(state.profileStore[state.activeProfileKey] || {}),
+    preferences: state.preferences,
+    baseResumeText: state.baseResumeText,
+  };
+  saveProfileStore();
+}
+
+async function switchProfile(profileKey) {
+  saveActiveProfile();
+  state.activeProfileKey = profileKey;
+  const profile = state.profileStore[profileKey] || defaultProfileStore()[profileKey] || defaultProfileStore().santosh;
+  state.preferences = profile.preferences;
+  state.baseResumeText = profile.baseResumeText || "";
+  localStorage.setItem("job-intelligence-preferences", JSON.stringify(state.preferences));
+  localStorage.setItem("job-intelligence-base-resume", state.baseResumeText);
+  saveProfileStore();
+  populatePreferencesForm();
+  renderResumeLab();
+  await saveProfileToApi();
+  showToast(`Profile switched to ${profile.label || profileKey}.`);
 }
 
 function profileToPreferences(profile) {
@@ -1707,6 +1815,10 @@ els.refreshResumeLabButton.addEventListener("click", renderResumeLab);
 els.copyPromptButton.addEventListener("click", copyTailoringPrompt);
 els.downloadPromptButton.addEventListener("click", downloadTailoringPrompt);
 els.downloadAuthenticityButton.addEventListener("click", downloadAuthenticityReport);
+els.profileSelect.addEventListener("change", (event) => {
+  switchProfile(event.target.value);
+});
+els.resumeFileInput.addEventListener("change", importResumeFile);
 els.resumeJobSelect.addEventListener("change", (event) => {
   state.resumeLabJobId = event.target.value;
   renderResumeLab();
@@ -1714,6 +1826,7 @@ els.resumeJobSelect.addEventListener("change", (event) => {
 els.baseResumeInput.addEventListener("input", (event) => {
   state.baseResumeText = event.target.value;
   localStorage.setItem("job-intelligence-base-resume", state.baseResumeText);
+  saveActiveProfile();
 });
 document.querySelector("#collectForm").addEventListener("submit", collectJobs);
 document.querySelector("#preferencesForm").addEventListener("submit", savePreferences);
@@ -1735,10 +1848,11 @@ document.body.addEventListener("click", (event) => {
     markApplied(appliedTarget.dataset.jobAppliedId);
     return;
   }
-  const atsTarget = event.target.closest("[data-job-ats-id]");
-  if (atsTarget) {
-    state.resumeLabJobId = atsTarget.dataset.jobAtsId;
+  const resumeLabTarget = event.target.closest("[data-job-resume-lab-id]");
+  if (resumeLabTarget) {
+    state.resumeLabJobId = resumeLabTarget.dataset.jobResumeLabId;
     switchView("resume");
+    renderResumeLab();
     return;
   }
   const detailsTarget = event.target.closest("[data-job-details-id]");
