@@ -38,6 +38,7 @@ class SearchRequest(BaseModel):
     remote: bool | None = None
     min_salary: float | None = None
     max_salary: float | None = None
+    qualification_status: str | None = None
     limit: int = Field(default=100, ge=1, le=500)
     offset: int = Field(default=0, ge=0)
 
@@ -65,6 +66,69 @@ class JobOut(BaseModel):
     status: str
     first_seen_at: datetime
     last_seen_at: datetime
+    fit_score: int = 0
+    qualification_status: str = "Needs Review"
+    qualification_reasons: list[str] = Field(default_factory=list)
+    matched_skills: list[str] = Field(default_factory=list)
+    missing_skills: list[str] = Field(default_factory=list)
+    trust_score: int = 0
+    trust_status: str = "Review"
+    trust_reasons: list[str] = Field(default_factory=list)
+    application_status: str | None = None
+    applied_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class ProfileIn(BaseModel):
+    target_roles: list[str] = Field(default_factory=list)
+    skills: list[str] = Field(default_factory=list)
+    preferred_locations: list[str] = Field(default_factory=list)
+    experience_level: str | None = None
+    visa_need: str | None = None
+    work_mode_preference: str | None = None
+    job_type_preference: str | None = None
+    excluded_keywords: list[str] = Field(default_factory=list)
+
+
+class ProfileOut(ProfileIn):
+    id: int
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ApplicationIn(BaseModel):
+    status: str = "Applied"
+    resume_text: str | None = None
+    cover_letter_text: str | None = None
+    notes: str | None = None
+
+
+class ApplicationOut(BaseModel):
+    id: int
+    job_id: int
+    status: str
+    applied_at: datetime | None
+    resume_text: str | None
+    cover_letter_text: str | None
+    notes: str | None
+    job: JobOut
+
+    model_config = {"from_attributes": True}
+
+
+class SavedSearchIn(BaseModel):
+    name: str = Field(min_length=1, max_length=160)
+    filters: SearchRequest
+
+
+class SavedSearchOut(BaseModel):
+    id: int
+    name: str
+    filters: dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
 
     model_config = {"from_attributes": True}
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from storage.repository import JobRepository
+from search.scoring import score_job
 
 
 class SearchEngine:
@@ -22,10 +23,11 @@ class SearchEngine:
         remote: bool | None = None,
         min_salary: float | None = None,
         max_salary: float | None = None,
+        qualification_status: str | None = None,
         limit: int = 100,
         offset: int = 0,
     ):
-        return self.repository.list_jobs(
+        jobs = self.repository.list_jobs(
             keyword=keyword,
             company=company,
             location=location,
@@ -36,6 +38,16 @@ class SearchEngine:
             remote=remote,
             min_salary=min_salary,
             max_salary=max_salary,
-            limit=limit,
-            offset=offset,
+            limit=500 if qualification_status else limit,
+            offset=0 if qualification_status else offset,
         )
+        if qualification_status:
+            profile = self.repository.get_profile()
+            normalized = qualification_status.lower()
+            jobs = [
+                job for job in jobs
+                if score_job(job, profile).qualification_status.lower() == normalized
+            ]
+            jobs = sorted(jobs, key=lambda job: score_job(job, profile).fit_score, reverse=True)
+            return jobs[offset : offset + limit]
+        return jobs

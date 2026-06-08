@@ -15,6 +15,15 @@ def test_local_dashboard_is_served():
     assert "Visa status" in response.text
     assert "High visa score" in response.text
     assert "Latest jobs" in response.text
+    assert "Applications" in response.text
+    assert "Saved searches" in response.text
+    assert "Resume Lab" in response.text
+    assert "Preferences" in response.text
+    assert "Qualified" in response.text
+    assert "Disqualified" in response.text
+    assert "Application tracker" in response.text
+    assert "Job preferences" in response.text
+    assert "credibility-v1" in response.text
     assert "Source health" in response.text
     assert "Company targets" in response.text
     assert "All latest" in response.text
@@ -27,6 +36,12 @@ def test_local_dashboard_is_served():
     assert "Any visa status" in response.text
     assert "Full-time" in response.text
     assert "Job type" in response.text
+    assert "Save search" in response.text
+    assert "ATS match, keyword gaps, and recruiter credibility review" in response.text
+    assert "Copy AI prompt" in response.text
+    assert "Base resume notes" in response.text
+    assert "Download credibility report" in response.text
+    assert "recruiter credibility review" in response.text
     assert "collectJobType" in response.text
     assert "Run latest" in response.text
     assert "Last 30 minutes" in response.text
@@ -51,21 +66,26 @@ def test_local_dashboard_is_served():
     assert "USAJOBS" in response.text
     assert "API key needed" in response.text
     assert "verified" in response.text
-    assert "no parse" in response.text
-    assert "Verified sources returned jobs" in response.text
-    assert "JobsH1B" in response.text
-    assert "VisaFriendly" in response.text
-    assert "Glever" in response.text
-    assert "JobsGrep" in response.text
-    assert "HiringCafe" in response.text
-    assert "Wellfound" in response.text
+    assert "Jobspresso" in response.text
+    assert "Dynamite Jobs" in response.text
+    assert "SkipTheDrive" in response.text
+    assert "Remotive" in response.text
     assert "YC Jobs" in response.text
-    assert "College Recruiter" in response.text
     assert ".NET developer or Java developer" in response.text
-    assert "CareerBuilder" in response.text
-    assert "blocked" in response.text
     assert "Remotely.jobs" in response.text
-    assert "We Work Remotely" in response.text
+    assert "Only working sources are shown" in response.text
+    assert "JobsH1B" not in response.text
+    assert "VisaFriendly" not in response.text
+    assert "Glever" not in response.text
+    assert "JobsGrep" not in response.text
+    assert "HiringCafe" not in response.text
+    assert "Career Hound" not in response.text
+    assert "Wellfound" not in response.text
+    assert "College Recruiter" not in response.text
+    assert "CareerBuilder" not in response.text
+    assert "We Work Remotely" not in response.text
+    assert "blocked" not in response.text
+    assert "no parse" not in response.text
     assert "minSalaryInput" not in response.text
     assert "maxSalaryInput" not in response.text
 
@@ -81,6 +101,10 @@ def test_static_assets_are_served():
     assert "supportedSources" in response.text
     assert "jobright_h1b" in response.text
     assert "governmentjobs" in response.text
+    assert "jobspresso" in response.text
+    assert "dynamitejobs" in response.text
+    assert "skipthedrive" in response.text
+    assert "remotive" in response.text
     assert "usajobs_api" in response.text
     assert "sourceHealthGrid" in response.text
     assert "companyTargetsGrid" in response.text
@@ -106,9 +130,31 @@ def test_static_assets_are_served():
     assert "/stats" in response.text
     assert "/source-counts" in response.text
     assert "New jobs added" in response.text
+    assert "parseApiDateTime" in response.text
     assert "centralDateTime" in response.text
     assert "America/Chicago" in response.text
     assert "postingTimestamp" in response.text
+    assert "jobIntelligenceScore" in response.text
+    assert "sendForResume" in response.text
+    assert "sendForCoverLetter" in response.text
+    assert "markApplied" in response.text
+    assert "jobTrustScore" in response.text
+    assert "trust_score" in response.text
+    assert "saveCurrentSearch" in response.text
+    assert "renderResumeLab" in response.text
+    assert "copyTailoringPrompt" in response.text
+    assert "recruiterAuthenticityReview" in response.text
+    assert "downloadAuthenticityReport" in response.text
+    assert "Recruiter credibility" in response.text
+    assert "job-intelligence-base-resume" in response.text
+    assert "ATS scan" in response.text
+    assert "/saved-searches" in response.text
+    assert "/profile" in response.text
+    assert "/applications" in response.text
+    assert "/apply" in response.text
+    assert "qualification_status" in response.text
+    assert "job-intelligence-applications" in response.text
+    assert "job-intelligence-preferences" in response.text
     assert "United States" in response.text
     assert "min_salary:" not in response.text
     assert "max_salary:" not in response.text
@@ -158,6 +204,11 @@ def test_refresh_endpoint_is_registered():
     assert "/stats" in paths
     assert "/source-counts" in paths
     assert "/company-targets" in paths
+    assert "/profile" in paths
+    assert "/applications" in paths
+    assert "/jobs/{job_id}/apply" in paths
+    assert "/saved-searches" in paths
+    assert "/saved-searches/{saved_search_id}" in paths
     assert "/scheduler/status" in paths
     assert "/scheduler/start" in paths
     assert "/scheduler/stop" in paths

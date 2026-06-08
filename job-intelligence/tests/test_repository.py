@@ -60,6 +60,81 @@ def test_upsert_creates_and_updates_job_changes():
     assert repository.count_job_changes(run.id, ChangeType.UPDATED) == 1
 
 
+def test_profile_defaults_and_application_tracking():
+    session = make_session()
+    repository = JobRepository(session)
+    profile = repository.get_profile()
+
+    assert ".NET Developer" in profile.target_roles
+    assert "H1B/TN/GC friendly" == profile.visa_need
+
+    repository.update_profile(
+        {
+            "target_roles": ["Java Developer"],
+            "skills": ["Java", "Spring Boot"],
+            "preferred_locations": ["Remote"],
+            "experience_level": "Senior",
+            "visa_need": "H1B sponsorship required",
+            "work_mode_preference": "Remote",
+            "job_type_preference": "Full-time",
+            "excluded_keywords": ["USC only"],
+        }
+    )
+    run = repository.create_search_run(
+        search_term="Java",
+        location="Remote",
+        sites=["linkedin"],
+        results_wanted=10,
+        started_at=__import__("datetime").datetime.now(__import__("datetime").UTC),
+    )
+    job = repository.upsert_jobs(
+        [
+            {
+                "site": "linkedin",
+                "id": "java-1",
+                "title": "Senior Java Developer",
+                "company": "Acme",
+                "location": "Remote",
+                "job_url": "https://example.com/java-1",
+                "description": "Java Spring Boot role with H1B sponsorship available.",
+            }
+        ],
+        run,
+    )[0]
+
+    application = repository.upsert_application(
+        job_id=job.id,
+        status="Applied",
+        resume_text="resume",
+        cover_letter_text="cover",
+    )
+    session.commit()
+
+    assert repository.get_profile().target_roles == ["Java Developer"]
+    assert application.job_id == job.id
+    assert repository.get_application_for_job(job.id).resume_text == "resume"
+    assert len(repository.list_applications()) == 1
+
+
+def test_saved_searches_can_be_created_and_deleted():
+    session = make_session()
+    repository = JobRepository(session)
+
+    saved_search = repository.create_saved_search(
+        name="Remote Java",
+        filters={"keyword": "Java", "location": "Remote", "limit": 100},
+    )
+    session.commit()
+
+    assert repository.list_saved_searches()[0].name == "Remote Java"
+    assert saved_search.filters["keyword"] == "Java"
+
+    assert repository.delete_saved_search(saved_search.id) is True
+    assert repository.delete_saved_search(saved_search.id) is False
+    session.commit()
+    assert repository.list_saved_searches() == []
+
+
 def test_upsert_sanitizes_change_history_json():
     session = make_session()
     repository = JobRepository(session)

@@ -9,7 +9,18 @@ from sqlalchemy import Select, and_, func, not_, or_, select
 from sqlalchemy.orm import Session
 
 from collectors.dedup import fingerprint_job
-from storage.models import ChangeType, Company, Job, JobChange, JobStatus, SearchRun, utc_now
+from storage.models import (
+    Application,
+    ChangeType,
+    Company,
+    Job,
+    JobChange,
+    JobStatus,
+    SavedSearch,
+    SearchRun,
+    UserProfile,
+    utc_now,
+)
 
 
 TRACKED_JOB_FIELDS = (
@@ -153,6 +164,95 @@ class JobRepository:
 
     def get_job(self, job_id: int) -> Job | None:
         return self.session.get(Job, job_id)
+
+    def get_profile(self) -> UserProfile:
+        profile = self.session.get(UserProfile, 1)
+        if profile:
+            return profile
+        profile = UserProfile(
+            id=1,
+            target_roles=[".NET Developer", "Java Developer", "Software Engineer"],
+            skills=["C#", ".NET", "Java", "SQL", "AWS", "React", "API"],
+            preferred_locations=["Dallas", "Remote", "United States"],
+            experience_level="Senior",
+            visa_need="H1B/TN/GC friendly",
+            work_mode_preference="Remote or Hybrid",
+            job_type_preference="Full-time",
+            excluded_keywords=["C2C", "USC only", "no sponsorship"],
+        )
+        self.session.add(profile)
+        self.session.flush()
+        return profile
+
+    def update_profile(self, values: dict[str, Any]) -> UserProfile:
+        profile = self.get_profile()
+        for field in (
+            "target_roles",
+            "skills",
+            "preferred_locations",
+            "experience_level",
+            "visa_need",
+            "work_mode_preference",
+            "job_type_preference",
+            "excluded_keywords",
+        ):
+            if field in values:
+                setattr(profile, field, values[field])
+        profile.updated_at = utc_now()
+        self.session.flush()
+        return profile
+
+    def list_applications(self) -> list[Application]:
+        return list(
+            self.session.scalars(
+                select(Application).order_by(Application.applied_at.desc().nullslast(), Application.id.desc())
+            )
+        )
+
+    def get_application_for_job(self, job_id: int) -> Application | None:
+        return self.session.scalar(select(Application).where(Application.job_id == job_id))
+
+    def upsert_application(
+        self,
+        *,
+        job_id: int,
+        status: str = "Applied",
+        resume_text: str | None = None,
+        cover_letter_text: str | None = None,
+        notes: str | None = None,
+    ) -> Application:
+        application = self.get_application_for_job(job_id)
+        if application is None:
+            application = Application(job_id=job_id, applied_at=utc_now())
+            self.session.add(application)
+        application.status = status
+        application.resume_text = resume_text
+        application.cover_letter_text = cover_letter_text
+        application.notes = notes
+        application.updated_at = utc_now()
+        self.session.flush()
+        return application
+
+    def list_saved_searches(self) -> list[SavedSearch]:
+        return list(
+            self.session.scalars(
+                select(SavedSearch).order_by(SavedSearch.updated_at.desc(), SavedSearch.id.desc())
+            )
+        )
+
+    def create_saved_search(self, *, name: str, filters: dict[str, Any]) -> SavedSearch:
+        saved_search = SavedSearch(name=name, filters=filters)
+        self.session.add(saved_search)
+        self.session.flush()
+        return saved_search
+
+    def delete_saved_search(self, saved_search_id: int) -> bool:
+        saved_search = self.session.get(SavedSearch, saved_search_id)
+        if saved_search is None:
+            return False
+        self.session.delete(saved_search)
+        self.session.flush()
+        return True
 
     def list_companies(self, *, limit: int = 100, offset: int = 0) -> list[Company]:
         return list(

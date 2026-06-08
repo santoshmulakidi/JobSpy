@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Job Intelligence Platform</title>
-    <link rel="stylesheet" href="/static/styles.css?v=control-consistency" />
+    <link rel="stylesheet" href="/static/styles.css?v=credibility-v1" />
   </head>
   <body>
     <div class="app-shell">
@@ -20,6 +20,10 @@
         <nav class="nav-list" aria-label="Main navigation">
           <button class="nav-item is-active" data-view="overview" type="button">Overview</button>
           <button class="nav-item" data-view="jobs" type="button">Jobs</button>
+          <button class="nav-item" data-view="resume" type="button">Resume Lab</button>
+          <button class="nav-item" data-view="saved" type="button">Saved searches</button>
+          <button class="nav-item" data-view="tracker" type="button">Applications</button>
+          <button class="nav-item" data-view="preferences" type="button">Preferences</button>
           <button class="nav-item" data-view="collect" type="button">Collect</button>
           <button class="nav-item" data-view="sources" type="button">Sources</button>
           <button class="nav-item" data-view="targets" type="button">Company targets</button>
@@ -151,9 +155,12 @@
                 </select>
               </label>
               <button class="primary-button" type="submit">Search</button>
+              <button class="secondary-button save-search-button" id="saveSearchButton" type="button">Save search</button>
             </form>
             <div class="work-mode-tabs" aria-label="Work mode filters">
               <button class="work-mode-tab is-active" data-work-mode="" type="button">All latest</button>
+              <button class="work-mode-tab" data-work-mode="" data-qualification-filter="qualified" type="button">Qualified</button>
+              <button class="work-mode-tab" data-work-mode="" data-qualification-filter="disqualified" type="button">Disqualified</button>
               <button class="work-mode-tab" data-work-mode="Remote" type="button">Remote</button>
               <button class="work-mode-tab" data-work-mode="Hybrid" type="button">Hybrid</button>
               <button class="work-mode-tab" data-work-mode="On-site" type="button">On-site</button>
@@ -166,6 +173,91 @@
               <span id="jobCountLabel">0 jobs</span>
             </div>
             <div class="job-feed" id="jobsTableBody"></div>
+          </section>
+        </section>
+
+        <section class="view" id="resumeView">
+          <section class="panel collect-panel resume-lab-panel">
+            <div class="panel-header">
+              <h3>Resume Lab</h3>
+              <span>ATS match, keyword gaps, and recruiter credibility review</span>
+            </div>
+            <div class="resume-lab-grid">
+              <label>
+                Target job
+                <select id="resumeJobSelect"></select>
+              </label>
+              <label>
+                Base resume notes
+                <textarea id="baseResumeInput" placeholder="Paste your current resume, achievement bullets, or profile notes here. This stays in local browser storage."></textarea>
+              </label>
+            </div>
+            <div class="resume-lab-actions">
+              <button class="primary-button" id="refreshResumeLabButton" type="button">Review match</button>
+              <button class="secondary-button" id="copyPromptButton" type="button">Copy AI prompt</button>
+              <button class="secondary-button" id="downloadPromptButton" type="button">Download prompt</button>
+              <button class="secondary-button" id="downloadAuthenticityButton" type="button">Download credibility report</button>
+            </div>
+            <div class="resume-lab-output" id="resumeLabOutput">
+              Select a job to review ATS alignment.
+            </div>
+          </section>
+        </section>
+
+        <section class="view" id="savedView">
+          <section class="panel table-panel job-feed-panel">
+            <div class="panel-header">
+              <h3>Saved searches</h3>
+              <span id="savedSearchCountLabel">0 saved</span>
+            </div>
+            <div class="job-feed" id="savedSearchesBody"></div>
+          </section>
+        </section>
+
+        <section class="view" id="trackerView">
+          <section class="panel table-panel job-feed-panel">
+            <div class="panel-header">
+              <h3>Application tracker</h3>
+              <span id="trackerCountLabel">0 applied jobs</span>
+            </div>
+            <div class="job-feed" id="trackerTableBody"></div>
+          </section>
+        </section>
+
+        <section class="view" id="preferencesView">
+          <section class="panel collect-panel">
+            <div class="panel-header">
+              <h3>Job preferences</h3>
+              <span>Used for scoring jobs and generating documents</span>
+            </div>
+            <form class="collect-grid" id="preferencesForm">
+              <label>
+                Target roles
+                <input id="prefRoles" placeholder=".NET Developer, Java Developer, Software Engineer" />
+              </label>
+              <label>
+                Skills
+                <input id="prefSkills" placeholder="C#, Java, SQL, AWS, React" />
+              </label>
+              <label>
+                Preferred locations
+                <input id="prefLocations" placeholder="Dallas, Remote, United States" />
+              </label>
+              <label>
+                Experience level
+                <input id="prefExperience" placeholder="Senior, 7 years" />
+              </label>
+              <label>
+                Visa needs
+                <select id="prefVisa">
+                  <option value="H1B/TN/GC friendly">H1B/TN/GC friendly</option>
+                  <option value="H1B sponsorship required">H1B sponsorship required</option>
+                  <option value="TN visa friendly">TN visa friendly</option>
+                  <option value="USC/GC only">USC/GC only</option>
+                </select>
+              </label>
+              <button class="primary-button" type="submit">Save preferences</button>
+            </form>
           </section>
         </section>
 
@@ -272,23 +364,18 @@
                 <label><input type="checkbox" value="jobright_h1b" /> Jobright H1B <span class="source-note source-note-good">verified</span></label>
                 <label><input type="checkbox" value="dice" /> Dice <span class="source-note source-note-good">verified</span></label>
                 <label><input type="checkbox" value="governmentjobs" /> GovernmentJobs <span class="source-note source-note-good">verified</span></label>
-                <label><input type="checkbox" value="hiringcafe" /> HiringCafe <span class="source-note source-note-good">verified</span></label>
+                <label><input type="checkbox" value="jobspresso" /> Jobspresso <span class="source-note source-note-good">verified</span></label>
+                <label><input type="checkbox" value="dynamitejobs" /> Dynamite Jobs <span class="source-note source-note-good">verified</span></label>
+                <label><input type="checkbox" value="skipthedrive" /> SkipTheDrive <span class="source-note source-note-good">verified</span></label>
+                <label><input type="checkbox" value="remotive" /> Remotive <span class="source-note source-note-good">verified</span></label>
                 <label><input type="checkbox" value="yc_jobs" /> YC Jobs <span class="source-note source-note-good">verified</span></label>
                 <label><input type="checkbox" value="remotely" /> Remotely.jobs <span class="source-note source-note-good">verified</span></label>
                 <label><input type="checkbox" value="usajobs_api" /> USAJOBS <span class="source-note">API key needed</span></label>
                 <label><input type="checkbox" value="simplify_new_grad" /> Simplify New Grad <span class="source-note">specialized</span></label>
                 <label><input type="checkbox" value="github_internships" /> GitHub Internships <span class="source-note">specialized</span></label>
-                <label><input type="checkbox" value="jobsh1b" /> JobsH1B <span class="source-note">no parse</span></label>
-                <label><input type="checkbox" value="visafriendly" /> VisaFriendly <span class="source-note">no parse</span></label>
-                <label><input type="checkbox" value="glever" /> Glever <span class="source-note">no parse</span></label>
-                <label><input type="checkbox" value="jobsgrep" /> JobsGrep <span class="source-note">HTTP 404</span></label>
-                <label><input type="checkbox" value="college_recruiter" /> College Recruiter <span class="source-note">HTTP 404</span></label>
-                <label><input type="checkbox" value="wellfound" /> Wellfound <span class="source-note">blocked</span></label>
-                <label><input type="checkbox" value="weworkremotely" /> We Work Remotely <span class="source-note">blocked</span></label>
-                <label><input type="checkbox" value="careerbuilder" /> CareerBuilder <span class="source-note">blocked</span></label>
               </fieldset>
               <p class="source-warning">
-                Verified sources returned jobs in the latest smoke test. Blocked/no-parse sources stay available but are lower priority.
+                Only working sources are shown. Blocked or no-parse sources were removed from collection until a reliable connector is available.
               </p>
               <label class="checkbox-row">
                 <input id="collectRemote" type="checkbox" />
@@ -342,6 +429,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=single-job-details" defer></script>
+    <script src="/static/app.js?v=credibility-v1" defer></script>
   </body>
 </html>

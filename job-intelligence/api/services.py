@@ -33,11 +33,16 @@ class CollectionService:
     h1b_markdown_sites = {"jobright_h1b", "simplify_new_grad", "github_internships"}
     simple_web_sites = {
         "college_recruiter",
+        "careerhound",
         "dice",
+        "dynamitejobs",
         "glever",
         "hiringcafe",
+        "jobspresso",
         "jobsgrep",
         "jobsh1b",
+        "remotive",
+        "skipthedrive",
         "visafriendly",
         "wellfound",
         "yc_jobs",
@@ -89,7 +94,27 @@ class CollectionService:
             ),
             "college_recruiter": SimpleWebJobCollector(
                 source_name="college_recruiter",
-                search_url_template="https://www.collegerecruiter.com/jobs?keyword={query}&location={location}",
+                search_url_template="https://www.collegerecruiter.com/job-search?keyword={query}&location={location}",
+            ),
+            "careerhound": SimpleWebJobCollector(
+                source_name="careerhound",
+                search_url_template="https://www.careerhound.io/?query={query}&location={location}",
+            ),
+            "jobspresso": SimpleWebJobCollector(
+                source_name="jobspresso",
+                search_url_template="https://jobspresso.co/remote-work/?search_keywords={query}",
+            ),
+            "dynamitejobs": SimpleWebJobCollector(
+                source_name="dynamitejobs",
+                search_url_template="https://dynamitejobs.com/remote-jobs/?search={query}",
+            ),
+            "skipthedrive": SimpleWebJobCollector(
+                source_name="skipthedrive",
+                search_url_template="https://www.skipthedrive.com/?s={query}",
+            ),
+            "remotive": SimpleWebJobCollector(
+                source_name="remotive",
+                search_url_template="https://remotive.com/remote-jobs?search={query}",
             ),
             "jobsh1b": SimpleWebJobCollector(
                 source_name="jobsh1b",
@@ -101,7 +126,7 @@ class CollectionService:
             ),
             "glever": SimpleWebJobCollector(
                 source_name="glever",
-                search_url_template="https://www.glever.co/search?q={query}&location={location}",
+                search_url_template="https://glever.co/search?q={query}&location={location}",
             ),
             "jobsgrep": SimpleWebJobCollector(
                 source_name="jobsgrep",

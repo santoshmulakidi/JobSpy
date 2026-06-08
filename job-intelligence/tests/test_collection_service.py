@@ -136,14 +136,16 @@ def test_collection_service_routes_h1b_and_simple_web_sources():
     jobspy = FakeJobSpyCollector()
     jobright = FakeCareerBuilderCollector()
     dice = FakeCareerBuilderCollector()
+    remotive = FakeCareerBuilderCollector()
     service = CollectionService(session, collector=jobspy)
     service.h1b_markdown_collectors["jobright_h1b"] = jobright
     service.simple_web_collectors["dice"] = dice
+    service.simple_web_collectors["remotive"] = remotive
 
     service.collect(
         CollectionRequest(
             search_term="developer",
-            sites=["jobright_h1b", "dice"],
+            sites=["jobright_h1b", "dice", "remotive"],
             results_wanted=5,
         )
     )
@@ -151,3 +153,4 @@ def test_collection_service_routes_h1b_and_simple_web_sources():
     assert jobspy.requests == []
     assert jobright.requests[0].sites == ["jobright_h1b"]
     assert dice.requests[0].sites == ["dice"]
+    assert remotive.requests[0].sites == ["remotive"]

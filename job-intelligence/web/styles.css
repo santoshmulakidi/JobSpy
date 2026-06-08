@@ -1316,6 +1316,13 @@ body {
   border-width: 1px 0 0;
 }
 
+.search-panel .filter-grid .save-search-button {
+  grid-column: span 1;
+  min-height: 54px;
+  border-radius: 0;
+  border-width: 1px 0 0 1px;
+}
+
 .filter-grid input,
 .filter-grid select,
 .collect-grid input,
@@ -1480,6 +1487,160 @@ body {
   color: var(--primary-strong);
 }
 
+.qualified-chip {
+  background: color-mix(in srgb, var(--green) 18%, var(--surface-soft));
+  color: var(--green);
+}
+
+.disqualified-chip {
+  background: color-mix(in srgb, var(--red) 14%, var(--surface-soft));
+  color: var(--red);
+}
+
+.review-chip {
+  background: color-mix(in srgb, var(--blue) 14%, var(--surface-soft));
+  color: var(--blue-strong);
+}
+
+.trusted-chip {
+  background: color-mix(in srgb, var(--green) 18%, var(--surface-soft));
+  color: var(--green);
+}
+
+.risk-chip {
+  background: color-mix(in srgb, var(--red) 14%, var(--surface-soft));
+  color: var(--red);
+}
+
+.applied-chip {
+  background: color-mix(in srgb, var(--amber) 18%, var(--surface-soft));
+  color: var(--amber);
+}
+
+.saved-search-card h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.saved-search-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.resume-lab-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.resume-lab-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(320px, 1.2fr);
+  gap: 16px;
+}
+
+.resume-lab-grid label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.resume-lab-grid select,
+.resume-lab-grid textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font: inherit;
+  padding: 12px;
+}
+
+.resume-lab-grid textarea {
+  min-height: 190px;
+  resize: vertical;
+}
+
+.resume-lab-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.resume-lab-output {
+  display: grid;
+  gap: 14px;
+}
+
+.resume-score-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.resume-score-grid article,
+.resume-lab-section {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  padding: 14px;
+}
+
+.resume-score-grid span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.resume-score-grid strong {
+  font-size: 20px;
+}
+
+.resume-lab-section h4 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.resume-lab-section p,
+.resume-lab-section ul {
+  margin: 0;
+  color: var(--muted);
+}
+
+.resume-lab-section ul {
+  padding-left: 18px;
+}
+
+.authenticity-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.authenticity-metrics span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 7px 10px;
+}
+
+.resume-lab-section pre {
+  max-height: 300px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  color: var(--ink);
+  font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
 .inline-job-details {
   border-radius: 12px;
   background: var(--surface-soft);
@@ -1539,7 +1700,8 @@ body {
 
   .search-panel .filter-grid label:nth-of-type(1),
   .search-panel .filter-grid label:nth-of-type(2),
-  .search-panel .filter-grid .primary-button {
+  .search-panel .filter-grid .primary-button,
+  .search-panel .filter-grid .save-search-button {
     grid-column: span 1;
   }
 
@@ -1593,8 +1755,14 @@ body {
     border-top: 0;
   }
 
-  .search-panel .filter-grid .primary-button {
+  .search-panel .filter-grid .primary-button,
+  .search-panel .filter-grid .save-search-button {
     grid-column: 1;
+  }
+
+  .resume-lab-grid,
+  .resume-score-grid {
+    grid-template-columns: 1fr;
   }
 
   .metric-grid {

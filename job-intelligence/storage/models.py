@@ -249,3 +249,58 @@ class JobChange(Base):
 
     job: Mapped[Job] = relationship(back_populates="changes")
     search_run: Mapped[SearchRun | None] = relationship(back_populates="changes")
+
+
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    target_roles: Mapped[list[str]] = mapped_column(JSON, default=list)
+    skills: Mapped[list[str]] = mapped_column(JSON, default=list)
+    preferred_locations: Mapped[list[str]] = mapped_column(JSON, default=list)
+    experience_level: Mapped[str | None] = mapped_column(String(120))
+    visa_need: Mapped[str | None] = mapped_column(String(120))
+    work_mode_preference: Mapped[str | None] = mapped_column(String(80))
+    job_type_preference: Mapped[str | None] = mapped_column(String(80))
+    excluded_keywords: Mapped[list[str]] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+    )
+
+
+class Application(Base):
+    __tablename__ = "applications"
+    __table_args__ = (UniqueConstraint("job_id", name="uq_applications_job_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id"), index=True)
+    status: Mapped[str] = mapped_column(String(80), default="Applied", index=True)
+    applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=utc_now)
+    resume_text: Mapped[str | None] = mapped_column(Text)
+    cover_letter_text: Mapped[str | None] = mapped_column(Text)
+    notes: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+    )
+
+    job: Mapped[Job] = relationship()
+
+
+class SavedSearch(Base):
+    __tablename__ = "saved_searches"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(160), index=True)
+    filters: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+    )
