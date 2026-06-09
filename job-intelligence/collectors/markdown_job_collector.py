@@ -67,6 +67,12 @@ class MarkdownJobCollector(Collector):
         raise requests.RequestException(f"{self.source_name} has no source URLs configured")
 
     def _parse_markdown(self, markdown: str, request: CollectionRequest) -> list[dict]:
+        # Try HTML table format first (Simplify repos migrated from pipe tables to HTML tables)
+        if "<tr>" in markdown or "<td>" in markdown:
+            jobs = self._parse_html_table(markdown, request)
+            if jobs:
+                return jobs
+        # Fall back to pipe-table format
         jobs: list[dict] = []
         headers: list[str] | None = None
         for line in markdown.splitlines():
@@ -84,6 +90,48 @@ class MarkdownJobCollector(Collector):
             row = dict(zip(headers, cells, strict=False))
             job = self._row_to_job(row, request)
             if job and self._matches(job, request):
+                jobs.append(job)
+        return jobs
+
+    def _parse_html_table(self, markdown: str, request: CollectionRequest) -> list[dict]:
+        """Parse HTML <tr>/<td> tables embedded in README markdown (Simplify format)."""
+        jobs: list[dict] = []
+        row_pattern = re.compile(r"<tr>(.*?)</tr>", re.DOTALL)
+        td_pattern = re.compile(r"<td[^>]*>(.*?)</td>", re.DOTALL)
+        href_pattern = re.compile(r'href=["\']([^"\']+)["\']')
+        tag_pattern = re.compile(r"<[^>]+>")
+
+        for row_match in row_pattern.finditer(markdown):
+            tds = td_pattern.findall(row_match.group(1))
+            if len(tds) < 3:
+                continue
+            company = tag_pattern.sub("", tds[0]).strip()
+            role = tag_pattern.sub("", tds[1]).strip()
+            location = tag_pattern.sub("", tds[2]).strip()
+
+            if not company or not role or role.lower() in {"role", "title", "position"}:
+                continue
+
+            apply_html = tds[3] if len(tds) > 3 else " ".join(tds)
+            urls = href_pattern.findall(apply_html)
+            job_url = next((u for u in urls if "simplify.jobs" not in u and u.startswith("http")), None)
+            if not job_url:
+                job_url = next((u for u in urls if u.startswith("http")), None)
+
+            job = {
+                "id": f"{self.source_name}-{abs(hash((company, role, job_url)))}",
+                "site": self.source_name,
+                "job_url": job_url,
+                "job_url_direct": job_url,
+                "title": role,
+                "company": company,
+                "location": location or request.location,
+                "description": f"{company} | {role} | {location}",
+                "is_remote": "remote" in str(location or "").lower(),
+                "date_posted": None,
+                "raw": {"source_url": self.source_url, "visa_friendly_source": self.visa_friendly},
+            }
+            if self._matches(job, request):
                 jobs.append(job)
         return jobs
 

@@ -123,8 +123,9 @@ class Indeed(Scraper):
             )
             return jobs, new_cursor
         data = response.json()
-        jobs = data["data"]["jobSearch"]["results"]
-        new_cursor = data["data"]["jobSearch"]["pageInfo"]["nextCursor"]
+        job_search = (data.get("data") or {}).get("jobSearch") or {}
+        jobs = job_search.get("results") or []
+        new_cursor = (job_search.get("pageInfo") or {}).get("nextCursor")
 
         job_list = []
         for job in jobs:
@@ -206,7 +207,7 @@ class Indeed(Scraper):
         if self.scraper_input.description_format == DescriptionFormat.MARKDOWN:
             description = markdown_converter(description)
 
-        job_type = get_job_type(job["attributes"])
+        job_type = get_job_type(job.get("attributes") or [])
         timestamp_seconds = job["datePublished"] / 1000
         date_posted = datetime.fromtimestamp(timestamp_seconds).strftime("%Y-%m-%d")
         employer = job["employer"].get("dossier") if job["employer"] else None
@@ -222,12 +223,12 @@ class Indeed(Scraper):
                 employer["links"]["corporateWebsite"] if employer else None
             ),
             location=Location(
-                city=job.get("location", {}).get("city"),
-                state=job.get("location", {}).get("admin1Code"),
-                country=job.get("location", {}).get("countryCode"),
+                city=(job.get("location") or {}).get("city"),
+                state=(job.get("location") or {}).get("admin1Code"),
+                country=(job.get("location") or {}).get("countryCode"),
             ),
             job_type=job_type,
-            compensation=get_compensation(job["compensation"]),
+            compensation=get_compensation(job.get("compensation")),
             date_posted=date_posted,
             job_url=job_url,
             job_url_direct=(
