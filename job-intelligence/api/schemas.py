@@ -11,7 +11,7 @@ class CollectRequest(BaseModel):
     location: str | None = None
     sites: list[str] = Field(default_factory=lambda: ["linkedin", "indeed"])
     results_wanted: int = Field(default=100, ge=1, le=1000)
-    country_indeed: str = "usa"
+    country_indeed: str = Field(default="usa", frozen=True)
     is_remote: bool = False
     job_type: str | None = None
     hours_old: float | None = Field(default=None, gt=0)
