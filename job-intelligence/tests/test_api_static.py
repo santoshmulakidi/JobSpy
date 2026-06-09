@@ -19,6 +19,9 @@ def test_local_dashboard_is_served():
     assert "Visa status" in response.text
     assert "High visa score" in response.text
     assert "Latest jobs" in response.text
+    assert "Active jobs (24h)" in response.text
+    assert "Today's active jobs" in response.text
+    assert "Archived after 24 hours" in response.text
     assert "Applications" in response.text
     assert "Saved searches" in response.text
     assert "Resume Lab" in response.text
@@ -26,11 +29,12 @@ def test_local_dashboard_is_served():
     assert "Qualified" in response.text
     assert "Disqualified" in response.text
     assert "Application tracker" in response.text
+    assert "applied jobs saved" in response.text
     assert "Job preferences" in response.text
-    assert "credibility-v1" in response.text
+    assert "job-lifecycle-v1" in response.text
     assert "Source health" in response.text
     assert "Company targets" in response.text
-    assert "All latest" in response.text
+    assert "Active today" in response.text
     assert "Hybrid" in response.text
     assert "On-site" in response.text
     assert "Hourly refresh" in response.text
@@ -146,6 +150,7 @@ def test_static_assets_are_served():
     assert "sendForResume" in response.text
     assert "sendForCoverLetter" in response.text
     assert "markApplied" in response.text
+    assert "Job moved to Applications." in response.text
     assert "jobTrustScore" in response.text
     assert "trust_score" in response.text
     assert "saveCurrentSearch" in response.text

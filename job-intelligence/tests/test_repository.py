@@ -1,8 +1,8 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
 
-from storage.models import Base, ChangeType, JobChange
+from storage.models import Base, ChangeType, JobChange, JobStatus
 from storage.repository import JobRepository
 
 
@@ -114,6 +114,43 @@ def test_profile_defaults_and_application_tracking():
     assert application.job_id == job.id
     assert repository.get_application_for_job(job.id).resume_text == "resume"
     assert len(repository.list_applications()) == 1
+
+
+def test_job_lifecycle_archives_old_jobs_deletes_expired_and_preserves_applied():
+    session = make_session()
+    repository = JobRepository(session)
+    run = repository.create_search_run(
+        search_term="Engineer",
+        location="Remote",
+        sites=["linkedin"],
+        results_wanted=10,
+        started_at=datetime.now(UTC),
+    )
+    fresh_job, old_job, expired_job, applied_job = repository.upsert_jobs(
+        [
+            {"site": "linkedin", "id": "fresh", "title": "Fresh Engineer", "company": "Acme"},
+            {"site": "linkedin", "id": "old", "title": "Old Engineer", "company": "Acme"},
+            {"site": "linkedin", "id": "expired", "title": "Expired Engineer", "company": "Acme"},
+            {"site": "linkedin", "id": "applied", "title": "Applied Engineer", "company": "Acme"},
+        ],
+        run,
+    )
+    old_job.first_seen_at = datetime.now(UTC) - timedelta(days=2)
+    expired_job.first_seen_at = datetime.now(UTC) - timedelta(days=8)
+    applied_job.first_seen_at = datetime.now(UTC) - timedelta(days=8)
+    repository.upsert_application(job_id=applied_job.id, status="Applied")
+    session.commit()
+
+    lifecycle = repository.apply_job_lifecycle(active_hours=24, retention_days=7)
+    session.commit()
+
+    assert lifecycle == {"archived": 2, "deleted": 1}
+    assert repository.get_job(fresh_job.id).status == JobStatus.ACTIVE
+    assert repository.get_job(old_job.id).status == JobStatus.ARCHIVED
+    assert repository.get_job(expired_job.id) is None
+    assert repository.get_job(applied_job.id).status == JobStatus.ARCHIVED
+    assert repository.get_application_for_job(applied_job.id).status == "Applied"
+    assert [job.title for job in repository.list_jobs()] == ["Fresh Engineer"]
 
 
 def test_saved_searches_can_be_created_and_deleted():

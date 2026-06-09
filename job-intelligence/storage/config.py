@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     telegram_chat_id: str | None = None
     usajobs_api_key: str | None = None
     usajobs_user_agent: str | None = None
+    cors_origins: str = "http://127.0.0.1:3000,http://localhost:3000"
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -26,6 +27,10 @@ class Settings(BaseSettings):
     @property
     def default_site_list(self) -> list[str]:
         return [site.strip() for site in self.default_sites.split(",") if site.strip()]
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
 
 @lru_cache

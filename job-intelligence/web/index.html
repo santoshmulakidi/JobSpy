@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Job Intelligence Platform</title>
-    <link rel="stylesheet" href="/static/styles.css?v=credibility-v1" />
+    <link rel="stylesheet" href="/static/styles.css?v=job-lifecycle-v1" />
   </head>
   <body>
     <div class="app-shell">
@@ -63,7 +63,7 @@
         <section class="view is-visible" id="overviewView">
           <div class="metric-grid">
             <article class="metric">
-              <span>Total Jobs</span>
+              <span>Active jobs (24h)</span>
               <strong id="totalJobs">0</strong>
             </article>
             <article class="metric">
@@ -104,8 +104,8 @@
             </section>
             <section class="panel">
               <div class="panel-header">
-                <h3>Latest jobs</h3>
-                <span>Most recently seen</span>
+                <h3>Today's active jobs</h3>
+                <span>Archived after 24 hours</span>
               </div>
               <div class="compact-list" id="latestJobs"></div>
             </section>
@@ -158,7 +158,7 @@
               <button class="secondary-button save-search-button" id="saveSearchButton" type="button">Save search</button>
             </form>
             <div class="work-mode-tabs" aria-label="Work mode filters">
-              <button class="work-mode-tab is-active" data-work-mode="" type="button">All latest</button>
+              <button class="work-mode-tab is-active" data-work-mode="" type="button">Active today</button>
               <button class="work-mode-tab" data-work-mode="" data-qualification-filter="qualified" type="button">Qualified</button>
               <button class="work-mode-tab" data-work-mode="" data-qualification-filter="disqualified" type="button">Disqualified</button>
               <button class="work-mode-tab" data-work-mode="Remote" type="button">Remote</button>
@@ -170,7 +170,7 @@
           <section class="panel table-panel job-feed-panel">
             <div class="panel-header">
               <h3>Latest jobs</h3>
-              <span id="jobCountLabel">0 jobs</span>
+              <span id="jobCountLabel">0 active jobs</span>
             </div>
             <div class="job-feed" id="jobsTableBody"></div>
           </section>
@@ -230,7 +230,7 @@
           <section class="panel table-panel job-feed-panel">
             <div class="panel-header">
               <h3>Application tracker</h3>
-              <span id="trackerCountLabel">0 applied jobs</span>
+              <span id="trackerCountLabel">0 applied jobs saved</span>
             </div>
             <div class="job-feed" id="trackerTableBody"></div>
           </section>
@@ -441,6 +441,6 @@
     </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=credibility-v1" defer></script>
+    <script src="/static/app.js?v=job-lifecycle-v1" defer></script>
   </body>
 </html>

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import math
 from typing import Any
 
-from sqlalchemy import Select, and_, func, not_, or_, select
+from sqlalchemy import Select, and_, delete, exists, func, not_, or_, select
 from sqlalchemy.orm import Session
 
 from collectors.dedup import fingerprint_job
@@ -98,6 +98,50 @@ class JobRepository:
                     self._record_change(existing, search_run, ChangeType.UPDATED, before, normalized)
             upserted.append(existing)
         return upserted
+
+    def apply_job_lifecycle(self, *, active_hours: int = 24, retention_days: int = 7) -> dict[str, int]:
+        """Keep the active feed fresh while preserving applied job history."""
+        archived = self.archive_stale_jobs(active_hours=active_hours)
+        deleted = self.delete_expired_jobs(retention_days=retention_days)
+        return {"archived": archived, "deleted": deleted}
+
+    def archive_stale_jobs(self, *, active_hours: int = 24) -> int:
+        cutoff = utc_now() - timedelta(hours=active_hours)
+        jobs = self.session.scalars(
+            select(Job).where(
+                and_(
+                    Job.status == JobStatus.ACTIVE,
+                    Job.first_seen_at < cutoff,
+                )
+            )
+        ).all()
+        for job in jobs:
+            job.status = JobStatus.ARCHIVED
+            job.last_changed_at = utc_now()
+        if jobs:
+            self.session.flush()
+        return len(jobs)
+
+    def delete_expired_jobs(self, *, retention_days: int = 7) -> int:
+        cutoff = utc_now() - timedelta(days=retention_days)
+        applied_job_exists = exists().where(Application.job_id == Job.id)
+        jobs = self.session.scalars(
+            select(Job).where(
+                and_(
+                    Job.first_seen_at < cutoff,
+                    not_(applied_job_exists),
+                )
+            )
+        ).all()
+        deleted = len(jobs)
+        job_ids = [job.id for job in jobs]
+        if job_ids:
+            self.session.execute(delete(JobChange).where(JobChange.job_id.in_(job_ids)))
+        for job in jobs:
+            self.session.delete(job)
+        if deleted:
+            self.session.flush()
+        return deleted
 
     def mark_removed_jobs(self, active_fingerprints: set[str], search_run: SearchRun) -> int:
         if not active_fingerprints:
@@ -225,6 +269,10 @@ class JobRepository:
         if application is None:
             application = Application(job_id=job_id, applied_at=utc_now())
             self.session.add(application)
+        job = self.session.get(Job, job_id)
+        if job:
+            job.status = JobStatus.ARCHIVED
+            job.last_changed_at = utc_now()
         application.status = status
         application.resume_text = resume_text
         application.cover_letter_text = cover_letter_text
@@ -300,7 +348,7 @@ class JobRepository:
         return list(
             self.session.execute(
                 select(Job.company_name, func.count(Job.id))
-                .where(Job.company_name.is_not(None))
+                .where(and_(Job.status == JobStatus.ACTIVE, Job.company_name.is_not(None)))
                 .group_by(Job.company_name)
                 .order_by(func.count(Job.id).desc())
                 .limit(limit)
@@ -311,7 +359,7 @@ class JobRepository:
         return list(
             self.session.execute(
                 select(Job.location, func.count(Job.id))
-                .where(Job.location.is_not(None))
+                .where(and_(Job.status == JobStatus.ACTIVE, Job.location.is_not(None)))
                 .group_by(Job.location)
                 .order_by(func.count(Job.id).desc())
                 .limit(limit)
@@ -321,6 +369,7 @@ class JobRepository:
     def salary_summary(self) -> dict[str, float | None]:
         row = self.session.execute(
             select(func.avg(Job.min_amount), func.avg(Job.max_amount), func.min(Job.min_amount), func.max(Job.max_amount))
+            .where(Job.status == JobStatus.ACTIVE)
         ).one()
         return {
             "average_min_salary": row[0],

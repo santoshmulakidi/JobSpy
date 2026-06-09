@@ -187,9 +187,10 @@ class CollectionService:
         unsupported_sites = sorted(set(request.sites) - supported_sites)
 
         if jobspy_sites:
-            result = self.collector.collect(request.model_copy(update={"sites": jobspy_sites}))
-            jobs.extend(result.jobs)
-            errors.extend(result.errors)
+            for site in jobspy_sites:
+                result = self.collector.collect(request.model_copy(update={"sites": [site]}))
+                jobs.extend(result.jobs)
+                errors.extend([f"{site}: {error}" for error in result.errors])
 
             if request.use_company_targets:
                 targets = select_company_targets(request.company_target_limit)

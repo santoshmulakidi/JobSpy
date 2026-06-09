@@ -340,6 +340,7 @@ async function markApplied(jobId) {
     ];
     job.application_status = application.status;
     job.applied_at = application.applied_at;
+    job.status = application.job?.status || "archived";
   } catch (error) {
     showToast("Could not save application to database; saved locally.");
   }
@@ -354,9 +355,11 @@ async function markApplied(jobId) {
     applied_at: new Date().toISOString(),
   };
   saveApplicationTracker();
+  state.jobs = state.jobs.filter((item) => String(item.id) !== String(job.id));
   renderJobs();
   renderTracker();
-  showToast("Job marked as applied.");
+  renderOverview();
+  showToast("Job moved to Applications.");
 }
 
 function downloadTextFile(filename, content) {
@@ -892,7 +895,7 @@ function renderJobs() {
     if (state.qualificationFilter === "disqualified") return !scoring.qualified;
     return true;
   });
-  els.jobCountLabel.textContent = `${visibleJobs.length} jobs`;
+  els.jobCountLabel.textContent = `${visibleJobs.length} active job${visibleJobs.length === 1 ? "" : "s"}`;
   if (!visibleJobs.length) {
     els.jobsTableBody.innerHTML = `
       <div class="empty-state">No matching jobs found.</div>
@@ -993,11 +996,11 @@ function renderTracker() {
     new Date(b.applied_at) - new Date(a.applied_at)
   ));
   if (els.trackerCountLabel) {
-    els.trackerCountLabel.textContent = `${entries.length} applied job${entries.length === 1 ? "" : "s"}`;
+    els.trackerCountLabel.textContent = `${entries.length} applied job${entries.length === 1 ? "" : "s"} saved`;
   }
   if (!els.trackerTableBody) return;
   if (!entries.length) {
-    empty(els.trackerTableBody, "No applications marked yet.");
+    empty(els.trackerTableBody, "No applications saved yet.");
     return;
   }
   els.trackerTableBody.innerHTML = entries.map((entry) => `

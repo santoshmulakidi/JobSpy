@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import io
 import logging
@@ -8,6 +9,7 @@ import zipfile
 from xml.etree import ElementTree
 
 from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
@@ -57,7 +59,33 @@ app = FastAPI(
     description="Standalone APIs for collecting, storing, searching, and analyzing jobs.",
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origin_list,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.mount("/static", StaticFiles(directory=WEB_ROOT), name="static")
+
+
+async def _lifecycle_loop() -> None:
+    """Run job lifecycle once per hour in the background."""
+    while True:
+        try:
+            session = next(iter(get_session()))
+            try:
+                lifecycle = JobRepository(session).apply_job_lifecycle(active_hours=24, retention_days=7)
+                if lifecycle["archived"] or lifecycle["deleted"]:
+                    session.commit()
+                    logging.getLogger(__name__).info("lifecycle: archived=%d deleted=%d", lifecycle["archived"], lifecycle["deleted"])
+            finally:
+                session.close()
+        except Exception:
+            logging.getLogger(__name__).exception("lifecycle run failed")
+        await asyncio.sleep(3600)
+
 
 
 def _job_out(repository: JobRepository, job) -> JobOut:
@@ -124,8 +152,9 @@ def _extract_docx_text(content: bytes) -> str:
 
 
 @app.on_event("startup")
-def startup() -> None:
+async def startup() -> None:
     init_database()
+    asyncio.create_task(_lifecycle_loop())
 
 
 @app.get("/health")
@@ -318,9 +347,10 @@ def get_stats(session: Session = Depends(get_session)):
 
 @app.get("/source-counts", response_model=list[SourceCountOut])
 def get_source_counts(session: Session = Depends(get_session)):
+    repository = JobRepository(session)
     return [
         SourceCountOut(source=source, job_count=job_count)
-        for source, job_count in JobRepository(session).source_counts()
+        for source, job_count in repository.source_counts()
     ]
 
 
@@ -328,7 +358,8 @@ def get_source_counts(session: Session = Depends(get_session)):
 def collect_jobs(payload: CollectRequest, session: Session = Depends(get_session)):
     request = CollectionRequest(**payload.model_dump())
     run, result = CollectionService(session).collect(request)
-    jobs_added = JobRepository(session).count_job_changes(run.id, ChangeType.NEW)
+    repository = JobRepository(session)
+    jobs_added = repository.count_job_changes(run.id, ChangeType.NEW)
     return CollectResponse(
         search_run_id=run.id,
         jobs_seen=result.count,
@@ -341,7 +372,8 @@ def collect_jobs(payload: CollectRequest, session: Session = Depends(get_session
 def refresh_jobs(payload: CollectRequest, session: Session = Depends(get_session)):
     request = CollectionRequest(**payload.model_dump())
     run, result = CollectionService(session).collect(request)
-    jobs_added = JobRepository(session).count_job_changes(run.id, ChangeType.NEW)
+    repository = JobRepository(session)
+    jobs_added = repository.count_job_changes(run.id, ChangeType.NEW)
     return CollectResponse(
         search_run_id=run.id,
         jobs_seen=result.count,

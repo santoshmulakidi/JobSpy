@@ -102,7 +102,8 @@ def test_collection_service_uses_source_specific_company_queries():
         )
     )
 
-    company_requests = jobspy.requests[1:]
+    assert [request.sites for request in jobspy.requests[:3]] == [["linkedin"], ["indeed"], ["google"]]
+    company_requests = jobspy.requests[3:]
     assert [request.sites for request in company_requests] == [["linkedin"], ["indeed"], ["google"]]
     assert company_requests[0].search_term == "developer Amazon AWS H1B sponsorship visa"
     assert company_requests[1].search_term == 'developer "Amazon AWS" H1B sponsorship visa'

@@ -27,6 +27,7 @@ class Base(DeclarativeBase):
 
 class JobStatus(str, enum.Enum):
     ACTIVE = "active"
+    ARCHIVED = "archived"
     REMOVED = "removed"
 
 
