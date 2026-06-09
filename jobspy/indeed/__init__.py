@@ -202,7 +202,7 @@ class Indeed(Scraper):
         if job_url in self.seen_urls:
             return
         self.seen_urls.add(job_url)
-        description = job["description"]["html"]
+        description = (job.get("description") or {}).get("html")
         if self.scraper_input.description_format == DescriptionFormat.MARKDOWN:
             description = markdown_converter(description)
 
