@@ -522,6 +522,96 @@ def test_list_jobs_filters_fulltime_job_type():
     assert jobs[0].source_job_id == "fulltime"
 
 
+def test_list_jobs_filters_contract_w2_and_c2c_job_types():
+    session = make_session()
+    repository = JobRepository(session)
+    run = repository.create_search_run(
+        search_term="Engineer",
+        location="Texas",
+        sites=["indeed"],
+        results_wanted=10,
+        started_at=datetime.now(UTC),
+    )
+
+    repository.upsert_jobs(
+        [
+            {
+                "site": "indeed",
+                "id": "contract",
+                "title": "Contract Engineer",
+                "company": "Acme",
+                "location": "Dallas, TX",
+                "job_url": "https://example.com/contract-job",
+                "job_type": "contract",
+            },
+            {
+                "site": "indeed",
+                "id": "w2",
+                "title": "Backend Engineer",
+                "company": "Acme",
+                "location": "Dallas, TX",
+                "job_url": "https://example.com/w2-job",
+                "description": "Open to W2 employment only.",
+            },
+            {
+                "site": "indeed",
+                "id": "c2c",
+                "title": "Cloud Engineer",
+                "company": "Acme",
+                "location": "Dallas, TX",
+                "job_url": "https://example.com/c2c-job",
+                "description": "C2C and corp-to-corp candidates accepted.",
+            },
+        ],
+        run,
+    )
+    session.commit()
+
+    assert [job.source_job_id for job in repository.list_jobs(job_type="contract")] == ["contract"]
+    assert [job.source_job_id for job in repository.list_jobs(job_type="w2")] == ["w2"]
+    assert [job.source_job_id for job in repository.list_jobs(job_type="c2c")] == ["c2c"]
+
+
+def test_list_jobs_expands_dotnet_and_java_keyword_families():
+    session = make_session()
+    repository = JobRepository(session)
+    run = repository.create_search_run(
+        search_term="Engineer",
+        location="United States",
+        sites=["linkedin"],
+        results_wanted=10,
+        started_at=datetime.now(UTC),
+    )
+
+    repository.upsert_jobs(
+        [
+            {
+                "site": "linkedin",
+                "id": "csharp",
+                "title": "Senior C# Developer",
+                "company": "Acme",
+                "location": "Remote",
+                "job_url": "https://example.com/csharp",
+                "description": "Build ASP.NET Core APIs on Azure.",
+            },
+            {
+                "site": "linkedin",
+                "id": "spring",
+                "title": "Backend Engineer",
+                "company": "Acme",
+                "location": "Remote",
+                "job_url": "https://example.com/spring",
+                "description": "Java services using Spring Boot and microservices.",
+            },
+        ],
+        run,
+    )
+    session.commit()
+
+    assert [job.source_job_id for job in repository.list_jobs(keyword=".NET developer")] == ["csharp"]
+    assert [job.source_job_id for job in repository.list_jobs(keyword="Java developer")] == ["spring"]
+
+
 def test_job_computes_visa_score_and_apply_priority():
     session = make_session()
     repository = JobRepository(session)

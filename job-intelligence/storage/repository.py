@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from datetime import date, datetime, timedelta
 import math
+import re
 from typing import Any
 
 from sqlalchemy import Select, and_, delete, exists, func, not_, or_, select
@@ -256,6 +257,15 @@ class JobRepository:
     def get_application_for_job(self, job_id: int) -> Application | None:
         return self.session.scalar(select(Application).where(Application.job_id == job_id))
 
+    def applications_for_jobs(self, job_ids: Iterable[int]) -> dict[int, Application]:
+        ids = list(job_ids)
+        if not ids:
+            return {}
+        applications = self.session.scalars(
+            select(Application).where(Application.job_id.in_(ids))
+        ).all()
+        return {application.job_id: application for application in applications}
+
     def upsert_application(
         self,
         *,
@@ -393,8 +403,12 @@ class JobRepository:
     ) -> Select:
         statement = select(Job).where(Job.status == JobStatus.ACTIVE)
         if keyword:
-            pattern = f"%{keyword}%"
-            statement = statement.where(or_(Job.title.ilike(pattern), Job.description.ilike(pattern)))
+            keyword_conditions = []
+            for term in self._expanded_keyword_terms(keyword):
+                pattern = f"%{term}%"
+                keyword_conditions.extend([Job.title.ilike(pattern), Job.description.ilike(pattern)])
+            if keyword_conditions:
+                statement = statement.where(or_(*keyword_conditions))
         if company:
             statement = statement.where(Job.company_name.ilike(f"%{company}%"))
         if location:
@@ -411,6 +425,12 @@ class JobRepository:
                         Job.job_type.ilike("%full_time%"),
                     )
                 )
+            elif job_type == "c2c":
+                statement = statement.where(self._text_matches(("c2c", "corp-to-corp", "corp to corp")))
+            elif job_type == "w2":
+                statement = statement.where(self._text_matches(("w2", "w-2")))
+            elif job_type == "contract":
+                statement = statement.where(self._text_matches(("contract", "contractor", "contract-to-hire", "contract to hire")))
             else:
                 statement = statement.where(Job.job_type.ilike(f"%{job_type}%"))
         if work_mode:
@@ -448,6 +468,51 @@ class JobRepository:
                 ]
             )
         return or_(*conditions)
+
+    @staticmethod
+    def _expanded_keyword_terms(keyword: str) -> list[str]:
+        terms = [
+            term.strip().strip('"')
+            for term in re.split(r"\s+OR\s+|[,;]", keyword, flags=re.IGNORECASE)
+            if term.strip().strip('"')
+        ]
+        lowered = " ".join(terms).lower()
+        if ".net" in lowered or "c#" in lowered or "asp.net" in lowered:
+            terms.extend(
+                [
+                    "C#",
+                    "ASP.NET",
+                    "ASP.NET Core",
+                    ".NET Core",
+                    "Azure Developer",
+                    "Senior Software Engineer .NET",
+                    "Senior Backend Developer C#",
+                    ".NET Solutions Architect",
+                    "Lead .NET Developer",
+                    "Principal .NET Developer",
+                ]
+            )
+        if re.search(r"\bjava\b", lowered):
+            terms.extend(
+                [
+                    "Spring Boot",
+                    "Senior Software Engineer Java",
+                    "Backend Java Developer",
+                    "Java Full Stack Developer",
+                    "Microservices Java",
+                    "Java Cloud Developer",
+                    "Lead Java Developer",
+                    "Principal Java Developer",
+                ]
+            )
+        unique: list[str] = []
+        seen: set[str] = set()
+        for term in terms:
+            key = term.lower()
+            if key not in seen:
+                unique.append(term)
+                seen.add(key)
+        return unique
 
     @staticmethod
     def _light_text_matches(tokens: tuple[str, ...]):

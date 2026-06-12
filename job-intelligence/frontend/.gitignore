@@ -1,0 +1,9 @@
+node_modules/
+.next/
+out/
+*.log
+*.pid
+tsconfig.tsbuildinfo
+.env
+.env.local
+.env.*.local

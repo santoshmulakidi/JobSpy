@@ -83,6 +83,7 @@ class Job(Base):
         UniqueConstraint("fingerprint", name="uq_jobs_fingerprint"),
         Index("ix_jobs_search", "title", "location", "is_remote"),
         Index("ix_jobs_salary", "min_amount", "max_amount"),
+        Index("ix_jobs_active_feed", "status", "date_posted", "last_seen_at"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

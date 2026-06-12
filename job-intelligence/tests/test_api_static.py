@@ -4,7 +4,7 @@ import zipfile
 
 from fastapi.testclient import TestClient
 
-from api.main import app
+from api.main import app, _split_collection_messages
 
 
 def test_local_dashboard_is_served():
@@ -100,6 +100,24 @@ def test_local_dashboard_is_served():
     assert "no parse" not in response.text
     assert "minSalaryInput" not in response.text
     assert "maxSalaryInput" not in response.text
+
+
+def test_collection_messages_split_expected_warnings_from_errors():
+    warnings, errors = _split_collection_messages(
+        [
+            "governmentjobs returned no matching jobs",
+            "usajobs_api requires JOB_INTELLIGENCE_USAJOBS_API_KEY and JOB_INTELLIGENCE_USAJOBS_USER_AGENT in .env",
+            "Meta Platforms: career page request failed: 400 Client Error: Bad Request",
+            "linkedin: attempt 1 failed: timeout",
+        ]
+    )
+
+    assert warnings == [
+        "governmentjobs returned no matching jobs",
+        "usajobs_api requires JOB_INTELLIGENCE_USAJOBS_API_KEY and JOB_INTELLIGENCE_USAJOBS_USER_AGENT in .env",
+        "Meta Platforms: career page request failed: 400 Client Error: Bad Request",
+    ]
+    assert errors == ["linkedin: attempt 1 failed: timeout"]
 
 
 def test_static_assets_are_served():

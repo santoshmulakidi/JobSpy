@@ -201,8 +201,15 @@ class AtsCareerPageCollector(Collector):
             return False
         if request.is_remote and not job.get("is_remote"):
             return False
-        if request.job_type == "fulltime" and "full" not in text:
-            return False
+        if request.job_type:
+            job_type_tokens = {
+                "fulltime": ("full", "full-time", "full time"),
+                "contract": ("contract", "contractor"),
+                "c2c": ("c2c", "corp-to-corp", "corp to corp"),
+                "w2": ("w2", "w-2"),
+            }.get(request.job_type, (request.job_type,))
+            if not any(token in text for token in job_type_tokens):
+                return False
         return True
 
     @staticmethod

@@ -140,6 +140,7 @@ class CollectionService:
         self.repository = JobRepository(session)
 
     def collect(self, request: CollectionRequest):
+        request = self._normalize_job_type_request(request)
         result = self._collect_all_sources(request)
         run = self.repository.create_search_run(
             search_term=request.search_term,
@@ -158,6 +159,61 @@ class CollectionService:
         )
         self.session.commit()
         return run, result
+
+    @staticmethod
+    def _normalize_job_type_request(request: CollectionRequest) -> CollectionRequest:
+        request = request.model_copy(update={"search_term": CollectionService._expanded_family_search_term(request.search_term)})
+        keyword_job_types = {"c2c": "C2C", "w2": "W2"}
+        if request.job_type not in keyword_job_types:
+            return request
+
+        token = keyword_job_types[request.job_type]
+        search_term = request.search_term.strip()
+        if token.lower() not in search_term.lower():
+            search_term = f"{search_term} {token}".strip()
+        return request.model_copy(update={"search_term": search_term, "job_type": None})
+
+    @staticmethod
+    def _expanded_family_search_term(search_term: str) -> str:
+        value = search_term.strip()
+        lower = value.lower()
+        if " OR " in value:
+            return value
+        if ".net" in lower or "c#" in lower or "asp.net" in lower:
+            return " OR ".join(
+                [
+                    value,
+                    "Senior .NET Developer",
+                    "Senior Full Stack .NET Developer",
+                    "Senior C# Developer",
+                    "Senior Azure Developer",
+                    "Senior Software Engineer .NET",
+                    ".NET Cloud Developer",
+                    "Senior ASP.NET Core Developer",
+                    "Senior Backend Developer C#",
+                    ".NET Solutions Architect",
+                    "Azure Application Architect",
+                    "Principal .NET Developer",
+                    "Lead .NET Developer",
+                ]
+            )
+        if "java" in lower:
+            return " OR ".join(
+                [
+                    value,
+                    "Senior Java Developer",
+                    "Senior Backend Java Developer",
+                    "Senior Software Engineer Java",
+                    "Java Full Stack Developer",
+                    "Spring Boot Developer",
+                    "Java Cloud Developer",
+                    "Microservices Java Developer",
+                    "Lead Java Developer",
+                    "Principal Java Developer",
+                    "Java Solutions Architect",
+                ]
+            )
+        return value
 
     def _collect_all_sources(self, request: CollectionRequest) -> CollectionResult:
         started_at = now_utc()

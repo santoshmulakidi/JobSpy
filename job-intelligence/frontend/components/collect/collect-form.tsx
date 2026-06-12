@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, Play, RotateCcw } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { collectJobs } from "@/lib/api";
+import { compactLocation, defaultProfiles, expandSearchTerm, loadProfiles, type JobProfile } from "@/lib/job-profiles";
 import type { CollectResult } from "@/types/job";
 
 const sources = [
@@ -19,7 +20,7 @@ const sources = [
   { id: "jobright_h1b", label: "Jobright H1B", group: "Visa" },
   { id: "dice", label: "Dice", group: "Tech" },
   { id: "governmentjobs", label: "GovernmentJobs", group: "Public" },
-  { id: "usajobs_api", label: "USAJOBS", group: "Public" },
+  { id: "usajobs_api", label: "USAJOBS (API key required)", group: "Public", setupRequired: true },
   { id: "jobspresso", label: "Jobspresso", group: "Remote" },
   { id: "dynamitejobs", label: "Dynamite Jobs", group: "Remote" },
   { id: "skipthedrive", label: "SkipTheDrive", group: "Remote" },
@@ -31,19 +32,26 @@ const sources = [
 ];
 
 const defaultSources = ["linkedin", "google", "jobright_h1b", "dice", "remotive"];
+const selectableSourceIds = sources.filter((source) => !source.setupRequired).map((source) => source.id);
 
 export function CollectForm() {
+  const [profiles, setProfiles] = useState<JobProfile[]>(defaultProfiles);
+  const [profileId, setProfileId] = useState("dotnet");
   const [searchTerm, setSearchTerm] = useState(".NET developer or Java developer");
   const [location, setLocation] = useState("United States");
-  const [resultsWanted, setResultsWanted] = useState(100);
+  const [resultsWanted, setResultsWanted] = useState(1000);
   const [hoursOld, setHoursOld] = useState("24");
   const [remoteMode, setRemoteMode] = useState("false");
-  const [jobType, setJobType] = useState("fulltime");
+  const [jobType, setJobType] = useState("all");
   const [useTargets, setUseTargets] = useState(false);
   const [visaFriendly, setVisaFriendly] = useState(false);
   const [selectedSources, setSelectedSources] = useState<string[]>(defaultSources);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CollectResult | null>(null);
+
+  useEffect(() => {
+    setProfiles(loadProfiles());
+  }, []);
 
   const groupedSources = useMemo(() => {
     return sources.reduce<Record<string, typeof sources>>((groups, source) => {
@@ -64,13 +72,13 @@ export function CollectForm() {
       return;
     }
     const safeResultsWanted = Number.isFinite(resultsWanted)
-      ? Math.min(1000, Math.max(1, resultsWanted))
-      : 100;
+      ? Math.min(5000, Math.max(1, resultsWanted))
+      : 1000;
     setLoading(true);
     setResult(null);
     try {
       const response = await collectJobs({
-        search_term: searchTerm,
+        search_term: expandSearchTerm(searchTerm),
         location: location.trim() || null,
         sites: selectedSources,
         results_wanted: safeResultsWanted,
@@ -100,6 +108,27 @@ export function CollectForm() {
         <CardContent className="space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
             <label className="space-y-2 text-sm font-medium">
+              Profile
+              <Select
+                value={profileId}
+                onValueChange={(value) => {
+                  setProfileId(value);
+                  const profile = profiles.find((item) => item.id === value);
+                  if (profile) {
+                    setSearchTerm(profile.searchTerm);
+                    setLocation(compactLocation(profile));
+                  }
+                }}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {profiles.map((profile) => (
+                    <SelectItem key={profile.id} value={profile.id}>{profile.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+            <label className="space-y-2 text-sm font-medium">
               Search keywords
               <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
             </label>
@@ -125,7 +154,11 @@ export function CollectForm() {
             </label>
             <label className="space-y-2 text-sm font-medium">
               Results wanted
-              <Input min={1} max={1000} type="number" value={resultsWanted} onChange={(event) => setResultsWanted(Number(event.target.value))} />
+              <div className="flex gap-2">
+                <Input min={1} max={5000} type="number" value={resultsWanted} onChange={(event) => setResultsWanted(Number(event.target.value))} />
+                <Button variant="outline" type="button" onClick={() => setResultsWanted(5000)}>All</Button>
+              </div>
+              <span className="block text-xs font-normal text-muted-foreground">Use All to pull the maximum available per run, then dedupe against stored jobs.</span>
             </label>
             <label className="space-y-2 text-sm font-medium">
               Freshness
@@ -156,15 +189,18 @@ export function CollectForm() {
               <Select value={jobType} onValueChange={setJobType}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">All job types</SelectItem>
                   <SelectItem value="fulltime">Full-time</SelectItem>
-                  <SelectItem value="all">Any type</SelectItem>
+                  <SelectItem value="contract">Contract</SelectItem>
+                  <SelectItem value="w2">W2</SelectItem>
+                  <SelectItem value="c2c">C2C</SelectItem>
                 </SelectContent>
               </Select>
             </label>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" type="button" onClick={() => setSelectedSources(sources.map((source) => source.id))}>Select all sources</Button>
+            <Button variant="outline" type="button" onClick={() => setSelectedSources(selectableSourceIds)}>Select all ready sources</Button>
             <Button variant="outline" type="button" onClick={() => setSelectedSources([])}>Deselect all</Button>
             <Button variant="outline" type="button" onClick={() => setSelectedSources(defaultSources)}>
               <RotateCcw className="h-4 w-4" /> Recommended
@@ -221,8 +257,10 @@ export function CollectForm() {
               <div className="flex justify-between"><span>Search run</span><strong>{result.search_run_id}</strong></div>
               <div className="flex justify-between"><span>Jobs seen</span><strong>{result.jobs_seen}</strong></div>
               <div className="flex justify-between"><span>New jobs added</span><strong>{result.jobs_added}</strong></div>
+              <div className="flex justify-between"><span>Warnings</span><strong>{(result.warnings ?? []).length}</strong></div>
+              {(result.warnings ?? []).length ? <pre className="max-h-52 overflow-auto rounded-lg bg-warning/10 p-3 text-xs text-warning-foreground">{(result.warnings ?? []).join("\n")}</pre> : null}
               <div className="flex justify-between"><span>Errors</span><strong>{result.errors.length}</strong></div>
-              {result.errors.length ? <pre className="max-h-52 overflow-auto rounded-lg bg-muted p-3 text-xs">{result.errors.join("\n")}</pre> : null}
+              {result.errors.length ? <pre className="max-h-52 overflow-auto rounded-lg bg-destructive/10 p-3 text-xs text-destructive">{result.errors.join("\n")}</pre> : null}
             </>
           ) : (
             <p className="text-muted-foreground">No collection run started from this page yet.</p>

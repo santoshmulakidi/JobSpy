@@ -42,7 +42,7 @@ from scheduler.hourly import hourly_refresh_scheduler
 from search import SearchEngine
 from storage.config import get_settings
 from storage.database import get_session, init_database
-from storage.models import ChangeType
+from storage.models import Application, ChangeType, UserProfile
 from storage.repository import JobRepository
 from search.scoring import score_job
 from search.trust import score_trust
@@ -88,11 +88,18 @@ async def _lifecycle_loop() -> None:
 
 
 
-def _job_out(repository: JobRepository, job) -> JobOut:
-    profile = repository.get_profile()
+def _job_out(
+    repository: JobRepository,
+    job,
+    *,
+    profile: UserProfile | None = None,
+    application: Application | None = None,
+) -> JobOut:
+    profile = profile or repository.get_profile()
     score = score_job(job, profile)
     trust = score_trust(job)
-    application = repository.get_application_for_job(job.id)
+    if application is None:
+        application = repository.get_application_for_job(job.id)
     return JobOut(
         id=job.id,
         source=job.source,
@@ -130,7 +137,41 @@ def _job_out(repository: JobRepository, job) -> JobOut:
 
 
 def _jobs_out(repository: JobRepository, jobs) -> list[JobOut]:
-    return [_job_out(repository, job) for job in jobs]
+    job_list = list(jobs)
+    profile = repository.get_profile()
+    applications = repository.applications_for_jobs(job.id for job in job_list)
+    return [
+        _job_out(repository, job, profile=profile, application=applications.get(job.id))
+        for job in job_list
+    ]
+
+
+def _split_collection_messages(messages: list[str]) -> tuple[list[str], list[str]]:
+    warning_markers = (
+        "returned no matching jobs",
+        "requires JOB_INTELLIGENCE_USAJOBS_API_KEY",
+        "career page request failed: 400 Client Error",
+    )
+    warnings: list[str] = []
+    errors: list[str] = []
+    for message in messages:
+        if any(marker in message for marker in warning_markers):
+            warnings.append(message)
+        else:
+            errors.append(message)
+    return warnings, errors
+
+
+def _collect_response(repository: JobRepository, run, result) -> CollectResponse:
+    warnings, errors = _split_collection_messages(result.errors)
+    jobs_added = repository.count_job_changes(run.id, ChangeType.NEW)
+    return CollectResponse(
+        search_run_id=run.id,
+        jobs_seen=result.count,
+        jobs_added=jobs_added,
+        warnings=warnings,
+        errors=errors,
+    )
 
 
 def _extract_docx_text(content: bytes) -> str:
@@ -359,13 +400,7 @@ def collect_jobs(payload: CollectRequest, session: Session = Depends(get_session
     request = CollectionRequest(**payload.model_dump())
     run, result = CollectionService(session).collect(request)
     repository = JobRepository(session)
-    jobs_added = repository.count_job_changes(run.id, ChangeType.NEW)
-    return CollectResponse(
-        search_run_id=run.id,
-        jobs_seen=result.count,
-        jobs_added=jobs_added,
-        errors=result.errors,
-    )
+    return _collect_response(repository, run, result)
 
 
 @app.post("/refresh", response_model=CollectResponse)
@@ -373,13 +408,7 @@ def refresh_jobs(payload: CollectRequest, session: Session = Depends(get_session
     request = CollectionRequest(**payload.model_dump())
     run, result = CollectionService(session).collect(request)
     repository = JobRepository(session)
-    jobs_added = repository.count_job_changes(run.id, ChangeType.NEW)
-    return CollectResponse(
-        search_run_id=run.id,
-        jobs_seen=result.count,
-        jobs_added=jobs_added,
-        errors=result.errors,
-    )
+    return _collect_response(repository, run, result)
 
 
 @app.post("/search", response_model=list[JobOut])

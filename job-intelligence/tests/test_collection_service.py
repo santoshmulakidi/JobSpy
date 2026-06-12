@@ -61,6 +61,62 @@ def test_collection_service_partitions_non_jobspy_sources_from_jobspy():
     assert weworkremotely.requests[0].sites == ["weworkremotely"]
 
 
+def test_collection_service_turns_c2c_and_w2_into_keyword_searches():
+    session = make_session()
+    jobspy = FakeJobSpyCollector()
+    service = CollectionService(session, collector=jobspy)
+
+    service.collect(
+        CollectionRequest(
+            search_term="developer",
+            location="United States",
+            sites=["linkedin"],
+            job_type="c2c",
+        )
+    )
+
+    assert jobspy.requests[0].search_term == "developer C2C"
+    assert jobspy.requests[0].job_type is None
+
+    service.collect(
+        CollectionRequest(
+            search_term="developer W2",
+            location="United States",
+            sites=["linkedin"],
+            job_type="w2",
+        )
+    )
+
+    assert jobspy.requests[1].search_term == "developer W2"
+    assert jobspy.requests[1].job_type is None
+
+
+def test_collection_service_expands_dotnet_and_java_search_families():
+    session = make_session()
+    jobspy = FakeJobSpyCollector()
+    service = CollectionService(session, collector=jobspy)
+
+    service.collect(
+        CollectionRequest(
+            search_term=".NET developer",
+            location="United States",
+            sites=["linkedin"],
+        )
+    )
+    service.collect(
+        CollectionRequest(
+            search_term="Java developer",
+            location="United States",
+            sites=["linkedin"],
+        )
+    )
+
+    assert "Senior C# Developer" in jobspy.requests[0].search_term
+    assert "Senior ASP.NET Core Developer" in jobspy.requests[0].search_term
+    assert "Spring Boot Developer" in jobspy.requests[1].search_term
+    assert "Java Solutions Architect" in jobspy.requests[1].search_term
+
+
 def test_collection_service_expands_company_target_searches():
     session = make_session()
     jobspy = FakeJobSpyCollector()
