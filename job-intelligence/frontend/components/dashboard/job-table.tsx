@@ -51,11 +51,15 @@ export function JobTable({
                 )}
                 onClick={() => onSelect?.(job)}
               >
-                <TableCell>
-                  <div className="font-medium">{job.title}</div>
+                <TableCell className="max-w-[340px]">
+                  <div className="line-clamp-2 font-medium leading-5">{cleanTitle(job.title)}</div>
                   <div className="text-xs text-muted-foreground">{job.location ?? "Location not listed"}</div>
                 </TableCell>
-                <TableCell>{job.company_name ?? "Unknown"}</TableCell>
+                <TableCell className="max-w-[220px]">
+                  <div className="truncate" title={cleanCompanyName(job.company_name)}>
+                    {cleanCompanyName(job.company_name)}
+                  </div>
+                </TableCell>
                 <TableCell className="min-w-32">
                   <div className="flex items-center gap-2">
                     <Progress value={job.fit_score} />
@@ -92,4 +96,20 @@ export function JobTable({
       </CardContent>
     </Card>
   );
+}
+
+function cleanTitle(title: string) {
+  const value = title.replace(/\s+/g, " ").trim();
+  if (/^(recommended jobs|search jobs|job)$/i.test(value)) {
+    return "Job title not listed";
+  }
+  return value;
+}
+
+function cleanCompanyName(companyName: string | null) {
+  const value = (companyName ?? "Unknown").replace(/\s+/g, " ").trim();
+  if (!value || value.length > 80 || /search jobs|set job alert|close filter|easy apply/i.test(value)) {
+    return "Company not listed";
+  }
+  return value;
 }

@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getJobs, markJobApplied, searchJobs } from "@/lib/api";
+import { markJobApplied, searchJobs } from "@/lib/api";
 import { compactLocation, defaultProfiles, expandSearchTerm, loadProfiles, type JobProfile } from "@/lib/job-profiles";
 import { formatDate } from "@/lib/utils";
 import type { Job } from "@/types/job";
@@ -55,8 +55,8 @@ export function JobsClient() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [keyword, setKeyword] = useState("");
-  const [location, setLocation] = useState("");
+  const [keyword, setKeyword] = useState(defaultProfiles[0]?.searchTerm ?? ".NET developer");
+  const [location, setLocation] = useState(compactLocation(defaultProfiles[0]));
   const [source, setSource] = useState("all");
   const [visaStatus, setVisaStatus] = useState("all");
   const [tab, setTab] = useState("active");
@@ -76,7 +76,7 @@ export function JobsClient() {
     const visibleJobs = pageJobs(sorted, nextPage);
     setRankedJobs(sorted);
     setJobs(visibleJobs);
-    setSelectedJob((current) => current && visibleJobs.some((job) => job.id === current.id) ? current : visibleJobs[0] ?? null);
+    setSelectedJob((current) => current && visibleJobs.some((job) => job.id === current.id) ? current : null);
   }
 
   function prioritizeJobs(items: Job[]) {
@@ -90,6 +90,7 @@ export function JobsClient() {
   function jobPriority(job: Job) {
     const text = `${job.title} ${job.description ?? ""} ${job.job_type ?? ""} ${job.visa_status}`.toLowerCase();
     let score = locationWorkVisaPriority(job);
+    if (isPlaceholderJob(job)) score -= 200_000;
     if (isVisaFriendly(job)) score += 1000;
     if (text.includes("contract") || text.includes("full-time") || text.includes("full time") || text.includes("w2") || text.includes("c2c")) score += 120;
     score += job.fit_score;
@@ -100,10 +101,14 @@ export function JobsClient() {
   useEffect(() => {
     let active = true;
     setLoading(true);
-    getJobs(CANDIDATE_LIMIT, 0)
+    const payload = searchPayload(0);
+    searchJobs(payload)
+      .then((items) => items.length === 0 && payload.location ? searchJobs({ ...payload, location: null }) : items)
       .then((items) => {
         if (!active) return;
-        setRankedJobFeed(items, page);
+        setRankedJobFeed(items, 0);
+        setPage(0);
+        setLastSearchMode("search");
         setError(null);
       })
       .catch((caught: unknown) => {
@@ -116,7 +121,7 @@ export function JobsClient() {
     return () => {
       active = false;
     };
-  }, [page]);
+  }, []);
 
   function searchPayload(nextPage = 0) {
     return {
@@ -134,7 +139,11 @@ export function JobsClient() {
   async function loadSearchPage(nextPage: number) {
     setLoading(true);
     try {
-      const nextJobs = await searchJobs(searchPayload(nextPage));
+      const payload = searchPayload(nextPage);
+      let nextJobs = await searchJobs(payload);
+      if (nextJobs.length === 0 && payload.location) {
+        nextJobs = await searchJobs({ ...payload, location: null });
+      }
       setRankedJobFeed(nextJobs, nextPage);
       setPage(nextPage);
       setLastSearchMode("search");
@@ -158,16 +167,17 @@ export function JobsClient() {
     }
     const visibleJobs = pageJobs(rankedJobs, nextPage);
     setJobs(visibleJobs);
-    setSelectedJob((current) => current && visibleJobs.some((job) => job.id === current.id) ? current : visibleJobs[0] ?? null);
+    setSelectedJob((current) => current && visibleJobs.some((job) => job.id === current.id) ? current : null);
     setPage(nextPage);
   }
 
   async function applyJob(job: Job) {
     try {
       await markJobApplied(job.id, { status: "Applied", notes: "Marked applied from Next UI" });
+      setRankedJobs((current) => current.filter((item) => item.id !== job.id));
       setJobs((current) => {
         const remaining = current.filter((item) => item.id !== job.id);
-        setSelectedJob((selected) => selected?.id === job.id ? remaining[0] ?? null : selected);
+        setSelectedJob((selected) => selected?.id === job.id ? null : selected);
         return remaining;
       });
       toast.success("Job moved to Applications");
@@ -257,7 +267,7 @@ export function JobsClient() {
         </div>
       </div>
       {error ? <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{error}</div> : null}
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className={selectedJob ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]" : "grid gap-4"}>
         <div className="space-y-3">
           {loading ? (
             <JobsSkeleton />
@@ -279,7 +289,7 @@ export function JobsClient() {
             </div>
           </div>
         </div>
-        <JobDetailsPanel job={selectedJob} onApply={applyJob} onResumeLab={openResumeLab} />
+        {selectedJob ? <JobDetailsPanel job={selectedJob} onApply={applyJob} onResumeLab={openResumeLab} /> : null}
       </div>
     </div>
   );
@@ -422,6 +432,15 @@ function locationWorkVisaPriority(job: Job) {
   if (isNearbyTexasState(location)) return 54_000;
   if (isUnitedStates(location)) return 44_000;
   return 30_000;
+}
+
+function isPlaceholderJob(job: Job) {
+  const title = normalize(job.title);
+  const company = normalize(job.company_name);
+  return title === "recommended jobs"
+    || title === "search jobs"
+    || title === "job"
+    || (title.length < 4 && !company);
 }
 
 function isVisaFriendly(job: Job) {

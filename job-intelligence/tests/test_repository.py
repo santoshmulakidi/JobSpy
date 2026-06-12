@@ -612,6 +612,50 @@ def test_list_jobs_expands_dotnet_and_java_keyword_families():
     assert [job.source_job_id for job in repository.list_jobs(keyword="Java developer")] == ["spring"]
 
 
+def test_list_jobs_splits_comma_separated_location_terms_and_expands_dfw():
+    session = make_session()
+    repository = JobRepository(session)
+    run = repository.create_search_run(
+        search_term="Developer",
+        location="Remote, Dallas, TX",
+        sites=["linkedin"],
+        results_wanted=10,
+        started_at=datetime.now(UTC),
+    )
+
+    repository.upsert_jobs(
+        [
+            {
+                "site": "linkedin",
+                "id": "remote",
+                "title": ".NET Developer",
+                "company": "Acme",
+                "location": "Remote",
+            },
+            {
+                "site": "linkedin",
+                "id": "irving",
+                "title": ".NET Developer",
+                "company": "Acme",
+                "location": "Irving, TX",
+            },
+            {
+                "site": "linkedin",
+                "id": "raleigh",
+                "title": ".NET Developer",
+                "company": "Acme",
+                "location": "Raleigh, NC",
+            },
+        ],
+        run,
+    )
+    session.commit()
+
+    jobs = repository.list_jobs(location="Remote, DFW")
+
+    assert {job.source_job_id for job in jobs} == {"remote", "irving"}
+
+
 def test_job_computes_visa_score_and_apply_priority():
     session = make_session()
     repository = JobRepository(session)

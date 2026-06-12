@@ -412,7 +412,11 @@ class JobRepository:
         if company:
             statement = statement.where(Job.company_name.ilike(f"%{company}%"))
         if location:
-            statement = statement.where(Job.location.ilike(f"%{location}%"))
+            location_conditions = []
+            for term in self._expanded_location_terms(location):
+                location_conditions.append(Job.location.ilike(f"%{term}%"))
+            if location_conditions:
+                statement = statement.where(or_(*location_conditions))
         if source:
             statement = statement.where(Job.source == source)
         if job_type:
@@ -508,6 +512,43 @@ class JobRepository:
         unique: list[str] = []
         seen: set[str] = set()
         for term in terms:
+            key = term.lower()
+            if key not in seen:
+                unique.append(term)
+                seen.add(key)
+        return unique
+
+    @staticmethod
+    def _expanded_location_terms(location: str) -> list[str]:
+        terms = [
+            term.strip()
+            for term in re.split(r"[,;]", location)
+            if term.strip()
+        ]
+        expanded: list[str] = []
+        for term in terms:
+            lower = term.lower()
+            expanded.append(term)
+            if lower == "dfw":
+                expanded.extend(
+                    [
+                        "Dallas",
+                        "Fort Worth",
+                        "Plano",
+                        "Frisco",
+                        "Irving",
+                        "Arlington",
+                        "Richardson",
+                        "Coppell",
+                    ]
+                )
+            elif lower in {"tx", "texas"}:
+                expanded.append("Texas")
+            elif lower in {"nc", "north carolina"}:
+                expanded.append("North Carolina")
+        unique: list[str] = []
+        seen: set[str] = set()
+        for term in expanded:
             key = term.lower()
             if key not in seen:
                 unique.append(term)

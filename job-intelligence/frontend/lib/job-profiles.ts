@@ -13,7 +13,7 @@ export const defaultProfiles: JobProfile[] = [
     id: "dotnet",
     name: ".NET Developer",
     searchTerm: ".NET developer",
-    locations: "United States, Remote, Dallas, TX",
+    locations: "Remote, Dallas, TX, DFW, Austin, Houston, San Antonio",
     preferredTitles: [
       "Senior .NET Developer",
       "Senior Full Stack .NET Developer",
@@ -103,5 +103,5 @@ export function expandSearchTerm(searchTerm: string) {
 
 export function compactLocation(profile: JobProfile | undefined) {
   if (!profile) return "United States";
-  return profile.locations.split(",")[0]?.trim() || "United States";
+  return profile.locations || "United States";
 }
