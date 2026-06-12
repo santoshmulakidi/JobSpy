@@ -40,6 +40,7 @@ from collectors import CollectionRequest
 from collectors.company_targets import load_company_targets
 from scheduler.hourly import hourly_refresh_scheduler
 from search import SearchEngine
+from storage.backups import backup_sqlite_database
 from storage.config import get_settings
 from storage.database import SessionLocal, get_session, init_database
 from storage.models import Application, ChangeType, UserProfile
@@ -76,6 +77,9 @@ async def _lifecycle_loop() -> None:
     while True:
         session = SessionLocal()
         try:
+            backup_path = backup_sqlite_database(settings.database_url, cwd=PROJECT_ROOT)
+            if backup_path:
+                log.info("lifecycle: SQLite backup created at %s", backup_path)
             lifecycle = JobRepository(session).apply_job_lifecycle(active_hours=24, retention_days=7)
             if lifecycle["archived"] or lifecycle["deleted"]:
                 session.commit()
