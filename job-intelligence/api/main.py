@@ -41,7 +41,7 @@ from collectors.company_targets import load_company_targets
 from scheduler.hourly import hourly_refresh_scheduler
 from search import SearchEngine
 from storage.config import get_settings
-from storage.database import get_session, init_database
+from storage.database import SessionLocal, get_session, init_database
 from storage.models import Application, ChangeType, UserProfile
 from storage.repository import JobRepository
 from search.scoring import score_job
@@ -72,18 +72,19 @@ app.mount("/static", StaticFiles(directory=WEB_ROOT), name="static")
 
 async def _lifecycle_loop() -> None:
     """Run job lifecycle once per hour in the background."""
+    log = logging.getLogger(__name__)
     while True:
+        session = SessionLocal()
         try:
-            session = next(iter(get_session()))
-            try:
-                lifecycle = JobRepository(session).apply_job_lifecycle(active_hours=24, retention_days=7)
-                if lifecycle["archived"] or lifecycle["deleted"]:
-                    session.commit()
-                    logging.getLogger(__name__).info("lifecycle: archived=%d deleted=%d", lifecycle["archived"], lifecycle["deleted"])
-            finally:
-                session.close()
+            lifecycle = JobRepository(session).apply_job_lifecycle(active_hours=24, retention_days=7)
+            if lifecycle["archived"] or lifecycle["deleted"]:
+                session.commit()
+                log.info("lifecycle: archived=%d deleted=%d", lifecycle["archived"], lifecycle["deleted"])
         except Exception:
-            logging.getLogger(__name__).exception("lifecycle run failed")
+            session.rollback()
+            log.exception("lifecycle run failed")
+        finally:
+            session.close()
         await asyncio.sleep(3600)
 
 
