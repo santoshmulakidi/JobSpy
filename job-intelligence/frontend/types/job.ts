@@ -88,6 +88,22 @@ export type ResumeParseResult = {
   text: string;
 };
 
+export type ResumeRebuildResult = {
+  provider: string;
+  model: string | null;
+  rebuilt_resume: string;
+  change_summary: string[];
+  warnings: string[];
+  prompt: string;
+};
+
+export type ResumeModelChoice = {
+  provider: string;
+  model: string;
+  label: string;
+  tier: "Free / Low cost" | "Premium";
+};
+
 export type SchedulerStatus = {
   running: boolean;
   interval_hours: number;

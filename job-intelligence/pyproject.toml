@@ -41,6 +41,7 @@ build-backend = "setuptools.build_meta"
 where = ["."]
 include = [
     "analytics*",
+    "ai*",
     "api*",
     "collectors*",
     "dashboard*",

@@ -144,6 +144,51 @@ class ResumeParseResponse(BaseModel):
     text: str
 
 
+class ResumeRebuildRequest(BaseModel):
+    base_resume: str = Field(min_length=50)
+    job_description: str = Field(min_length=50)
+    profile_name: str | None = None
+    target_title: str | None = None
+    provider: str | None = None
+    model: str | None = None
+    refine_instruction: str | None = None
+
+
+class ResumeRebuildResponse(BaseModel):
+    provider: str
+    model: str | None
+    rebuilt_resume: str
+    change_summary: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    prompt: str
+
+
+class BulkRebuildRequest(BaseModel):
+    job_ids: list[int] = Field(min_length=1, max_length=200)
+    base_resume: str = Field(min_length=50)
+    profile_name: str | None = None
+    provider: str | None = None
+    model: str | None = None
+
+
+class BulkRebuildItemOut(BaseModel):
+    job_id: int
+    title: str | None
+    company_name: str | None
+    status: str  # "ok" | "no_jd" | "error"
+    rebuilt_resume: str | None = None
+    warnings: list[str] = Field(default_factory=list)
+    error: str | None = None
+
+
+class BulkRebuildOut(BaseModel):
+    total: int
+    succeeded: int
+    failed: int
+    rate_limited: bool
+    results: list[BulkRebuildItemOut]
+
+
 class CompanyOut(BaseModel):
     id: int
     name: str
