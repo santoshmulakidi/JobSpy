@@ -4,21 +4,25 @@ import asyncio
 import base64
 import io
 import logging
+import time
 from pathlib import Path
 import zipfile
 from xml.etree import ElementTree
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from analytics import AnalyticsEngine
+from ai import rebuild_resume
 from api.schemas import (
     AnalyticsOut,
     ApplicationIn,
     ApplicationOut,
+    BulkRebuildOut,
+    BulkRebuildRequest,
     CollectRequest,
     CollectResponse,
     CompanyOut,
@@ -28,6 +32,8 @@ from api.schemas import (
     ProfileOut,
     ResumeParseRequest,
     ResumeParseResponse,
+    ResumeRebuildRequest,
+    ResumeRebuildResponse,
     SavedSearchIn,
     SavedSearchOut,
     SchedulerStatusOut,
@@ -333,6 +339,132 @@ def parse_resume(payload: ResumeParseRequest):
     if not text:
         raise HTTPException(status_code=400, detail="No readable resume text found")
     return ResumeParseResponse(filename=payload.filename, text=text)
+
+
+@app.post("/resume/rebuild", response_model=ResumeRebuildResponse)
+def rebuild_resume_endpoint(payload: ResumeRebuildRequest):
+    result = rebuild_resume(
+        base_resume=payload.base_resume,
+        job_description=payload.job_description,
+        profile_name=payload.profile_name,
+        target_title=payload.target_title,
+        provider=payload.provider,
+        model=payload.model,
+        refine_instruction=payload.refine_instruction,
+        settings=settings,
+    )
+    return ResumeRebuildResponse(
+        provider=result.provider,
+        model=result.model,
+        rebuilt_resume=result.rebuilt_resume,
+        change_summary=result.change_summary,
+        warnings=result.warnings,
+        prompt=result.prompt,
+    )
+
+
+@app.post("/resume/export-docx")
+def export_resume_docx(payload: dict):
+    from ai.resume_docx import build_resume_docx
+
+    resume_text = (payload.get("resume_text") or "").strip()
+    if len(resume_text) < 50:
+        raise HTTPException(status_code=422, detail="resume_text must be at least 50 characters")
+    filename = (payload.get("filename") or "resume").strip() or "resume"
+    filename = "".join(c for c in filename if c.isalnum() or c in "-_ ").strip() or "resume"
+    docx_bytes = build_resume_docx(resume_text, candidate_name=payload.get("candidate_name"))
+    downloads_path = Path.home() / "Downloads" / f"{filename}.docx"
+    try:
+        downloads_path.write_bytes(docx_bytes)
+    except OSError:
+        downloads_path = Path("")
+    return Response(
+        content=docx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}.docx"',
+            "X-Saved-To": str(downloads_path),
+        },
+    )
+
+
+@app.post("/resume/bulk-rebuild", response_model=BulkRebuildOut)
+def bulk_rebuild_resume(payload: BulkRebuildRequest, session: Session = Depends(get_session)):
+    log = logging.getLogger(__name__)
+    repository = JobRepository(session)
+    results = []
+    succeeded = 0
+    failed = 0
+    rate_limited = False
+
+    # 4 seconds between calls = 15 RPM, safe for Gemini free tier
+    delay_seconds = 4.0
+
+    for job_id in payload.job_ids:
+        job = repository.get_job(job_id)
+        if job is None:
+            results.append({"job_id": job_id, "title": None, "company_name": None,
+                            "status": "error", "error": "job not found"})
+            failed += 1
+            continue
+
+        jd = (job.description or "").strip()
+        target = f"{job.title or 'Software Engineer'}{' at ' + job.company_name if job.company_name else ''}{' | ' + job.location if job.location else ''}"
+
+        try:
+            result = rebuild_resume(
+                base_resume=payload.base_resume,
+                job_description=jd,
+                profile_name=payload.profile_name,
+                target_title=target,
+                provider=payload.provider,
+                model=payload.model,
+                settings=settings,
+            )
+
+            if result.provider == "prompt_only":
+                rate_limited = True
+                results.append({
+                    "job_id": job_id,
+                    "title": job.title,
+                    "company_name": job.company_name,
+                    "status": "error",
+                    "error": "; ".join(result.warnings) or "All providers rate limited or unavailable",
+                })
+                failed += 1
+            else:
+                status = "no_jd" if not jd else "ok"
+                results.append({
+                    "job_id": job_id,
+                    "title": job.title,
+                    "company_name": job.company_name,
+                    "status": status,
+                    "rebuilt_resume": result.rebuilt_resume,
+                    "warnings": result.warnings,
+                })
+                succeeded += 1
+
+        except Exception as exc:
+            log.exception("bulk rebuild failed for job %d", job_id)
+            results.append({
+                "job_id": job_id,
+                "title": job.title,
+                "company_name": job.company_name,
+                "status": "error",
+                "error": str(exc),
+            })
+            failed += 1
+
+        if job_id != payload.job_ids[-1]:
+            time.sleep(delay_seconds)
+
+    return BulkRebuildOut(
+        total=len(payload.job_ids),
+        succeeded=succeeded,
+        failed=failed,
+        rate_limited=rate_limited,
+        results=results,
+    )
 
 
 @app.get("/saved-searches", response_model=list[SavedSearchOut])
