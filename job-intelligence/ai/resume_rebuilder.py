@@ -123,9 +123,11 @@ def rebuild_resume(
                 prompt=prompt,
             )
         except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 429:
+            code = exc.response.status_code
+            if code in (429, 503, 529):
                 key_info = f" (key {p['key_index']})" if p.get("key_index") else ""
-                provider_errors.append(f"{p['name']}{key_info}: rate limit hit, trying next key")
+                label = "rate limit" if code == 429 else "service unavailable"
+                provider_errors.append(f"{p['name']}{key_info}: {label} ({code}), trying next")
                 continue
             provider_errors.append(f"{p['name']}: {exc}")
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
@@ -241,11 +243,13 @@ def _provider_order(
     selected_model: str | None = None,
 ) -> list[dict[str, str]]:
     providers: list[dict[str, str]] = []
-    preferred = (
-        [selected_provider.strip().lower()]
-        if selected_provider
-        else [item.strip().lower() for item in settings.ai_provider_order.split(",") if item.strip()]
-    )
+    default_order = [item.strip().lower() for item in settings.ai_provider_order.split(",") if item.strip()]
+    # Selected provider goes first; remaining default order appended as automatic fallbacks.
+    if selected_provider:
+        primary = selected_provider.strip().lower()
+        preferred = [primary] + [n for n in default_order if n != primary]
+    else:
+        preferred = default_order
     for name in preferred:
         if name == "openrouter" and settings.openrouter_api_key:
             providers.append(
