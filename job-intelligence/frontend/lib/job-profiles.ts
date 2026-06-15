@@ -12,7 +12,7 @@ export const defaultProfiles: JobProfile[] = [
   {
     id: "dotnet",
     name: ".NET Developer",
-    searchTerm: ".NET developer",
+    searchTerm: "Senior .NET Developer OR Senior Full Stack .NET Developer OR Senior C# Developer OR Senior Azure Developer OR Senior Software Engineer .NET OR .NET Cloud Developer OR Senior ASP.NET Core Developer OR Senior Backend Developer C# OR .NET Solutions Architect OR Azure Application Architect OR Principal .NET Developer OR Lead .NET Developer",
     locations: "Remote, Dallas, TX, DFW, Austin, Houston, San Antonio",
     preferredTitles: [
       "Senior .NET Developer",
@@ -71,8 +71,10 @@ export function saveProfiles(profiles: JobProfile[]) {
 
 export function expandSearchTerm(searchTerm: string) {
   const value = searchTerm.trim();
-  const lower = value.toLowerCase();
   if (!value) return value;
+  // Already an OR query (profile-generated) — use as-is.
+  if (value.includes(" OR ")) return value;
+  const lower = value.toLowerCase();
   if (lower.includes(".net") || lower.includes("c#") || lower.includes("asp.net")) {
     return [
       value,
