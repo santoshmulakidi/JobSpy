@@ -34,7 +34,7 @@ export const defaultProfiles: JobProfile[] = [
   {
     id: "java",
     name: "Java Developer",
-    searchTerm: "Java developer",
+    searchTerm: "Senior Java Developer OR Senior Backend Java Developer OR Senior Software Engineer Java OR Java Full Stack Developer OR Spring Boot Developer OR Java Cloud Developer OR Microservices Java Developer OR Lead Java Developer OR Principal Java Developer OR Java Solutions Architect OR Senior Java Engineer OR Java Application Developer",
     locations: "United States, Remote",
     preferredTitles: [
       "Senior Java Developer",
@@ -47,6 +47,8 @@ export const defaultProfiles: JobProfile[] = [
       "Lead Java Developer",
       "Principal Java Developer",
       "Java Solutions Architect",
+      "Senior Java Engineer",
+      "Java Application Developer",
     ],
     skills: ["Java", "Spring Boot", "Microservices", "Kafka", "AWS", "Azure", "SQL", "REST API"],
     baseResume: "",

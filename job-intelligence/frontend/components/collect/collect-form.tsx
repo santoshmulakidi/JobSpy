@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Play, RotateCcw } from "lucide-react";
+import { CheckCircle2, Circle, Loader2, Play, RotateCcw, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -9,67 +9,60 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { collectJobs } from "@/lib/api";
-import { compactLocation, defaultProfiles, expandSearchTerm, loadProfiles, type JobProfile } from "@/lib/job-profiles";
+import { compactLocation, defaultProfiles, loadProfiles, type JobProfile } from "@/lib/job-profiles";
 import type { CollectResult } from "@/types/job";
 
-const DOTNET_KEYWORDS = [
-  "Senior .NET Developer",
-  "Senior Full Stack .NET Developer",
-  "Senior C# Developer",
-  "Senior Azure Developer",
-  "Senior Software Engineer .NET",
-  ".NET Cloud Developer",
-  "Senior ASP.NET Core Developer",
-  "Senior Backend Developer C#",
-  ".NET Solutions Architect",
-  "Azure Application Architect",
-  "Principal .NET Developer",
-  "Lead .NET Developer",
-];
-
 const LOCATIONS = [
-  { value: "remote", label: "Remote (USA)", location: "United States", isRemote: true },
-  { value: "dfw", label: "DFW / Dallas, TX", location: "Dallas, TX", isRemote: false },
-  { value: "texas", label: "Texas (statewide)", location: "Texas", isRemote: false },
-  { value: "nc", label: "North Carolina", location: "North Carolina", isRemote: false },
-  { value: "ok", label: "Oklahoma", location: "Oklahoma", isRemote: false },
-  { value: "la", label: "Louisiana", location: "Louisiana", isRemote: false },
-  { value: "ar", label: "Arkansas", location: "Arkansas", isRemote: false },
-  { value: "nm", label: "New Mexico", location: "New Mexico", isRemote: false },
-  { value: "va", label: "Virginia", location: "Virginia", isRemote: false },
-  { value: "sc", label: "South Carolina", location: "South Carolina", isRemote: false },
-  { value: "ga", label: "Georgia", location: "Georgia", isRemote: false },
-  { value: "tn", label: "Tennessee", location: "Tennessee", isRemote: false },
-  { value: "usa", label: "United States (all)", location: "United States", isRemote: false },
+  { value: "remote", label: "🌐 Remote (USA)",        location: "United States",  isRemote: true  },
+  { value: "dfw",    label: "🏙️ DFW / Dallas, TX",   location: "Dallas, TX",     isRemote: false },
+  { value: "texas",  label: "⭐ Texas (statewide)",   location: "Texas",          isRemote: false },
+  { value: "nc",     label: "North Carolina",          location: "North Carolina", isRemote: false },
+  { value: "ok",     label: "Oklahoma",                location: "Oklahoma",       isRemote: false },
+  { value: "la",     label: "Louisiana",               location: "Louisiana",      isRemote: false },
+  { value: "ar",     label: "Arkansas",                location: "Arkansas",       isRemote: false },
+  { value: "nm",     label: "New Mexico",              location: "New Mexico",     isRemote: false },
+  { value: "va",     label: "Virginia",                location: "Virginia",       isRemote: false },
+  { value: "sc",     label: "South Carolina",          location: "South Carolina", isRemote: false },
+  { value: "ga",     label: "Georgia",                 location: "Georgia",        isRemote: false },
+  { value: "tn",     label: "Tennessee",               location: "Tennessee",      isRemote: false },
+  { value: "usa",    label: "🇺🇸 United States (all)", location: "United States",  isRemote: false },
 ];
 
 const sources = [
-  { id: "linkedin", label: "LinkedIn", group: "Core" },
-  { id: "indeed", label: "Indeed", group: "Core" },
-  { id: "google", label: "Google Jobs", group: "Core" },
-  { id: "career_page", label: "Career Pages", group: "Company" },
-  { id: "jobright_h1b", label: "Jobright H1B", group: "Visa" },
-  { id: "dice", label: "Dice", group: "Tech" },
-  { id: "governmentjobs", label: "GovernmentJobs", group: "Public" },
-  { id: "usajobs_api", label: "USAJOBS (API key required)", group: "Public", setupRequired: true },
-  { id: "jobspresso", label: "Jobspresso", group: "Remote" },
-  { id: "dynamitejobs", label: "Dynamite Jobs", group: "Remote" },
-  { id: "skipthedrive", label: "SkipTheDrive", group: "Remote" },
-  { id: "remotive", label: "Remotive", group: "Remote" },
-  { id: "remotely", label: "Remotely.jobs", group: "Remote" },
-  { id: "yc_jobs", label: "YC Jobs", group: "Startup" },
-  { id: "simplify_new_grad", label: "Simplify New Grad", group: "Early career" },
-  { id: "github_internships", label: "GitHub Internships", group: "Early career" },
+  { id: "linkedin",         label: "LinkedIn",                       group: "Core"         },
+  { id: "indeed",           label: "Indeed",                         group: "Core"         },
+  { id: "google",           label: "Google Jobs",                    group: "Core"         },
+  { id: "career_page",      label: "Career Pages",                   group: "Company"      },
+  { id: "jobright_h1b",     label: "Jobright H1B",                   group: "Visa"         },
+  { id: "dice",             label: "Dice",                           group: "Tech"         },
+  { id: "governmentjobs",   label: "GovernmentJobs",                 group: "Public"       },
+  { id: "usajobs_api",      label: "USAJOBS (API key required)",     group: "Public",      setupRequired: true },
+  { id: "jobspresso",       label: "Jobspresso",                     group: "Remote"       },
+  { id: "dynamitejobs",     label: "Dynamite Jobs",                  group: "Remote"       },
+  { id: "skipthedrive",     label: "SkipTheDrive",                   group: "Remote"       },
+  { id: "remotive",         label: "Remotive",                       group: "Remote"       },
+  { id: "remotely",         label: "Remotely.jobs",                  group: "Remote"       },
+  { id: "yc_jobs",          label: "YC Jobs",                        group: "Startup"      },
+  { id: "simplify_new_grad",label: "Simplify New Grad",              group: "Early career" },
+  { id: "github_internships",label: "GitHub Internships",            group: "Early career" },
 ];
 
 const defaultSources = ["linkedin", "google", "jobright_h1b", "dice", "remotive"];
-const selectableSourceIds = sources.filter((source) => !source.setupRequired).map((source) => source.id);
+const selectableSourceIds = sources.filter((s) => !s.setupRequired).map((s) => s.id);
+
+type KeywordStatus = "pending" | "running" | "done" | "error";
+interface KeywordRun {
+  keyword: string;
+  status: KeywordStatus;
+  added: number;
+  seen: number;
+  error?: string;
+}
 
 export function CollectForm() {
   const [profiles, setProfiles] = useState<JobProfile[]>(defaultProfiles);
   const [profileId, setProfileId] = useState("dotnet");
-  const [searchTerm, setSearchTerm] = useState(".NET developer or Java developer");
-  const [location, setLocation] = useState("United States");
+  const [customKeyword, setCustomKeyword] = useState("");
   const [locationKey, setLocationKey] = useState("usa");
   const [resultsWanted, setResultsWanted] = useState(1000);
   const [hoursOld, setHoursOld] = useState("24");
@@ -79,59 +72,77 @@ export function CollectForm() {
   const [visaFriendly, setVisaFriendly] = useState(false);
   const [selectedSources, setSelectedSources] = useState<string[]>(defaultSources);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<CollectResult | null>(null);
+  const [runs, setRuns] = useState<KeywordRun[]>([]);
 
-  useEffect(() => {
-    setProfiles(loadProfiles());
-  }, []);
+  useEffect(() => { setProfiles(loadProfiles()); }, []);
 
-  const groupedSources = useMemo(() => {
-    return sources.reduce<Record<string, typeof sources>>((groups, source) => {
-      groups[source.group] = [...(groups[source.group] ?? []), source];
-      return groups;
-    }, {});
-  }, []);
+  const activeProfile = profiles.find((p) => p.id === profileId);
+  const keywords: string[] = customKeyword.trim()
+    ? [customKeyword.trim()]
+    : (activeProfile?.preferredTitles ?? []);
 
-  function toggleSource(sourceId: string) {
-    setSelectedSources((current) => (
-      current.includes(sourceId) ? current.filter((item) => item !== sourceId) : [...current, sourceId]
-    ));
+  const groupedSources = useMemo(() =>
+    sources.reduce<Record<string, typeof sources>>((acc, s) => {
+      acc[s.group] = [...(acc[s.group] ?? []), s];
+      return acc;
+    }, {}), []);
+
+  function toggleSource(id: string) {
+    setSelectedSources((cur) => cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]);
   }
 
   async function submitCollect() {
-    if (!selectedSources.length) {
-      toast.error("Select at least one source");
-      return;
-    }
-    const safeResultsWanted = Number.isFinite(resultsWanted)
-      ? Math.min(5000, Math.max(1, resultsWanted))
-      : 1000;
+    if (!selectedSources.length) { toast.error("Select at least one source"); return; }
+    if (!keywords.length) { toast.error("No keywords to search"); return; }
+
+    const locDef = LOCATIONS.find((l) => l.value === locationKey);
+    const resolvedLocation = locDef?.location ?? "United States";
+    const resolvedRemote = locDef?.isRemote ?? remoteMode === "true";
+    const safeResults = Number.isFinite(resultsWanted) ? Math.min(5000, Math.max(1, resultsWanted)) : 1000;
+
+    const initial: KeywordRun[] = keywords.map((kw) => ({ keyword: kw, status: "pending", added: 0, seen: 0 }));
+    setRuns(initial);
     setLoading(true);
-    setResult(null);
-    try {
-      const locDef = LOCATIONS.find((l) => l.value === locationKey);
-      const resolvedLocation = locDef ? locDef.location : location.trim() || null;
-      const resolvedRemote = locDef ? locDef.isRemote : remoteMode === "true";
-      const response = await collectJobs({
-        search_term: expandSearchTerm(searchTerm),
-        location: resolvedLocation,
-        sites: selectedSources,
-        results_wanted: safeResultsWanted,
-        country_indeed: "usa",
-        is_remote: resolvedRemote,
-        job_type: jobType === "all" ? null : jobType,
-        hours_old: hoursOld === "all" ? null : Number(hoursOld),
-        use_company_targets: useTargets,
-        visa_friendly_only: visaFriendly,
-      });
-      setResult(response);
-      toast.success(`Collection finished: ${response.jobs_added} new jobs`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Collection failed");
-    } finally {
-      setLoading(false);
+
+    let totalAdded = 0;
+    let totalSeen = 0;
+
+    for (let i = 0; i < keywords.length; i++) {
+      const kw = keywords[i];
+      setRuns((prev) => prev.map((r, idx) => idx === i ? { ...r, status: "running" } : r));
+      try {
+        const res: CollectResult = await collectJobs({
+          search_term: kw,
+          location: resolvedLocation,
+          sites: selectedSources,
+          results_wanted: safeResults,
+          country_indeed: "usa",
+          is_remote: resolvedRemote,
+          job_type: jobType === "all" ? null : jobType,
+          hours_old: hoursOld === "all" ? null : Number(hoursOld),
+          use_company_targets: useTargets,
+          visa_friendly_only: visaFriendly,
+        });
+        totalAdded += res.jobs_added;
+        totalSeen += res.jobs_seen;
+        setRuns((prev) => prev.map((r, idx) =>
+          idx === i ? { ...r, status: "done", added: res.jobs_added, seen: res.jobs_seen } : r
+        ));
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed";
+        setRuns((prev) => prev.map((r, idx) =>
+          idx === i ? { ...r, status: "error", error: msg } : r
+        ));
+      }
     }
+
+    setLoading(false);
+    toast.success(`All done: ${totalAdded} new jobs from ${totalSeen} seen`);
   }
+
+  const totalAdded = runs.reduce((s, r) => s + r.added, 0);
+  const totalSeen  = runs.reduce((s, r) => s + r.seen, 0);
+  const doneCount  = runs.filter((r) => r.status === "done" || r.status === "error").length;
 
   return (
     <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
@@ -142,37 +153,62 @@ export function CollectForm() {
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
+
+            {/* Profile */}
             <label className="space-y-2 text-sm font-medium">
               Profile
               <Select
                 value={profileId}
-                onValueChange={(value) => {
-                  setProfileId(value);
-                  const profile = profiles.find((item) => item.id === value);
-                  if (profile) {
-                    setSearchTerm(profile.searchTerm);
-                    setLocation(compactLocation(profile));
-                  }
+                onValueChange={(val) => {
+                  setProfileId(val);
+                  setCustomKeyword("");
                 }}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {profiles.map((profile) => (
-                    <SelectItem key={profile.id} value={profile.id}>{profile.name}</SelectItem>
+                  {profiles.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </label>
-            <div className="space-y-2 text-sm font-medium">
+
+            {/* Location */}
+            <label className="space-y-2 text-sm font-medium">
+              Location
+              <Select
+                value={locationKey}
+                onValueChange={(key) => {
+                  setLocationKey(key);
+                  const def = LOCATIONS.find((l) => l.value === key);
+                  if (def) setRemoteMode(def.isRemote ? "true" : "false");
+                }}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {LOCATIONS.map((l) => (
+                    <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+
+            {/* Keywords */}
+            <div className="space-y-2 text-sm font-medium md:col-span-2">
               Search keywords
+              <p className="text-xs font-normal text-muted-foreground mb-2">
+                {customKeyword.trim()
+                  ? "Custom keyword — profile keywords disabled"
+                  : `${keywords.length} keywords from ${activeProfile?.name ?? "profile"} — each runs as a separate search`}
+              </p>
               <div className="flex flex-wrap gap-1.5 mb-2">
-                {DOTNET_KEYWORDS.map((kw) => (
+                {(activeProfile?.preferredTitles ?? []).map((kw) => (
                   <button
                     key={kw}
                     type="button"
-                    onClick={() => setSearchTerm(kw)}
+                    onClick={() => setCustomKeyword((prev) => prev === kw ? "" : kw)}
                     className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
-                      searchTerm === kw
+                      customKeyword === kw
                         ? "border-primary bg-primary text-primary-foreground"
                         : "border-border bg-muted/40 hover:bg-muted"
                     }`}
@@ -181,47 +217,23 @@ export function CollectForm() {
                   </button>
                 ))}
               </div>
-              <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Or type a custom keyword" />
+              <Input
+                value={customKeyword}
+                onChange={(e) => setCustomKeyword(e.target.value)}
+                placeholder="Type a custom keyword to override profile (or leave blank to run all)"
+              />
             </div>
+
+            {/* Results wanted */}
             <label className="space-y-2 text-sm font-medium">
-              Location
-              <Select
-                value={locationKey}
-                onValueChange={(key) => {
-                  setLocationKey(key);
-                  const def = LOCATIONS.find((l) => l.value === key);
-                  if (def) {
-                    setLocation(def.location);
-                    setRemoteMode(def.isRemote ? "true" : "false");
-                  }
-                }}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="remote">🌐 Remote (USA)</SelectItem>
-                  <SelectItem value="dfw">🏙️ DFW / Dallas, TX</SelectItem>
-                  <SelectItem value="texas">⭐ Texas (statewide)</SelectItem>
-                  <SelectItem value="nc">North Carolina</SelectItem>
-                  <SelectItem value="ok">Oklahoma</SelectItem>
-                  <SelectItem value="la">Louisiana</SelectItem>
-                  <SelectItem value="ar">Arkansas</SelectItem>
-                  <SelectItem value="nm">New Mexico</SelectItem>
-                  <SelectItem value="va">Virginia</SelectItem>
-                  <SelectItem value="sc">South Carolina</SelectItem>
-                  <SelectItem value="ga">Georgia</SelectItem>
-                  <SelectItem value="tn">Tennessee</SelectItem>
-                  <SelectItem value="usa">🇺🇸 United States (all)</SelectItem>
-                </SelectContent>
-              </Select>
-            </label>
-            <label className="space-y-2 text-sm font-medium">
-              Results wanted
+              Results wanted <span className="font-normal text-muted-foreground">(per keyword)</span>
               <div className="flex gap-2">
-                <Input min={1} max={5000} type="number" value={resultsWanted} onChange={(event) => setResultsWanted(Number(event.target.value))} />
+                <Input min={1} max={5000} type="number" value={resultsWanted} onChange={(e) => setResultsWanted(Number(e.target.value))} />
                 <Button variant="outline" type="button" onClick={() => setResultsWanted(5000)}>All</Button>
               </div>
-              <span className="block text-xs font-normal text-muted-foreground">Use All to pull the maximum available per run, then dedupe against stored jobs.</span>
             </label>
+
+            {/* Freshness */}
             <label className="space-y-2 text-sm font-medium">
               Freshness
               <Select value={hoursOld} onValueChange={setHoursOld}>
@@ -236,6 +248,8 @@ export function CollectForm() {
                 </SelectContent>
               </Select>
             </label>
+
+            {/* Work mode */}
             <label className="space-y-2 text-sm font-medium">
               Work mode
               <Select value={remoteMode} onValueChange={setRemoteMode}>
@@ -246,6 +260,8 @@ export function CollectForm() {
                 </SelectContent>
               </Select>
             </label>
+
+            {/* Job type */}
             <label className="space-y-2 text-sm font-medium">
               Job type
               <Select value={jobType} onValueChange={setJobType}>
@@ -261,6 +277,7 @@ export function CollectForm() {
             </label>
           </div>
 
+          {/* Source toggles */}
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" type="button" onClick={() => setSelectedSources(selectableSourceIds)}>Select all ready sources</Button>
             <Button variant="outline" type="button" onClick={() => setSelectedSources([])}>Deselect all</Button>
@@ -270,19 +287,16 @@ export function CollectForm() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            {Object.entries(groupedSources).map(([group, groupSources]) => (
+            {Object.entries(groupedSources).map(([group, gs]) => (
               <fieldset key={group} className="rounded-xl border p-4">
                 <legend className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{group}</legend>
                 <div className="mt-2 grid gap-2">
-                  {groupSources.map((source) => (
-                    <label key={source.id} className="flex items-center gap-2 text-sm">
-                      <input
-                        className="h-4 w-4 accent-primary"
-                        type="checkbox"
-                        checked={selectedSources.includes(source.id)}
-                        onChange={() => toggleSource(source.id)}
-                      />
-                      {source.label}
+                  {gs.map((s) => (
+                    <label key={s.id} className="flex items-center gap-2 text-sm">
+                      <input className="h-4 w-4 accent-primary" type="checkbox"
+                        checked={selectedSources.includes(s.id)}
+                        onChange={() => toggleSource(s.id)} />
+                      {s.label}
                     </label>
                   ))}
                 </div>
@@ -292,40 +306,63 @@ export function CollectForm() {
 
           <div className="grid gap-2 sm:grid-cols-2">
             <label className="flex items-center gap-2 rounded-xl border p-3 text-sm">
-              <input className="h-4 w-4 accent-primary" type="checkbox" checked={useTargets} onChange={(event) => setUseTargets(event.target.checked)} />
+              <input className="h-4 w-4 accent-primary" type="checkbox" checked={useTargets} onChange={(e) => setUseTargets(e.target.checked)} />
               Use company targets
             </label>
             <label className="flex items-center gap-2 rounded-xl border p-3 text-sm">
-              <input className="h-4 w-4 accent-primary" type="checkbox" checked={visaFriendly} onChange={(event) => setVisaFriendly(event.target.checked)} />
+              <input className="h-4 w-4 accent-primary" type="checkbox" checked={visaFriendly} onChange={(e) => setVisaFriendly(e.target.checked)} />
               Visa-friendly mode
             </label>
           </div>
 
           <Button size="lg" onClick={submitCollect} disabled={loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-            {loading ? "Collecting" : "Start collection"}
+            {loading
+              ? `Searching ${doneCount}/${keywords.length} keywords…`
+              : `Start collection (${keywords.length} keyword${keywords.length !== 1 ? "s" : ""})`}
           </Button>
         </CardContent>
       </Card>
 
+      {/* Status panel */}
       <Card className="surface h-fit shadow-none">
         <CardHeader>
           <CardTitle>Collection status</CardTitle>
-          <CardDescription>Latest run summary</CardDescription>
+          <CardDescription>
+            {runs.length > 0
+              ? `${doneCount} / ${runs.length} keywords done · ${totalAdded} new jobs`
+              : "Latest run summary"}
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          {result ? (
-            <>
-              <div className="flex justify-between"><span>Search run</span><strong>{result.search_run_id}</strong></div>
-              <div className="flex justify-between"><span>Jobs seen</span><strong>{result.jobs_seen}</strong></div>
-              <div className="flex justify-between"><span>New jobs added</span><strong>{result.jobs_added}</strong></div>
-              <div className="flex justify-between"><span>Warnings</span><strong>{(result.warnings ?? []).length}</strong></div>
-              {(result.warnings ?? []).length ? <pre className="max-h-52 overflow-auto rounded-lg bg-warning/10 p-3 text-xs text-warning-foreground">{(result.warnings ?? []).join("\n")}</pre> : null}
-              <div className="flex justify-between"><span>Errors</span><strong>{result.errors.length}</strong></div>
-              {result.errors.length ? <pre className="max-h-52 overflow-auto rounded-lg bg-destructive/10 p-3 text-xs text-destructive">{result.errors.join("\n")}</pre> : null}
-            </>
+        <CardContent className="space-y-2 text-sm">
+          {runs.length === 0 ? (
+            <p className="text-muted-foreground">No collection run started yet.</p>
           ) : (
-            <p className="text-muted-foreground">No collection run started from this page yet.</p>
+            <>
+              {runs.map((r) => (
+                <div key={r.keyword} className="flex items-center gap-2">
+                  {r.status === "pending" && <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                  {r.status === "running" && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />}
+                  {r.status === "done"    && <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" />}
+                  {r.status === "error"   && <XCircle className="h-4 w-4 shrink-0 text-destructive" />}
+                  <span className={`flex-1 truncate ${r.status === "pending" ? "text-muted-foreground" : ""}`}>
+                    {r.keyword}
+                  </span>
+                  {r.status === "done" && (
+                    <span className="shrink-0 text-xs text-muted-foreground">+{r.added}</span>
+                  )}
+                  {r.status === "error" && (
+                    <span className="shrink-0 text-xs text-destructive" title={r.error}>err</span>
+                  )}
+                </div>
+              ))}
+              {doneCount === runs.length && runs.length > 0 && (
+                <div className="mt-3 rounded-lg border p-3 text-xs space-y-1">
+                  <div className="flex justify-between"><span>Total seen</span><strong>{totalSeen}</strong></div>
+                  <div className="flex justify-between"><span>New jobs added</span><strong>{totalAdded}</strong></div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
