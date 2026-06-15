@@ -69,7 +69,6 @@ def _build_requests(settings) -> list[CollectionRequest]:
                 search_term=search_term,
                 location=f.get("location"),
                 sites=settings.default_site_list,
-                results_wanted=50,
                 hours_old=1,
             )
             requests.append(req)
@@ -87,7 +86,6 @@ def _build_requests(settings) -> list[CollectionRequest]:
                 sites=settings.default_site_list,
                 is_remote=is_remote,
                 visa_friendly_only=visa_friendly,
-                results_wanted=50,
                 hours_old=1,
             ))
     return requests
