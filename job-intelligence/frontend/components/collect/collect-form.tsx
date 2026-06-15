@@ -12,6 +12,37 @@ import { collectJobs } from "@/lib/api";
 import { compactLocation, defaultProfiles, expandSearchTerm, loadProfiles, type JobProfile } from "@/lib/job-profiles";
 import type { CollectResult } from "@/types/job";
 
+const DOTNET_KEYWORDS = [
+  "Senior .NET Developer",
+  "Senior Full Stack .NET Developer",
+  "Senior C# Developer",
+  "Senior Azure Developer",
+  "Senior Software Engineer .NET",
+  ".NET Cloud Developer",
+  "Senior ASP.NET Core Developer",
+  "Senior Backend Developer C#",
+  ".NET Solutions Architect",
+  "Azure Application Architect",
+  "Principal .NET Developer",
+  "Lead .NET Developer",
+];
+
+const LOCATIONS = [
+  { value: "remote", label: "Remote (USA)", location: "United States", isRemote: true },
+  { value: "dfw", label: "DFW / Dallas, TX", location: "Dallas, TX", isRemote: false },
+  { value: "texas", label: "Texas (statewide)", location: "Texas", isRemote: false },
+  { value: "nc", label: "North Carolina", location: "North Carolina", isRemote: false },
+  { value: "ok", label: "Oklahoma", location: "Oklahoma", isRemote: false },
+  { value: "la", label: "Louisiana", location: "Louisiana", isRemote: false },
+  { value: "ar", label: "Arkansas", location: "Arkansas", isRemote: false },
+  { value: "nm", label: "New Mexico", location: "New Mexico", isRemote: false },
+  { value: "va", label: "Virginia", location: "Virginia", isRemote: false },
+  { value: "sc", label: "South Carolina", location: "South Carolina", isRemote: false },
+  { value: "ga", label: "Georgia", location: "Georgia", isRemote: false },
+  { value: "tn", label: "Tennessee", location: "Tennessee", isRemote: false },
+  { value: "usa", label: "United States (all)", location: "United States", isRemote: false },
+];
+
 const sources = [
   { id: "linkedin", label: "LinkedIn", group: "Core" },
   { id: "indeed", label: "Indeed", group: "Core" },
@@ -39,6 +70,7 @@ export function CollectForm() {
   const [profileId, setProfileId] = useState("dotnet");
   const [searchTerm, setSearchTerm] = useState(".NET developer or Java developer");
   const [location, setLocation] = useState("United States");
+  const [locationKey, setLocationKey] = useState("usa");
   const [resultsWanted, setResultsWanted] = useState(1000);
   const [hoursOld, setHoursOld] = useState("24");
   const [remoteMode, setRemoteMode] = useState("false");
@@ -77,13 +109,16 @@ export function CollectForm() {
     setLoading(true);
     setResult(null);
     try {
+      const locDef = LOCATIONS.find((l) => l.value === locationKey);
+      const resolvedLocation = locDef ? locDef.location : location.trim() || null;
+      const resolvedRemote = locDef ? locDef.isRemote : remoteMode === "true";
       const response = await collectJobs({
         search_term: expandSearchTerm(searchTerm),
-        location: location.trim() || null,
+        location: resolvedLocation,
         sites: selectedSources,
         results_wanted: safeResultsWanted,
         country_indeed: "usa",
-        is_remote: remoteMode === "true",
+        is_remote: resolvedRemote,
         job_type: jobType === "all" ? null : jobType,
         hours_old: hoursOld === "all" ? null : Number(hoursOld),
         use_company_targets: useTargets,
@@ -128,27 +163,54 @@ export function CollectForm() {
                 </SelectContent>
               </Select>
             </label>
-            <label className="space-y-2 text-sm font-medium">
+            <div className="space-y-2 text-sm font-medium">
               Search keywords
-              <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
-            </label>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {DOTNET_KEYWORDS.map((kw) => (
+                  <button
+                    key={kw}
+                    type="button"
+                    onClick={() => setSearchTerm(kw)}
+                    className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+                      searchTerm === kw
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-muted/40 hover:bg-muted"
+                    }`}
+                  >
+                    {kw}
+                  </button>
+                ))}
+              </div>
+              <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Or type a custom keyword" />
+            </div>
             <label className="space-y-2 text-sm font-medium">
               Location
-              <Select value={location} onValueChange={setLocation}>
+              <Select
+                value={locationKey}
+                onValueChange={(key) => {
+                  setLocationKey(key);
+                  const def = LOCATIONS.find((l) => l.value === key);
+                  if (def) {
+                    setLocation(def.location);
+                    setRemoteMode(def.isRemote ? "true" : "false");
+                  }
+                }}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="United States">United States (all)</SelectItem>
-                  <SelectItem value="Remote">Remote (USA)</SelectItem>
-                  <SelectItem value="New York, NY">New York, NY</SelectItem>
-                  <SelectItem value="San Francisco, CA">San Francisco, CA</SelectItem>
-                  <SelectItem value="Seattle, WA">Seattle, WA</SelectItem>
-                  <SelectItem value="Austin, TX">Austin, TX</SelectItem>
-                  <SelectItem value="Chicago, IL">Chicago, IL</SelectItem>
-                  <SelectItem value="Boston, MA">Boston, MA</SelectItem>
-                  <SelectItem value="Los Angeles, CA">Los Angeles, CA</SelectItem>
-                  <SelectItem value="Dallas, TX">Dallas, TX</SelectItem>
-                  <SelectItem value="Atlanta, GA">Atlanta, GA</SelectItem>
-                  <SelectItem value="Denver, CO">Denver, CO</SelectItem>
+                  <SelectItem value="remote">🌐 Remote (USA)</SelectItem>
+                  <SelectItem value="dfw">🏙️ DFW / Dallas, TX</SelectItem>
+                  <SelectItem value="texas">⭐ Texas (statewide)</SelectItem>
+                  <SelectItem value="nc">North Carolina</SelectItem>
+                  <SelectItem value="ok">Oklahoma</SelectItem>
+                  <SelectItem value="la">Louisiana</SelectItem>
+                  <SelectItem value="ar">Arkansas</SelectItem>
+                  <SelectItem value="nm">New Mexico</SelectItem>
+                  <SelectItem value="va">Virginia</SelectItem>
+                  <SelectItem value="sc">South Carolina</SelectItem>
+                  <SelectItem value="ga">Georgia</SelectItem>
+                  <SelectItem value="tn">Tennessee</SelectItem>
+                  <SelectItem value="usa">🇺🇸 United States (all)</SelectItem>
                 </SelectContent>
               </Select>
             </label>
