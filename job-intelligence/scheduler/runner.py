@@ -14,13 +14,21 @@ from storage.repository import JobRepository
 
 logger = logging.getLogger(__name__)
 
-# Fallback search used when no saved searches exist in the DB.
-_DEFAULT_SEARCH = CollectionRequest(
-    search_term="Senior .NET Developer",
-    location="Texas",
-    results_wanted=100,
-    hours_old=1,
-)
+# Fallback searches used when no saved searches exist in the DB.
+_DEFAULT_SEARCHES = [
+    "Senior .NET Developer",
+    "Senior Full Stack .NET Developer",
+    "Senior C# Developer",
+    "Senior Azure Developer",
+    "Senior Software Engineer .NET",
+    ".NET Cloud Developer",
+    "Senior ASP.NET Core Developer",
+    "Senior Backend Developer C#",
+    ".NET Solutions Architect",
+    "Azure Application Architect",
+    "Principal .NET Developer",
+    "Lead .NET Developer",
+]
 
 
 def _build_requests(settings) -> list[CollectionRequest]:
@@ -29,8 +37,17 @@ def _build_requests(settings) -> list[CollectionRequest]:
     try:
         saved = JobRepository(session).list_saved_searches()
         if not saved:
-            logger.info("no saved searches found, using default search")
-            return [_DEFAULT_SEARCH]
+            logger.info("no saved searches found, using %d default searches", len(_DEFAULT_SEARCHES))
+            return [
+                CollectionRequest(
+                    search_term=term,
+                    location="Texas",
+                    sites=settings.default_site_list,
+                    results_wanted=100,
+                    hours_old=1,
+                )
+                for term in _DEFAULT_SEARCHES
+            ]
 
         requests: list[CollectionRequest] = []
         for ss in saved:
