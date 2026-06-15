@@ -14,6 +14,22 @@ from storage.repository import JobRepository
 
 logger = logging.getLogger(__name__)
 
+# All sources to scrape every run.
+_ALL_SITES = [
+    "linkedin",
+    "indeed",
+    "google",
+    "career_page",
+    "jobright_h1b",
+    "dice",
+    "jobspresso",
+    "dynamitejobs",
+    "skipthedrive",
+    "remotive",
+    "remotely",
+    "yc_jobs",
+]
+
 # All 12 target role keywords.
 _KEYWORDS = [
     "Senior .NET Developer",
@@ -68,7 +84,7 @@ def _build_requests(settings) -> list[CollectionRequest]:
             req = CollectionRequest(
                 search_term=search_term,
                 location=f.get("location"),
-                sites=settings.default_site_list,
+                sites=_ALL_SITES,
                 hours_old=1,
             )
             requests.append(req)
@@ -83,7 +99,7 @@ def _build_requests(settings) -> list[CollectionRequest]:
             requests.append(CollectionRequest(
                 search_term=keyword,
                 location=location,
-                sites=settings.default_site_list,
+                sites=_ALL_SITES,
                 is_remote=is_remote,
                 visa_friendly_only=visa_friendly,
                 hours_old=1,
