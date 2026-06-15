@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Copy, Download, Eye, FileText, Loader2, Save, Sparkles, Upload, Wand2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/layout/app-shell";
@@ -462,6 +462,8 @@ export default function ResumeLabPage() {
   const atsDropped = Boolean(atsBefore && atsAfter && atsAfter.score < atsBefore.score);
   const [showPreview, setShowPreview] = useState(true);
   const [docxLoading, setDocxLoading] = useState(false);
+  const [refinePulse, setRefinePulse] = useState(false);
+  const atsResultRef = useRef<HTMLDivElement>(null);
 
   async function downloadWord() {
     if (!rebuildResult) return;
@@ -675,6 +677,12 @@ export default function ResumeLabPage() {
       setAtsAfter(computeAts(result.rebuilt_resume, jobDescription));
       setRefineInstruction("");
       toast.success("Resume refined");
+      // Scroll to score panel and pulse to show what updated
+      setTimeout(() => {
+        atsResultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        setRefinePulse(true);
+        setTimeout(() => setRefinePulse(false), 1500);
+      }, 100);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Refinement failed");
     } finally {
@@ -882,7 +890,10 @@ export default function ResumeLabPage() {
                   {rebuildResult.model ? <span className="rounded-full border px-3 py-1">Model: {rebuildResult.model}</span> : null}
                 </div>
                 {atsBefore && atsAfter && (
-                  <div className="rounded-lg border bg-muted/40 p-4 space-y-4">
+                  <div
+                    ref={atsResultRef}
+                    className={`rounded-lg border bg-muted/40 p-4 space-y-4 transition-all duration-500 ${refinePulse ? "ring-2 ring-primary ring-offset-2" : ""}`}
+                  >
                     {/* Score header */}
                     <div className="flex flex-wrap items-center gap-6">
                       <div className="text-center">
@@ -1054,9 +1065,11 @@ export default function ResumeLabPage() {
                     </ul>
                   </div>
                 ) : null}
-                {showPreview
-                  ? <WordPreview text={rebuildResult.rebuilt_resume} />
-                  : <Textarea value={rebuildResult.rebuilt_resume} readOnly className="min-h-96 max-h-[600px] overflow-y-auto font-mono text-sm" />}
+                <div className={`transition-all duration-500 ${refinePulse ? "ring-2 ring-primary ring-offset-2 rounded-lg" : ""}`}>
+                  {showPreview
+                    ? <WordPreview text={rebuildResult.rebuilt_resume} />
+                    : <Textarea value={rebuildResult.rebuilt_resume} readOnly className="min-h-96 max-h-[600px] overflow-y-auto font-mono text-sm" />}
+                </div>
                 <div className="flex flex-wrap gap-2">
                   <Button onClick={downloadWord} disabled={docxLoading}>
                     {docxLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Download Word (.docx)
