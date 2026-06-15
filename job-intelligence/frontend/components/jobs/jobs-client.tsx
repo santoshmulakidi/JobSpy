@@ -56,7 +56,7 @@ export function JobsClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState(defaultProfiles[0]?.searchTerm ?? ".NET developer");
-  const [location, setLocation] = useState(compactLocation(defaultProfiles[0]));
+  const [location, setLocation] = useState("");
   const [source, setSource] = useState("all");
   const [visaStatus, setVisaStatus] = useState("all");
   const [postedWithin, setPostedWithin] = useState("all"); // all | 24h | 3d | 7d | 14d
@@ -67,6 +67,13 @@ export function JobsClient() {
   useEffect(() => {
     setProfiles(loadProfiles());
   }, []);
+
+  // Build the keyword OR string from a profile's preferredTitles.
+  function profileKeyword(profile: JobProfile) {
+    return profile.preferredTitles.length > 0
+      ? profile.preferredTitles.join(" OR ")
+      : profile.searchTerm;
+  }
 
   function pageJobs(items: Job[], nextPage: number) {
     return items.slice(nextPage * PAGE_SIZE, nextPage * PAGE_SIZE + PAGE_SIZE);
@@ -107,12 +114,24 @@ export function JobsClient() {
     return score;
   }
 
+  // Auto-search on mount with the default profile keywords, no location filter.
   useEffect(() => {
+    const profile = defaultProfiles.find((p) => p.id === "dotnet") ?? defaultProfiles[0];
+    if (!profile) return;
+    const kw = profileKeyword(profile);
+    setKeyword(kw);
     let active = true;
     setLoading(true);
-    const payload = searchPayload(0);
-    searchJobs(payload)
-      .then((items) => items.length === 0 && payload.location ? searchJobs({ ...payload, location: null }) : items)
+    searchJobs({
+      keyword: kw,
+      location: null,
+      source: null,
+      visa_status: null,
+      work_mode: null,
+      qualification_status: null,
+      limit: CANDIDATE_LIMIT,
+      offset: 0,
+    })
       .then((items) => {
         if (!active) return;
         setRankedJobFeed(items, 0);
@@ -124,12 +143,8 @@ export function JobsClient() {
         if (!active) return;
         setError(caught instanceof Error ? caught.message : "Could not load jobs");
       })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, []);
 
   function searchPayload(nextPage = 0) {
@@ -237,10 +252,30 @@ export function JobsClient() {
             onValueChange={(value) => {
               setProfileId(value);
               const profile = profiles.find((item) => item.id === value);
-              if (profile) {
-                setKeyword(profile.searchTerm);
-                setLocation(compactLocation(profile));
-              }
+              if (!profile) return;
+              const kw = profileKeyword(profile);
+              setKeyword(kw);
+              setLocation("");
+              // Auto-search with all profile keywords, no location filter.
+              setLoading(true);
+              setError(null);
+              searchJobs({
+                keyword: kw,
+                location: null,
+                source: source === "all" ? null : source,
+                visa_status: visaStatus === "all" ? null : visaStatus,
+                work_mode: tab === "remote" ? "Remote" : tab === "hybrid" ? "Hybrid" : tab === "onsite" ? "On-site" : null,
+                qualification_status: tab === "qualified" ? "Qualified" : tab === "disqualified" ? "Disqualified" : null,
+                limit: CANDIDATE_LIMIT,
+                offset: 0,
+              })
+                .then((items) => {
+                  setRankedJobFeed(items, 0);
+                  setPage(0);
+                  setLastSearchMode("search");
+                })
+                .catch((caught: unknown) => setError(caught instanceof Error ? caught.message : "Search failed"))
+                .finally(() => setLoading(false));
             }}
           >
             <SelectTrigger><SelectValue placeholder="Profile" /></SelectTrigger>
@@ -459,6 +494,7 @@ function locationWorkVisaPriority(job: Job) {
   if (isNorthCarolina(location)) return 72_000;
   if (isTexas(location)) return 64_000;
   if (isNearbyTexasState(location)) return 54_000;
+  if (isNearbyNcState(location)) return 48_000;
   if (isUnitedStates(location)) return 44_000;
   return 30_000;
 }
@@ -535,18 +571,19 @@ function isNorthCarolina(location: string) {
 
 function isNearbyTexasState(location: string) {
   return [
-    "oklahoma",
-    " ok",
-    ",ok",
-    "arkansas",
-    " ar",
-    ",ar",
-    "louisiana",
-    " la",
-    ",la",
-    "new mexico",
-    " nm",
-    ",nm",
+    "oklahoma", " ok", ",ok",
+    "arkansas",  " ar", ",ar",
+    "louisiana", " la", ",la",
+    "new mexico"," nm", ",nm",
+  ].some((token) => location.includes(token));
+}
+
+function isNearbyNcState(location: string) {
+  return [
+    "virginia",       " va", ",va",
+    "south carolina", " sc", ",sc",
+    "georgia",        " ga", ",ga",
+    "tennessee",      " tn", ",tn",
   ].some((token) => location.includes(token));
 }
 
