@@ -42,6 +42,10 @@ class JobSpyCollector(Collector):
                     is_remote=request.is_remote,
                     job_type=request.job_type,
                     hours_old=request.hours_old,
+                    # LinkedIn search results omit the description; fetch it per job.
+                    # Costs one extra request per LinkedIn listing but is required
+                    # for ATS tailoring in Resume Lab.
+                    linkedin_fetch_description=True,
                 )
                 break
             except Exception as exc:  # Job boards fail independently and often.

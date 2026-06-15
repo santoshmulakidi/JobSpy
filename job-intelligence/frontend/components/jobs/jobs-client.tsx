@@ -59,6 +59,7 @@ export function JobsClient() {
   const [location, setLocation] = useState(compactLocation(defaultProfiles[0]));
   const [source, setSource] = useState("all");
   const [visaStatus, setVisaStatus] = useState("all");
+  const [postedWithin, setPostedWithin] = useState("all"); // all | 24h | 3d | 7d | 14d
   const [tab, setTab] = useState("active");
   const [page, setPage] = useState(0);
   const [lastSearchMode, setLastSearchMode] = useState<"feed" | "search">("feed");
@@ -71,9 +72,17 @@ export function JobsClient() {
     return items.slice(nextPage * PAGE_SIZE, nextPage * PAGE_SIZE + PAGE_SIZE);
   }
 
+  function withinWindow(job: Job, window: string) {
+    if (window === "all") return true;
+    const hours: Record<string, number> = { "24h": 24, "3d": 72, "7d": 168, "14d": 336 };
+    const cutoff = Date.now() - (hours[window] ?? 0) * 3_600_000;
+    const posted = postedTime(job);
+    return posted > 0 && posted >= cutoff;
+  }
+
   function setRankedJobFeed(items: Job[], nextPage: number) {
     const sorted = prioritizeJobs(items);
-    const visibleJobs = pageJobs(sorted, nextPage);
+    const visibleJobs = pageJobs(sorted.filter((job) => withinWindow(job, postedWithin)), nextPage);
     setRankedJobs(sorted);
     setJobs(visibleJobs);
     setSelectedJob((current) => current && visibleJobs.some((job) => job.id === current.id) ? current : null);
@@ -165,11 +174,21 @@ export function JobsClient() {
       await loadSearchPage(nextPage);
       return;
     }
-    const visibleJobs = pageJobs(rankedJobs, nextPage);
+    const visibleJobs = pageJobs(rankedJobs.filter((job) => withinWindow(job, postedWithin)), nextPage);
     setJobs(visibleJobs);
     setSelectedJob((current) => current && visibleJobs.some((job) => job.id === current.id) ? current : null);
     setPage(nextPage);
   }
+
+  // Re-apply the "posted within" window to the loaded feed without re-fetching.
+  useEffect(() => {
+    if (lastSearchMode !== "search" && rankedJobs.length === 0) return;
+    const visibleJobs = pageJobs(rankedJobs.filter((job) => withinWindow(job, postedWithin)), 0);
+    setJobs(visibleJobs);
+    setPage(0);
+    setSelectedJob((current) => current && visibleJobs.some((job) => job.id === current.id) ? current : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postedWithin]);
 
   async function applyJob(job: Job) {
     try {
@@ -212,7 +231,7 @@ export function JobsClient() {
         </Button>
       </div>
       <div className="surface rounded-2xl p-4">
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
           <Select
             value={profileId}
             onValueChange={(value) => {
@@ -249,6 +268,16 @@ export function JobsClient() {
               <SelectItem value="all">All sources</SelectItem>
               <SelectItem value="linkedin">LinkedIn</SelectItem>
               <SelectItem value="indeed">Indeed</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={postedWithin} onValueChange={setPostedWithin}>
+            <SelectTrigger><SelectValue placeholder="Posted within" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Any time</SelectItem>
+              <SelectItem value="24h">Last 24 hours</SelectItem>
+              <SelectItem value="3d">Last 3 days</SelectItem>
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="14d">Last 14 days</SelectItem>
             </SelectContent>
           </Select>
         </div>
