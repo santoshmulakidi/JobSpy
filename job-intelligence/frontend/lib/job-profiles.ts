@@ -12,21 +12,16 @@ export const defaultProfiles: JobProfile[] = [
   {
     id: "dotnet",
     name: ".NET Developer",
-    searchTerm: "Senior .NET Developer OR Senior Full Stack .NET Developer OR Senior C# Developer OR Senior Azure Developer OR Senior Software Engineer .NET OR .NET Cloud Developer OR Senior ASP.NET Core Developer OR Senior Backend Developer C# OR .NET Solutions Architect OR Azure Application Architect OR Principal .NET Developer OR Lead .NET Developer",
+    searchTerm: ".NET Developer OR DotNet Developer OR C# Developer OR ASP.NET Core Developer OR Azure Developer .NET OR Principal .NET Engineer OR Staff Software Engineer C#",
     locations: "Remote, Dallas, TX, DFW, Austin, Houston, San Antonio",
     preferredTitles: [
-      "Senior .NET Developer",
-      "Senior Full Stack .NET Developer",
-      "Senior C# Developer",
-      "Senior Azure Developer",
-      "Senior Software Engineer .NET",
-      ".NET Cloud Developer",
-      "Senior ASP.NET Core Developer",
-      "Senior Backend Developer C#",
-      ".NET Solutions Architect",
-      "Azure Application Architect",
-      "Principal .NET Developer",
-      "Lead .NET Developer",
+      ".NET Developer",
+      "DotNet Developer",
+      "C# Developer",
+      "ASP.NET Core Developer",
+      "Azure Developer .NET",
+      "Principal .NET Engineer",
+      "Staff Software Engineer C#",
     ],
     skills: ["C#", ".NET", ".NET Core", "ASP.NET Core", "Azure", "SQL", "React", "API"],
     baseResume: "",
@@ -57,7 +52,7 @@ export const defaultProfiles: JobProfile[] = [
 
 export function loadProfiles(): JobProfile[] {
   if (typeof window === "undefined") return defaultProfiles;
-  const stored = window.localStorage.getItem("job-intelligence-profiles-v1");
+  const stored = window.localStorage.getItem("job-intelligence-profiles-v3");
   if (!stored) return defaultProfiles;
   try {
     const parsed = JSON.parse(stored) as JobProfile[];
@@ -68,7 +63,7 @@ export function loadProfiles(): JobProfile[] {
 }
 
 export function saveProfiles(profiles: JobProfile[]) {
-  window.localStorage.setItem("job-intelligence-profiles-v1", JSON.stringify(profiles));
+  window.localStorage.setItem("job-intelligence-profiles-v3", JSON.stringify(profiles));
 }
 
 export function expandSearchTerm(searchTerm: string) {

@@ -451,6 +451,7 @@ export default function ResumeLabPage() {
   const [resumeText, setResumeText] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [jobContext, setJobContext] = useState("No job selected");
+  const [jobTitle, setJobTitle] = useState("");
   const [returnTo, setReturnTo] = useState<string | null>(null);
   const [rebuildLoading, setRebuildLoading] = useState(false);
   const [rebuildResult, setRebuildResult] = useState<ResumeRebuildResult | null>(null);
@@ -469,13 +470,19 @@ export default function ResumeLabPage() {
     if (!rebuildResult) return;
     setDocxLoading(true);
     try {
-      const name = rebuildResult.rebuilt_resume.trim().split("\n")[0]?.split(/\s+/).slice(0, 2).join("_") || "resume";
-      const { blob, savedTo } = await exportResumeDocx(rebuildResult.rebuilt_resume, `${name}_tailored`);
+      const candidateName = rebuildResult.rebuilt_resume.trim().split("\n")[0]?.trim() || "Santosh_Mulakidi";
+      const title = jobTitle.trim() || "Resume";
+      const sanitize = (s: string) => s.replace(/[^a-zA-Z0-9 _-]/g, "").replace(/\s+/g, "_").slice(0, 50);
+      const name = `${sanitize(candidateName)}_${sanitize(title)}`;
+      const { blob, savedTo } = await exportResumeDocx(rebuildResult.rebuilt_resume, name);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${name}_tailored.docx`;
+      a.download = `${name}.docx`;
+      a.style.display = "none";
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
       toast.success(savedTo ? `Word resume saved to ${savedTo}` : "Word resume downloaded");
     } catch (error) {
@@ -509,6 +516,7 @@ export default function ResumeLabPage() {
           };
           if (!jobId || parsed.id === jobId) {
             setJobContext(`${parsed.title ?? "Selected job"}${parsed.company ? ` at ${parsed.company}` : ""}${parsed.location ? ` | ${parsed.location}` : ""}`);
+            if (parsed.title) setJobTitle(parsed.title);
             setReturnTo(parsed.returnTo ?? "/jobs");
             if (parsed.description?.trim()) {
               setJobDescription(parsed.description);
@@ -518,6 +526,7 @@ export default function ResumeLabPage() {
               const job = await getJob(parsed.id);
               setJobDescription(job.description ?? "");
               setJobContext(`${job.title}${job.company_name ? ` at ${job.company_name}` : ""}${job.location ? ` | ${job.location}` : ""}`);
+              setJobTitle(job.title);
               return;
             }
             if (parsed.title) {

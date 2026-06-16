@@ -23,10 +23,13 @@ from api.schemas import (
     ApplicationOut,
     BulkRebuildOut,
     BulkRebuildRequest,
+    ApplicationStageUpdate,
     CollectRequest,
     CollectResponse,
     CompanyOut,
     CompanyTargetOut,
+    CoverLetterRequest,
+    CoverLetterResponse,
     JobOut,
     ProfileIn,
     ProfileOut,
@@ -86,7 +89,7 @@ async def _lifecycle_loop() -> None:
             backup_path = backup_sqlite_database(settings.database_url, cwd=PROJECT_ROOT)
             if backup_path:
                 log.info("lifecycle: SQLite backup created at %s", backup_path)
-            lifecycle = JobRepository(session).apply_job_lifecycle(active_hours=24, retention_days=7)
+            lifecycle = JobRepository(session).apply_job_lifecycle(active_hours=168, retention_days=7)
             if lifecycle["archived"] or lifecycle["deleted"]:
                 session.commit()
                 log.info("lifecycle: archived=%d deleted=%d", lifecycle["archived"], lifecycle["deleted"])
@@ -144,6 +147,8 @@ def _job_out(
         trust_reasons=trust.trust_reasons,
         application_status=application.status if application else None,
         applied_at=application.applied_at if application else None,
+        easy_apply=_is_easy_apply(job),
+        salary_display=_salary_display(job),
     )
 
 
@@ -157,11 +162,38 @@ def _jobs_out(repository: JobRepository, jobs) -> list[JobOut]:
     ]
 
 
+def _salary_display(job) -> str | None:
+    if job.min_amount is None and job.max_amount is None:
+        return None
+    currency = job.currency or "USD"
+    interval = job.interval or "year"
+    sym = "$" if currency == "USD" else currency
+    def fmt(v): return f"{sym}{v:,.0f}"
+    if job.min_amount and job.max_amount:
+        return f"{fmt(job.min_amount)} – {fmt(job.max_amount)} / {interval}"
+    if job.min_amount:
+        return f"{fmt(job.min_amount)}+ / {interval}"
+    return f"Up to {fmt(job.max_amount)} / {interval}"
+
+
+def _is_easy_apply(job) -> bool:
+    desc = (job.description or "").lower()
+    title = (job.title or "").lower()
+    return (
+        "easy apply" in desc or "easy apply" in title
+        or "1-click apply" in desc or "quick apply" in desc
+        or job.source in {"linkedin", "indeed", "simplify_new_grad"}
+        and "apply" in desc[:200]
+    )
+
+
 def _split_collection_messages(messages: list[str]) -> tuple[list[str], list[str]]:
     warning_markers = (
         "returned no matching jobs",
+        "returned no parseable jobs",
         "requires JOB_INTELLIGENCE_USAJOBS_API_KEY",
         "career page request failed: 400 Client Error",
+        "too many 429 error responses",
     )
     warnings: list[str] = []
     errors: list[str] = []
@@ -224,6 +256,48 @@ def admin_dashboard() -> FileResponse:
     return FileResponse(WEB_ROOT / "admin.html")
 
 
+@app.get("/jobs/collection-runs")
+def get_collection_runs(keyword: str | None = None, session: Session = Depends(get_session)):
+    """Return distinct 15-min collection buckets with job counts, newest first.
+    If keyword is given, counts only jobs whose title matches (OR-split terms)."""
+    import re as _re
+    from sqlalchemy import select as _select, or_ as _or_
+    from storage.models import Job, JobStatus
+
+    # Build keyword title conditions if provided
+    def _kw_conditions(kw: str):
+        terms = [t.strip().strip('"') for t in _re.split(r'\s+OR\s+|[,;]', kw, flags=_re.IGNORECASE) if t.strip()]
+        return [Job.title.ilike(f"%{t}%") for t in terms] if terms else []
+
+    stmt = _select(
+        Job.first_seen_at,
+    ).where(Job.status == JobStatus.ACTIVE, Job.first_seen_at.isnot(None))
+
+    if keyword:
+        conds = _kw_conditions(keyword)
+        if conds:
+            stmt = stmt.where(_or_(*conds))
+
+    rows = session.scalars(stmt).all()
+
+    # Floor each timestamp to 15-min bucket in Python
+    from collections import Counter
+    buckets: Counter = Counter()
+    for ts in rows:
+        # ts is a datetime object from SQLAlchemy
+        ts_str = str(ts)  # '2026-06-15 18:47:23.123456+00:00' or similar
+        # Take first 15 chars: '2026-06-15 18:4' then floor minutes
+        date_part = ts_str[:10]
+        hour = ts_str[11:13]
+        minute = int(ts_str[14:16]) if len(ts_str) > 15 else 0
+        floored = (minute // 15) * 15
+        bucket = f"{date_part} {hour}:{floored:02d}"
+        buckets[bucket] += 1
+
+    result = sorted(buckets.items(), key=lambda x: x[0], reverse=True)[:50]
+    return [{"bucket": b, "count": c} for b, c in result]
+
+
 @app.get("/jobs", response_model=list[JobOut])
 def get_jobs(
     keyword: str | None = None,
@@ -237,6 +311,8 @@ def get_jobs(
     min_salary: float | None = None,
     max_salary: float | None = None,
     qualification_status: str | None = None,
+    first_seen_after: str | None = None,
+    first_seen_before: str | None = None,
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
@@ -254,9 +330,29 @@ def get_jobs(
         min_salary=min_salary,
         max_salary=max_salary,
         qualification_status=qualification_status,
+        first_seen_after=first_seen_after,
+        first_seen_before=first_seen_before,
         limit=limit,
         offset=offset,
     )
+    return _jobs_out(repository, jobs)
+
+
+@app.get("/jobs/archived", response_model=list[JobOut])
+def get_archived_jobs(
+    keyword: str | None = None,
+    limit: int = Query(default=200, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
+    session: Session = Depends(get_session),
+):
+    from sqlalchemy import or_, select as sa_select
+    from storage.models import Job, JobStatus
+    repository = JobRepository(session)
+    stmt = sa_select(Job).where(Job.status == JobStatus.ARCHIVED).order_by(Job.last_seen_at.desc()).limit(limit).offset(offset)
+    if keyword:
+        pattern = f"%{keyword}%"
+        stmt = stmt.where(or_(Job.title.ilike(pattern), Job.company_name.ilike(pattern)))
+    jobs = session.scalars(stmt).all()
     return _jobs_out(repository, jobs)
 
 
@@ -318,6 +414,75 @@ def mark_job_applied(job_id: int, payload: ApplicationIn, session: Session = Dep
         notes=application.notes,
         job=_job_out(repository, job),
     )
+
+
+@app.patch("/applications/{application_id}/stage", response_model=ApplicationOut)
+def update_application_stage(application_id: int, payload: ApplicationStageUpdate, session: Session = Depends(get_session)):
+    repository = JobRepository(session)
+    application = repository.get_application(application_id)
+    if application is None:
+        raise HTTPException(status_code=404, detail="application not found")
+    application.status = payload.status
+    if payload.notes is not None:
+        application.notes = payload.notes
+    session.commit()
+    return ApplicationOut(
+        id=application.id,
+        job_id=application.job_id,
+        status=application.status,
+        applied_at=application.applied_at,
+        resume_text=application.resume_text,
+        cover_letter_text=application.cover_letter_text,
+        notes=application.notes,
+        job=_job_out(repository, application.job),
+    )
+
+
+@app.post("/resume/cover-letter", response_model=CoverLetterResponse)
+def generate_cover_letter(payload: CoverLetterRequest):
+    from ai.resume_rebuilder import _provider_order, _chat_completion, _message_content  # noqa: PLC0415
+    providers = _provider_order(settings, selected_provider=payload.provider, selected_model=payload.model)
+    prompt = (
+        f"Write a concise, professional cover letter (3-4 paragraphs, plain text, no filler phrases) "
+        f"for this candidate applying to the role below.\n\n"
+        f"Job Title: {payload.job_title or 'Not specified'}\n"
+        f"Company: {payload.company_name or 'Not specified'}\n\n"
+        f"Job Description:\n{payload.job_description.strip()}\n\n"
+        f"Candidate Resume:\n{payload.base_resume.strip()}\n\n"
+        "Requirements:\n"
+        "- Open with a strong hook referencing the specific role and company\n"
+        "- Paragraph 2: most relevant experience matching the JD requirements\n"
+        "- Paragraph 3: specific technical value-add (tools, achievements)\n"
+        "- Close with a clear call to action\n"
+        "- Plain text only, no bullet points, no markdown\n"
+        "- Under 350 words\n"
+        "- No AI filler: no 'leverage', 'utilize', 'spearhead', 'passionate', 'excited to'"
+    )
+    messages = [{"role": "user", "content": prompt}]
+    for p in providers:
+        try:
+            text = _chat_completion(provider=p, messages=messages, settings=settings)
+            return CoverLetterResponse(provider=p["name"], model=p["model"], cover_letter=text.strip())
+        except Exception:
+            continue
+    raise HTTPException(status_code=503, detail="All AI providers unavailable. Configure an API key.")
+
+
+@app.post("/jobs/{job_id}/notes")
+def save_job_notes(job_id: int, payload: dict, session: Session = Depends(get_session)):
+    """Save quick notes for a job without marking it applied."""
+    repository = JobRepository(session)
+    job = repository.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="job not found")
+    notes = payload.get("notes", "")
+    application = repository.get_application_for_job(job_id)
+    if application:
+        application.notes = notes
+    else:
+        repository.upsert_application(job_id=job_id, status="Saved", notes=notes)
+    session.commit()
+    return {"status": "saved"}
 
 
 @app.post("/resume/parse", response_model=ResumeParseResponse)
@@ -533,17 +698,17 @@ def get_source_counts(session: Session = Depends(get_session)):
 
 
 @app.post("/collect", response_model=CollectResponse)
-def collect_jobs(payload: CollectRequest, session: Session = Depends(get_session)):
+async def collect_jobs(payload: CollectRequest, session: Session = Depends(get_session)):
     request = CollectionRequest(**payload.model_dump())
-    run, result = CollectionService(session).collect(request)
+    run, result = await asyncio.to_thread(CollectionService(session).collect, request)
     repository = JobRepository(session)
     return _collect_response(repository, run, result)
 
 
 @app.post("/refresh", response_model=CollectResponse)
-def refresh_jobs(payload: CollectRequest, session: Session = Depends(get_session)):
+async def refresh_jobs(payload: CollectRequest, session: Session = Depends(get_session)):
     request = CollectionRequest(**payload.model_dump())
-    run, result = CollectionService(session).collect(request)
+    run, result = await asyncio.to_thread(CollectionService(session).collect, request)
     repository = JobRepository(session)
     return _collect_response(repository, run, result)
 
@@ -568,3 +733,137 @@ def scheduler_start(payload: CollectRequest):
 @app.post("/scheduler/stop", response_model=SchedulerStatusOut)
 def scheduler_stop():
     return hourly_refresh_scheduler.stop()
+
+
+def _mask(key: str | None) -> str | None:
+    if not key:
+        return None
+    if len(key) <= 8:
+        return "***"
+    return key[:4] + "..." + key[-4:]
+
+
+@app.get("/settings/api-keys")
+def get_api_keys():
+    s = settings
+    return {
+        "gemini_keys": [
+            {"slot": i + 1, "set": bool(k), "masked": _mask(k)}
+            for i, k in enumerate([s.gemini_api_key, s.gemini_api_key_2, s.gemini_api_key_3, s.gemini_api_key_4, s.gemini_api_key_5])
+        ],
+        "groq_key": {"set": bool(s.groq_api_key), "masked": _mask(s.groq_api_key)},
+        "groq_model": s.groq_model,
+        "openrouter_key": {"set": bool(s.openrouter_api_key), "masked": _mask(s.openrouter_api_key)},
+        "openrouter_model": s.openrouter_model,
+        "nvidia_key": {"set": bool(s.nvidia_api_key), "masked": _mask(s.nvidia_api_key)},
+        "nvidia_model": s.nvidia_model,
+    }
+
+
+@app.post("/settings/api-keys")
+def save_api_keys(payload: dict):
+    env_path = PROJECT_ROOT / ".env"
+    # Read existing lines
+    existing: dict[str, str] = {}
+    if env_path.exists():
+        for line in env_path.read_text().splitlines():
+            if "=" in line and not line.startswith("#"):
+                k, _, v = line.partition("=")
+                existing[k.strip()] = v.strip()
+
+    updates: dict[str, str] = {}
+    # Gemini keys
+    gemini_keys = payload.get("gemini_keys", [])
+    for i, key in enumerate(gemini_keys[:5]):
+        if key is not None:
+            env_var = f"JOB_INTELLIGENCE_GEMINI_API_KEY{'_' + str(i + 1) if i > 0 else ''}"
+            if str(key).strip():
+                updates[env_var] = str(key).strip()
+            else:
+                existing.pop(env_var, None)
+    # Groq
+    if payload.get("groq_key") is not None:
+        if str(payload["groq_key"]).strip():
+            updates["JOB_INTELLIGENCE_GROQ_API_KEY"] = str(payload["groq_key"]).strip()
+        else:
+            existing.pop("JOB_INTELLIGENCE_GROQ_API_KEY", None)
+    if payload.get("groq_model"):
+        updates["JOB_INTELLIGENCE_GROQ_MODEL"] = str(payload["groq_model"]).strip()
+    # OpenRouter
+    if payload.get("openrouter_key") is not None:
+        if str(payload["openrouter_key"]).strip():
+            updates["JOB_INTELLIGENCE_OPENROUTER_API_KEY"] = str(payload["openrouter_key"]).strip()
+        else:
+            existing.pop("JOB_INTELLIGENCE_OPENROUTER_API_KEY", None)
+    # NVIDIA
+    if payload.get("nvidia_key") is not None:
+        if str(payload["nvidia_key"]).strip():
+            updates["JOB_INTELLIGENCE_NVIDIA_API_KEY"] = str(payload["nvidia_key"]).strip()
+        else:
+            existing.pop("JOB_INTELLIGENCE_NVIDIA_API_KEY", None)
+    if payload.get("nvidia_model"):
+        updates["JOB_INTELLIGENCE_NVIDIA_MODEL"] = str(payload["nvidia_model"]).strip()
+
+    merged = {**existing, **updates}
+    env_path.write_text("\n".join(f"{k}={v}" for k, v in merged.items()) + "\n")
+
+    # Reload settings
+    from storage.config import get_settings as _get_settings
+    _get_settings.cache_clear()
+
+    return {"ok": True, "message": "Keys saved. Restart the API server to apply changes."}
+
+
+@app.get("/scheduler/run-stats")
+def scheduler_run_stats(session: Session = Depends(get_session)):
+    from sqlalchemy import select as sa_select, func, text
+    from storage.models import Job, JobStatus, SearchRun
+    # Last 10 search runs
+    runs = session.scalars(
+        sa_select(SearchRun).order_by(SearchRun.started_at.desc()).limit(10)
+    ).all()
+    # Active/archived counts
+    active_count = session.scalar(sa_select(func.count(Job.id)).where(Job.status == JobStatus.ACTIVE)) or 0
+    archived_count = session.scalar(sa_select(func.count(Job.id)).where(Job.status == JobStatus.ARCHIVED)) or 0
+    # Jobs added in last 7 days
+    week_count = session.scalar(
+        sa_select(func.count(Job.id)).where(
+            Job.first_seen_at >= text("datetime('now', '-7 days')")
+        )
+    ) or 0
+    # Source breakdown for active
+    source_rows = session.execute(
+        sa_select(Job.source, func.count(Job.id).label("cnt"))
+        .where(Job.status == JobStatus.ACTIVE)
+        .group_by(Job.source)
+        .order_by(func.count(Job.id).desc())
+    ).all()
+    return {
+        "active_jobs": active_count,
+        "archived_jobs": archived_count,
+        "new_this_week": week_count,
+        "retention_days": 7,
+        "sources": [{"source": r[0], "count": r[1]} for r in source_rows],
+        "recent_runs": [
+            {
+                "id": r.id,
+                "search_term": r.search_term[:60] + ("…" if len(r.search_term) > 60 else ""),
+                "location": r.location,
+                "jobs_seen": r.jobs_seen,
+                "error_count": r.error_count,
+                "started_at": (r.started_at.isoformat() + "Z") if r.started_at else None,
+                "duration_s": round((r.finished_at - r.started_at).total_seconds()) if r.finished_at and r.started_at else None,
+            }
+            for r in runs
+        ],
+    }
+
+
+@app.post("/scheduler/trigger")
+def scheduler_trigger():
+    """Fire one collection run immediately in a background thread."""
+    import threading
+    from scheduler.runner import run_collection
+    t = threading.Thread(target=run_collection, daemon=True, name="manual-collect")
+    t.start()
+    return {"status": "triggered", "message": "Collection started in background — check run stats in ~2 min."}

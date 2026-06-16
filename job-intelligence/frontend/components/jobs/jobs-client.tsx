@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowUpRight, CheckCircle2, Copy, FileText, Search, SlidersHorizontal } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Copy, FileText, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { JobTable } from "@/components/dashboard/job-table";
@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { markJobApplied, searchJobs } from "@/lib/api";
+import { getArchivedJobs, getCollectionRuns, getJobsByRun, markJobApplied, saveJobNotes, searchJobs } from "@/lib/api";
 import { compactLocation, defaultProfiles, expandSearchTerm, loadProfiles, type JobProfile } from "@/lib/job-profiles";
 import { formatDate } from "@/lib/utils";
 import type { Job } from "@/types/job";
@@ -60,13 +60,72 @@ export function JobsClient() {
   const [source, setSource] = useState("all");
   const [visaStatus, setVisaStatus] = useState("all");
   const [postedWithin, setPostedWithin] = useState("all"); // all | 24h | 3d | 7d | 14d
+  const [priorityTier, setPriorityTier] = useState("all"); // all | remote | texas | nc | usa
+  const [filterCity, setFilterCity] = useState("all");
+  const [filterRun, setFilterRun] = useState("all"); // "all" | ISO bucket string (15-min window)
+  const [apiCollectionRuns, setApiCollectionRuns] = useState<{ bucket: string; count: number; label: string }[]>([]);
   const [tab, setTab] = useState("active");
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(30);
+  const [availableSources, setAvailableSources] = useState<{ source: string; job_count: number }[]>([]);
   const [lastSearchMode, setLastSearchMode] = useState<"feed" | "search">("feed");
+
+  // Derive state counts from loaded jobs — used to populate the state dropdown.
+  const stateCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const job of rankedJobs) {
+      const loc = normalize(job.location);
+      if (isRemoteJob(job, loc)) {
+        counts.set("remote", (counts.get("remote") ?? 0) + 1);
+      } else {
+        const s = extractState(job.location);
+        if (s) counts.set(s, (counts.get(s) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }, [rankedJobs]);
+
+  // City counts for the currently selected state.
+  const cityCounts = useMemo(() => {
+    if (priorityTier === "all" || priorityTier === "remote") return new Map<string, number>();
+    const counts = new Map<string, number>();
+    for (const job of rankedJobs) {
+      if (extractState(job.location) !== priorityTier) continue;
+      const city = extractCity(job.location);
+      if (city) counts.set(city, (counts.get(city) ?? 0) + 1);
+    }
+    return counts;
+  }, [rankedJobs, priorityTier]);
+
 
   useEffect(() => {
     setProfiles(loadProfiles());
+    // Load all available sources from DB for the source dropdown
+    import("@/lib/api").then(({ getSourceCounts }) =>
+      getSourceCounts().then((rows) => setAvailableSources(rows.sort((a, b) => b.job_count - a.job_count)))
+    ).catch(() => {});
+    // Load initial collection run buckets (no keyword yet — keyword loads after profile is set)
+    loadCollectionRuns(null);
   }, []);
+
+  function loadCollectionRuns(_kw: string | null) {
+    // Always show total batch counts (not keyword-filtered) so user sees "402 new" matching the Collect page
+    getCollectionRuns(null).then((runs) => {
+      const labeled = runs.map(({ bucket, count }) => {
+        // bucket is "2026-06-15 18:45" UTC
+        const d = new Date(bucket.replace(" ", "T") + ":00Z");
+        const formatted = d.toLocaleString("en-US", {
+          timeZone: "America/Chicago",
+          month: "short", day: "numeric",
+          hour: "2-digit", minute: "2-digit", hour12: true,
+        });
+        const month = parseInt(d.toLocaleString("en-US", { timeZone: "America/Chicago", month: "numeric" }));
+        const tz = month >= 3 && month <= 11 ? "CDT" : "CST";
+        return { bucket, count, label: `${formatted} ${tz}` };
+      });
+      setApiCollectionRuns(labeled);
+    }).catch(() => {});
+  }
 
   // Build the keyword OR string from a profile's preferredTitles.
   function profileKeyword(profile: JobProfile) {
@@ -75,8 +134,9 @@ export function JobsClient() {
       : profile.searchTerm;
   }
 
-  function pageJobs(items: Job[], nextPage: number) {
-    return items.slice(nextPage * PAGE_SIZE, nextPage * PAGE_SIZE + PAGE_SIZE);
+  function pageJobs(items: Job[], nextPage: number, size = pageSize) {
+    if (size === 0) return items; // 0 = "All"
+    return items.slice(nextPage * size, nextPage * size + size);
   }
 
   function withinWindow(job: Job, window: string) {
@@ -87,9 +147,21 @@ export function JobsClient() {
     return posted > 0 && posted >= cutoff;
   }
 
-  function setRankedJobFeed(items: Job[], nextPage: number) {
+  function matchesLocation(job: Job, state: string, city: string): boolean {
+    if (state === "all") return true;
+    const loc = normalize(job.location);
+    if (state === "remote") return isRemoteJob(job, loc);
+    const jobState = extractState(job.location);
+    if (jobState !== state) return false;
+    if (city === "all") return true;
+    const jobCity = extractCity(job.location);
+    return normalize(jobCity).includes(normalize(city));
+  }
+
+  function setRankedJobFeed(items: Job[], nextPage: number, state = priorityTier, city = filterCity) {
     const sorted = prioritizeJobs(items);
-    const visibleJobs = pageJobs(sorted.filter((job) => withinWindow(job, postedWithin)), nextPage);
+    const filtered = sorted.filter((job) => withinWindow(job, postedWithin) && matchesLocation(job, state, city));
+    const visibleJobs = pageJobs(filtered, nextPage);
     setRankedJobs(sorted);
     setJobs(visibleJobs);
     setSelectedJob((current) => current && visibleJobs.some((job) => job.id === current.id) ? current : null);
@@ -120,6 +192,7 @@ export function JobsClient() {
     if (!profile) return;
     const kw = profileKeyword(profile);
     setKeyword(kw);
+    loadCollectionRuns(kw); // reload counts filtered by default profile keyword
     let active = true;
     setLoading(true);
     searchJobs({
@@ -183,27 +256,45 @@ export function JobsClient() {
     await loadSearchPage(0);
   }
 
+  async function loadArchived() {
+    setLoading(true);
+    setError(null);
+    try {
+      const items = await getArchivedJobs(keyword.trim() || undefined);
+      setRankedJobs(items);
+      setJobs(pageSize === 0 ? items : items.slice(0, pageSize));
+      setPage(0);
+      setSelectedJob(null);
+      setLastSearchMode("search");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not load archived jobs");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function goToPage(nextPage: number) {
     if (nextPage < 0) return;
     if (lastSearchMode === "search") {
       await loadSearchPage(nextPage);
       return;
     }
-    const visibleJobs = pageJobs(rankedJobs.filter((job) => withinWindow(job, postedWithin)), nextPage);
+    const visibleJobs = pageJobs(rankedJobs.filter((job) => withinWindow(job, postedWithin) && matchesLocation(job, priorityTier, filterCity)), nextPage);
     setJobs(visibleJobs);
     setSelectedJob((current) => current && visibleJobs.some((job) => job.id === current.id) ? current : null);
     setPage(nextPage);
   }
 
-  // Re-apply the "posted within" window to the loaded feed without re-fetching.
+  // Re-apply filters + page size without re-fetching whenever filter state changes.
   useEffect(() => {
-    if (lastSearchMode !== "search" && rankedJobs.length === 0) return;
-    const visibleJobs = pageJobs(rankedJobs.filter((job) => withinWindow(job, postedWithin)), 0);
+    if (rankedJobs.length === 0) return;
+    const filtered = rankedJobs.filter((job) => withinWindow(job, postedWithin) && matchesLocation(job, priorityTier, filterCity));
+    const visibleJobs = pageJobs(filtered, 0, pageSize);
     setJobs(visibleJobs);
     setPage(0);
     setSelectedJob((current) => current && visibleJobs.some((job) => job.id === current.id) ? current : null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [postedWithin]);
+  }, [postedWithin, priorityTier, filterCity, pageSize]);
 
   async function applyJob(job: Job) {
     try {
@@ -236,14 +327,9 @@ export function JobsClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">Jobs</p>
-          <h1 className="mt-1 text-3xl font-medium tracking-tight">Active 24-hour job feed</h1>
-        </div>
-        <Button>
-          <SlidersHorizontal className="h-4 w-4" /> Advanced filters
-        </Button>
+      <div>
+        <p className="text-sm text-muted-foreground">Jobs</p>
+        <h1 className="mt-1 text-3xl font-medium tracking-tight">Active job feed</h1>
       </div>
       <div className="surface rounded-2xl p-4">
         <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
@@ -256,6 +342,8 @@ export function JobsClient() {
               const kw = profileKeyword(profile);
               setKeyword(kw);
               setLocation("");
+              setFilterRun("all"); // reset collection filter when profile changes
+              loadCollectionRuns(kw); // reload counts filtered by new profile keyword
               // Auto-search with all profile keywords, no location filter.
               setLoading(true);
               setError(null);
@@ -287,22 +375,13 @@ export function JobsClient() {
           </Select>
           <Input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder=".NET developer, Java developer" aria-label="Keyword" />
           <Input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Remote or Dallas, TX" aria-label="Location" />
-          <Select value={visaStatus} onValueChange={setVisaStatus}>
-            <SelectTrigger><SelectValue placeholder="Visa status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Any visa status</SelectItem>
-              <SelectItem value="H1B accepted">H1B accepted</SelectItem>
-              <SelectItem value="Sponsorship available">Sponsorship available</SelectItem>
-              <SelectItem value="USC/GC required">USC/GC required</SelectItem>
-              <SelectItem value="Not specified">Not specified</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={source} onValueChange={setSource}>
+<Select value={source} onValueChange={setSource}>
             <SelectTrigger><SelectValue placeholder="Source" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All sources</SelectItem>
-              <SelectItem value="linkedin">LinkedIn</SelectItem>
-              <SelectItem value="indeed">Indeed</SelectItem>
+              {availableSources.map(({ source: s, job_count }) => (
+                <SelectItem key={s} value={s}>{s} · {job_count.toLocaleString()}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={postedWithin} onValueChange={setPostedWithin}>
@@ -316,18 +395,89 @@ export function JobsClient() {
             </SelectContent>
           </Select>
         </div>
+        {/* Location filter: State → City (both dynamic from job data) */}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Select value={priorityTier} onValueChange={(v) => { setPriorityTier(v); setFilterCity("all"); }}>
+            <SelectTrigger className="w-52"><SelectValue placeholder="All states" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All states</SelectItem>
+              {stateCounts.get("remote") ? (
+                <SelectItem value="remote">Remote only ({stateCounts.get("remote")})</SelectItem>
+              ) : null}
+              {Array.from(stateCounts.entries())
+                .filter(([s]) => s !== "remote")
+                .sort((a, b) => b[1] - a[1])
+                .map(([state, count]) => (
+                  <SelectItem key={state} value={state}>{state} ({count})</SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          {priorityTier !== "all" && priorityTier !== "remote" && cityCounts.size > 0 && (
+            <Select value={filterCity} onValueChange={setFilterCity}>
+              <SelectTrigger className="w-52"><SelectValue placeholder={`All ${priorityTier} cities`} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All {priorityTier} cities</SelectItem>
+                {Array.from(cityCounts.entries())
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([city, count]) => (
+                    <SelectItem key={city} value={city}>{city} ({count})</SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          )}
+          {apiCollectionRuns.length > 0 && (
+            <Select
+              value={filterRun}
+              onValueChange={(value) => {
+                setFilterRun(value);
+                if (value === "all") {
+                  // Return to normal search
+                  setLoading(true);
+                  const kw = keyword.trim() ? expandSearchTerm(keyword) : null;
+                  searchJobs({ keyword: kw, location: null, source: null, visa_status: null, work_mode: null, qualification_status: null, limit: CANDIDATE_LIMIT, offset: 0 })
+                    .then((items) => { setRankedJobFeed(items, 0); setPage(0); setLastSearchMode("search"); })
+                    .catch((e: unknown) => setError(e instanceof Error ? e.message : "Load failed"))
+                    .finally(() => setLoading(false));
+                } else {
+                  // Fetch ALL jobs first_seen in this 15-min bucket — no keyword filter
+                  // (the batch may contain any source/title; keyword would exclude most)
+                  setLoading(true);
+                  setJobs([]);  // clear stale results immediately
+                  setRankedJobs([]);
+                  // No keyword filter — all jobs in this batch were already collected by profile
+                  // search keywords, so all are relevant regardless of title wording
+                  getJobsByRun(value, null)
+                    .then((items) => { setRankedJobFeed(items, 0); setPage(0); setLastSearchMode("search"); })
+                    .catch((e: unknown) => setError(e instanceof Error ? e.message : "Load failed"))
+                    .finally(() => setLoading(false));
+                }
+              }}
+            >
+              <SelectTrigger className="w-60"><SelectValue placeholder="All collections" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All collections</SelectItem>
+                {apiCollectionRuns.map(({ bucket, label, count }) => (
+                  <SelectItem key={bucket} value={bucket}>{label} · {count} jobs</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
         <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <Tabs value={tab} onValueChange={setTab}>
+          <Tabs value={tab} onValueChange={(value) => {
+            setTab(value);
+            if (value === "archived") loadArchived();
+          }}>
             <TabsList>
               <TabsTrigger value="active">Active today</TabsTrigger>
               <TabsTrigger value="qualified">Qualified</TabsTrigger>
-              <TabsTrigger value="disqualified">Disqualified</TabsTrigger>
               <TabsTrigger value="remote">Remote</TabsTrigger>
               <TabsTrigger value="hybrid">Hybrid</TabsTrigger>
               <TabsTrigger value="onsite">On-site</TabsTrigger>
+              <TabsTrigger value="archived">Archived</TabsTrigger>
             </TabsList>
           </Tabs>
-          <Button onClick={runSearch}>Search</Button>
+          <Button onClick={runSearch} disabled={tab === "archived"}>Search</Button>
         </div>
       </div>
       {error ? <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{error}</div> : null}
@@ -345,15 +495,31 @@ export function JobsClient() {
           )}
           <div className="flex flex-col gap-3 rounded-xl border bg-card/70 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
             <span className="text-muted-foreground">
-              Page {page + 1} | {rankedJobs.length.toLocaleString()} ranked active jobs | Top order: Remote + visa, DFW hybrid + visa, Texas, NC, nearby states, USA
+              {pageSize === 0 ? `${rankedJobs.length.toLocaleString()} total (all shown)` : `Page ${page + 1} · ${jobs.length} shown · ${rankedJobs.length.toLocaleString()} total`}
+              {priorityTier !== "all" && (
+                <span className="text-primary font-medium">
+                  {" · "}{priorityTier === "remote" ? "Remote" : priorityTier === "texas" ? "Texas" : "NC"}
+                  {filterCity !== "all" && ` › ${filterCity.replace(/\b\w/g, (c) => c.toUpperCase())}`}
+                </span>
+              )}
             </span>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => goToPage(page - 1)} disabled={loading || page === 0}>Previous</Button>
-              <Button variant="outline" onClick={() => goToPage(page + 1)} disabled={loading || (page + 1) * PAGE_SIZE >= rankedJobs.length}>Next</Button>
+            <div className="flex items-center gap-2">
+              <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(0); }}>
+                <SelectTrigger className="h-8 w-24 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="30">30 / page</SelectItem>
+                  <SelectItem value="60">60 / page</SelectItem>
+                  <SelectItem value="90">90 / page</SelectItem>
+                  <SelectItem value="120">120 / page</SelectItem>
+                  <SelectItem value="0">All</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" onClick={() => goToPage(page - 1)} disabled={loading || page === 0 || pageSize === 0}>Previous</Button>
+              <Button variant="outline" size="sm" onClick={() => goToPage(page + 1)} disabled={loading || pageSize === 0 || (page + 1) * pageSize >= rankedJobs.length}>Next</Button>
             </div>
           </div>
         </div>
-        {selectedJob ? <JobDetailsPanel job={selectedJob} onApply={applyJob} onResumeLab={openResumeLab} /> : null}
+        {selectedJob ? <JobDetailsPanel job={selectedJob} onApply={applyJob} onResumeLab={openResumeLab} onClose={() => setSelectedJob(null)} /> : null}
       </div>
     </div>
   );
@@ -363,13 +529,42 @@ function JobDetailsPanel({
   job,
   onApply,
   onResumeLab,
+  onClose,
 }: {
   job: Job | null;
   onApply: (job: Job) => void;
   onResumeLab: (job: Job) => void;
+  onClose: () => void;
 }) {
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
   const canEmbedPreview = job?.job_url ? canEmbedJobUrl(job.job_url) : false;
+
+  useEffect(() => {
+    setNotes("");
+  }, [job?.id]);
+
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
+  async function handleSaveNotes() {
+    if (!job || !notes.trim()) return;
+    setSavingNotes(true);
+    try {
+      await saveJobNotes(job.id, notes.trim());
+      toast.success("Notes saved");
+    } catch {
+      toast.error("Could not save notes");
+    } finally {
+      setSavingNotes(false);
+    }
+  }
 
   function jobDetailsText() {
     if (!job) return "";
@@ -408,10 +603,15 @@ function JobDetailsPanel({
   return (
     <Card className="surface h-fit shadow-none xl:sticky xl:top-24">
       <CardHeader className="space-y-3">
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary">{job.source}</Badge>
-          <Badge variant={job.visa_score === "High" ? "success" : job.visa_score === "Low" ? "destructive" : "warning"}>{job.visa_score}</Badge>
-          <Badge variant="outline">{job.work_mode}</Badge>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="secondary">{job.source}</Badge>
+            <Badge variant={job.visa_score === "High" ? "success" : job.visa_score === "Low" ? "destructive" : "warning"}>{job.visa_score}</Badge>
+            <Badge variant="outline">{job.work_mode}</Badge>
+          </div>
+          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground" onClick={onClose} title="Close (Esc)">
+            <span className="text-base leading-none">✕</span>
+          </Button>
         </div>
         <div>
           <CardTitle className="leading-6">{job.title}</CardTitle>
@@ -422,8 +622,14 @@ function JobDetailsPanel({
         <div className="grid gap-2 text-sm">
           <div className="flex justify-between gap-4"><span className="text-muted-foreground">Posted</span><strong className="text-right font-medium">{formatDate(job.date_posted)}</strong></div>
           <div className="flex justify-between gap-4"><span className="text-muted-foreground">Job type</span><strong className="text-right font-medium">{job.job_type ?? "Not listed"}</strong></div>
+          {job.salary_display && (
+            <div className="flex justify-between gap-4"><span className="text-muted-foreground">Salary</span><strong className="text-right font-medium">{job.salary_display}</strong></div>
+          )}
           <div className="flex justify-between gap-4"><span className="text-muted-foreground">Fit score</span><strong className="text-right font-medium">{job.fit_score}</strong></div>
           <div className="flex justify-between gap-4"><span className="text-muted-foreground">Trust</span><strong className="text-right font-medium">{job.trust_status}</strong></div>
+          {job.easy_apply && (
+            <div className="flex justify-between gap-4"><span className="text-muted-foreground">Easy Apply</span><Badge variant="secondary" className="text-xs">Yes</Badge></div>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -440,6 +646,22 @@ function JobDetailsPanel({
               </a>
             </Button>
           ) : null}
+        </div>
+
+        <div>
+          <h3 className="mb-2 text-sm font-medium">Notes</h3>
+          <div className="flex gap-2">
+            <Input
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add a quick note..."
+              className="text-sm"
+              onKeyDown={(e) => { if (e.key === "Enter") handleSaveNotes(); }}
+            />
+            <Button size="sm" variant="outline" onClick={handleSaveNotes} disabled={savingNotes || !notes.trim()}>
+              Save
+            </Button>
+          </div>
         </div>
 
         <div>
@@ -593,6 +815,41 @@ function isUnitedStates(location: string) {
 
 function normalize(value: string | null | undefined) {
   return (value ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+const STATE_ABBR: Record<string, string> = {
+  al: "Alabama", ak: "Alaska", az: "Arizona", ar: "Arkansas", ca: "California",
+  co: "Colorado", ct: "Connecticut", de: "Delaware", fl: "Florida", ga: "Georgia",
+  hi: "Hawaii", id: "Idaho", il: "Illinois", in: "Indiana", ia: "Iowa",
+  ks: "Kansas", ky: "Kentucky", la: "Louisiana", me: "Maine", md: "Maryland",
+  ma: "Massachusetts", mi: "Michigan", mn: "Minnesota", ms: "Mississippi",
+  mo: "Missouri", mt: "Montana", ne: "Nebraska", nv: "Nevada", nh: "New Hampshire",
+  nj: "New Jersey", nm: "New Mexico", ny: "New York", nc: "North Carolina",
+  nd: "North Dakota", oh: "Ohio", ok: "Oklahoma", or: "Oregon", pa: "Pennsylvania",
+  ri: "Rhode Island", sc: "South Carolina", sd: "South Dakota", tn: "Tennessee",
+  tx: "Texas", ut: "Utah", vt: "Vermont", va: "Virginia", wa: "Washington",
+  wv: "West Virginia", wi: "Wisconsin", wy: "Wyoming", dc: "District of Columbia",
+};
+
+const STATE_NAME_TO_ABBR = Object.fromEntries(
+  Object.entries(STATE_ABBR).map(([abbr, name]) => [name.toLowerCase(), abbr])
+);
+
+function extractState(location: string | null | undefined): string | null {
+  const loc = normalize(location);
+  const abbrMatch = loc.match(/,\s*([a-z]{2})(?:\s|$|,)/);
+  const abbr1 = abbrMatch?.[1];
+  if (abbr1 && STATE_ABBR[abbr1]) return STATE_ABBR[abbr1] ?? null;
+  for (const [name, abbr] of Object.entries(STATE_NAME_TO_ABBR)) {
+    if (loc.includes(name)) return STATE_ABBR[abbr] ?? null;
+  }
+  return null;
+}
+
+function extractCity(location: string | null | undefined): string | null {
+  const raw = (location ?? "").trim();
+  const match = raw.match(/^(.+?),\s*[A-Z]{2}/);
+  return match?.[1]?.trim() ?? null;
 }
 
 function postedTime(job: Job) {

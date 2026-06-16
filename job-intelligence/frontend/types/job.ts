@@ -23,6 +23,8 @@ export type Job = {
   trust_status: string;
   application_status: string | null;
   applied_at: string | null;
+  easy_apply: boolean;
+  salary_display: string | null;
 };
 
 export type Stats = {
@@ -50,6 +52,7 @@ export type CollectPayload = {
   hours_old: number | null;
   use_company_targets: boolean;
   visa_friendly_only: boolean;
+  skip_expand?: boolean;
 };
 
 export type CollectResult = {

@@ -31,7 +31,7 @@ class Settings(BaseSettings):
         default=None,
         validation_alias=AliasChoices("JOB_INTELLIGENCE_NVIDIA_API_KEY", "NVIDIA_API_KEY"),
     )
-    nvidia_model: str = "minimaxai/minimax-m3"
+    nvidia_model: str = "meta/llama-3.1-8b-instruct"
     nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
     groq_api_key: str | None = Field(
         default=None,

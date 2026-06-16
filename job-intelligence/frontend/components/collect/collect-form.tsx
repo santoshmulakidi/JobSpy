@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2, Circle, Loader2, Play, RotateCcw, XCircle } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -73,6 +73,21 @@ export function CollectForm() {
   const [selectedSources, setSelectedSources] = useState<string[]>(defaultSources);
   const [loading, setLoading] = useState(false);
   const [runs, setRuns] = useState<KeywordRun[]>([]);
+  const abortRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  // Warn before navigating away mid-collection
+  useEffect(() => {
+    if (!loading) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [loading]);
 
   useEffect(() => { setProfiles(loadProfiles()); }, []);
 
@@ -100,6 +115,7 @@ export function CollectForm() {
     const resolvedRemote = locDef?.isRemote ?? remoteMode === "true";
     const safeResults = Number.isFinite(resultsWanted) ? Math.min(5000, Math.max(1, resultsWanted)) : 1000;
 
+    abortRef.current = false;
     const initial: KeywordRun[] = keywords.map((kw) => ({ keyword: kw, status: "pending", added: 0, seen: 0 }));
     setRuns(initial);
     setLoading(true);
@@ -108,8 +124,9 @@ export function CollectForm() {
     let totalSeen = 0;
 
     for (let i = 0; i < keywords.length; i++) {
-      const kw = keywords[i];
-      setRuns((prev) => prev.map((r, idx) => idx === i ? { ...r, status: "running" } : r));
+      if (abortRef.current) break;
+      const kw = keywords[i] ?? "";
+      if (mountedRef.current) setRuns((prev) => prev.map((r, idx) => idx === i ? { ...r, status: "running" } : r));
       try {
         const res: CollectResult = await collectJobs({
           search_term: kw,
@@ -122,22 +139,34 @@ export function CollectForm() {
           hours_old: hoursOld === "all" ? null : Number(hoursOld),
           use_company_targets: useTargets,
           visa_friendly_only: visaFriendly,
+          skip_expand: true,
         });
         totalAdded += res.jobs_added;
         totalSeen += res.jobs_seen;
-        setRuns((prev) => prev.map((r, idx) =>
+        if (mountedRef.current) setRuns((prev) => prev.map((r, idx) =>
           idx === i ? { ...r, status: "done", added: res.jobs_added, seen: res.jobs_seen } : r
         ));
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Failed";
-        setRuns((prev) => prev.map((r, idx) =>
-          idx === i ? { ...r, status: "error", error: msg } : r
-        ));
+        if (mountedRef.current) {
+          const msg = err instanceof Error ? err.message : "Failed";
+          setRuns((prev) => prev.map((r, idx) =>
+            idx === i ? { ...r, status: "error", error: msg } : r
+          ));
+        }
       }
     }
 
+    if (mountedRef.current) {
+      setLoading(false);
+      toast.success(`All done: ${totalAdded} new jobs from ${totalSeen} seen`);
+    }
+  }
+
+  function stopCollect() {
+    abortRef.current = true;
     setLoading(false);
-    toast.success(`All done: ${totalAdded} new jobs from ${totalSeen} seen`);
+    setRuns((prev) => prev.map((r) => r.status === "pending" ? { ...r, status: "error", error: "Stopped" } : r));
+    toast.info("Collection stopped");
   }
 
   const totalAdded = runs.reduce((s, r) => s + r.added, 0);
@@ -315,12 +344,19 @@ export function CollectForm() {
             </label>
           </div>
 
-          <Button size="lg" onClick={submitCollect} disabled={loading}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-            {loading
-              ? `Searching ${doneCount}/${keywords.length} keywords…`
-              : `Start collection (${keywords.length} keyword${keywords.length !== 1 ? "s" : ""})`}
-          </Button>
+          <div className="flex gap-3">
+            <Button size="lg" onClick={submitCollect} disabled={loading}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              {loading
+                ? `Searching ${doneCount}/${keywords.length} keywords…`
+                : `Start collection (${keywords.length} keyword${keywords.length !== 1 ? "s" : ""})`}
+            </Button>
+            {loading && (
+              <Button size="lg" variant="destructive" onClick={stopCollect}>
+                Stop
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 

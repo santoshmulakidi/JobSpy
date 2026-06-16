@@ -81,10 +81,37 @@ class JobRepository:
         run.errors = errors
         run.status = "failed" if errors and jobs_seen == 0 else "completed"
 
+    # Sources that should never appear in the senior-role active feed.
+    _BLOCKED_SOURCES: frozenset[str] = frozenset({"simplify_new_grad", "github_internships"})
+
+    # Career page URLs that always fail — block at storage so they never waste retries.
+    _BLOCKED_CAREER_URLS: frozenset[str] = frozenset({"metacareers.com"})
+
+    # jobright_h1b ignores search keywords — filter to only .NET/C# titles if it ever reappears
+    _JOBRIGHT_TITLE_TOKENS = (".net", "c#", "dotnet", "csharp", "asp.net")
+
+    # Jobs posted more than this many days ago are too stale to surface.
+    _MAX_DATE_POSTED_DAYS = 7
+
     def upsert_jobs(self, jobs: Iterable[dict[str, Any]], search_run: SearchRun | None) -> list[Job]:
         upserted: list[Job] = []
         seen_fingerprints: set[str] = set()
+        stale_cutoff = date.today() - timedelta(days=self._MAX_DATE_POSTED_DAYS)
         for raw_job in jobs:
+            if raw_job.get("site") in self._BLOCKED_SOURCES or raw_job.get("source") in self._BLOCKED_SOURCES:
+                continue
+            # jobright_h1b floods DB with keyword-unrelated jobs — title-filter it
+            if raw_job.get("site") == "jobright_h1b" or raw_job.get("source") == "jobright_h1b":
+                title = (raw_job.get("title") or "").lower()
+                if not any(t in title for t in self._JOBRIGHT_TITLE_TOKENS):
+                    continue
+            # Skip jobs the board posted more than 14 days ago — boards sometimes
+            # return stale listings regardless of the hours_old filter we send them.
+            raw_date = raw_job.get("date_posted")
+            if raw_date is not None:
+                coerced = self._coerce_date(raw_date)
+                if coerced is not None and coerced < stale_cutoff:
+                    continue
             normalized = self._normalize_job(raw_job)
             fingerprint = normalized["fingerprint"]
             seen_fingerprints.add(fingerprint)
@@ -100,19 +127,24 @@ class JobRepository:
             upserted.append(existing)
         return upserted
 
-    def apply_job_lifecycle(self, *, active_hours: int = 24, retention_days: int = 7) -> dict[str, int]:
+    def apply_job_lifecycle(self, *, active_hours: int = 168, retention_days: int = 30) -> dict[str, int]:
         """Keep the active feed fresh while preserving applied job history."""
         archived = self.archive_stale_jobs(active_hours=active_hours)
         deleted = self.delete_expired_jobs(retention_days=retention_days)
         return {"archived": archived, "deleted": deleted}
 
-    def archive_stale_jobs(self, *, active_hours: int = 24) -> int:
+    def archive_stale_jobs(self, *, active_hours: int = 168) -> int:
+        """Archive jobs not re-seen in active_hours OR posted more than 14 days ago."""
         cutoff = utc_now() - timedelta(hours=active_hours)
+        date_cutoff = date.today() - timedelta(days=self._MAX_DATE_POSTED_DAYS)
         jobs = self.session.scalars(
             select(Job).where(
                 and_(
                     Job.status == JobStatus.ACTIVE,
-                    Job.first_seen_at < cutoff,
+                    or_(
+                        Job.last_seen_at < cutoff,
+                        and_(Job.date_posted.isnot(None), Job.date_posted < date_cutoff),
+                    ),
                 )
             )
         ).all()
@@ -178,6 +210,8 @@ class JobRepository:
         remote: bool | None = None,
         min_salary: float | None = None,
         max_salary: float | None = None,
+        first_seen_after: str | None = None,
+        first_seen_before: str | None = None,
         limit: int = 100,
         offset: int = 0,
     ) -> list[Job]:
@@ -191,6 +225,8 @@ class JobRepository:
             remote=remote,
             min_salary=min_salary,
             max_salary=max_salary,
+            first_seen_after=first_seen_after,
+            first_seen_before=first_seen_before,
         )
         statement = statement.order_by(Job.date_posted.desc().nullslast(), Job.last_seen_at.desc())
         if visa_status or work_mode:
@@ -246,6 +282,9 @@ class JobRepository:
         profile.updated_at = utc_now()
         self.session.flush()
         return profile
+
+    def get_application(self, application_id: int) -> Application | None:
+        return self.session.get(Application, application_id)
 
     def list_applications(self) -> list[Application]:
         return list(
@@ -354,16 +393,31 @@ class JobRepository:
             )
         ) or 0
 
+    # Aggregator placeholder names that aren't real companies
+    _AGGREGATOR_COMPANY_PATTERNS = (
+        "jobs via ",
+        "posted via ",
+        "via ",
+    )
+
     def company_counts(self, limit: int = 20) -> list[tuple[str, int]]:
-        return list(
-            self.session.execute(
-                select(Job.company_name, func.count(Job.id))
-                .where(and_(Job.status == JobStatus.ACTIVE, Job.company_name.is_not(None)))
-                .group_by(Job.company_name)
-                .order_by(func.count(Job.id).desc())
-                .limit(limit)
-            )
+        stmt = (
+            select(Job.company_name, func.count(Job.id))
+            .where(and_(Job.status == JobStatus.ACTIVE, Job.company_name.is_not(None)))
+            .group_by(Job.company_name)
+            .order_by(func.count(Job.id).desc())
+            .limit(limit * 3)  # fetch extra to account for filtered aggregators
         )
+        rows = list(self.session.execute(stmt))
+        results = []
+        for name, count in rows:
+            lower = (name or "").lower()
+            if any(lower.startswith(p) for p in self._AGGREGATOR_COMPANY_PATTERNS):
+                continue
+            results.append((name, count))
+            if len(results) >= limit:
+                break
+        return results
 
     def location_counts(self, limit: int = 20) -> list[tuple[str, int]]:
         return list(
@@ -400,13 +454,22 @@ class JobRepository:
         remote: bool | None,
         min_salary: float | None,
         max_salary: float | None,
+        first_seen_after: str | None = None,
+        first_seen_before: str | None = None,
     ) -> Select:
         statement = select(Job).where(Job.status == JobStatus.ACTIVE)
+        if first_seen_after:
+            statement = statement.where(Job.first_seen_at >= first_seen_after)
+        if first_seen_before:
+            statement = statement.where(Job.first_seen_at < first_seen_before)
         if keyword:
-            keyword_conditions = []
-            for term in self._expanded_keyword_terms(keyword):
-                pattern = f"%{term}%"
-                keyword_conditions.extend([Job.title.ilike(pattern), Job.description.ilike(pattern)])
+            # Title-only match — description matching is too broad and pulls in
+            # QA/Salesforce/unrelated jobs that mention .NET/C# as a footnote.
+            # The DB is already .NET-focused (collected by keyword), so title is enough.
+            keyword_conditions = [
+                Job.title.ilike(f"%{term}%")
+                for term in self._expanded_keyword_terms(keyword)
+            ]
             if keyword_conditions:
                 statement = statement.where(or_(*keyword_conditions))
         if company:
@@ -481,30 +544,32 @@ class JobRepository:
             if term.strip().strip('"')
         ]
         lowered = " ".join(terms).lower()
-        if ".net" in lowered or "c#" in lowered or "asp.net" in lowered:
+        if ".net" in lowered or "c#" in lowered or "asp.net" in lowered or "dotnet" in lowered:
+            # Only add title-specific patterns — bare "C#" or "ASP.NET" match too many unrelated titles
             terms.extend(
                 [
-                    "C#",
-                    "ASP.NET",
-                    "ASP.NET Core",
-                    ".NET Core",
-                    "Azure Developer",
-                    "Senior Software Engineer .NET",
-                    "Senior Backend Developer C#",
-                    ".NET Solutions Architect",
-                    "Lead .NET Developer",
-                    "Principal .NET Developer",
+                    ".NET Developer",
+                    "C# Developer",
+                    "ASP.NET Developer",
+                    ".NET Engineer",
+                    "C# Engineer",
+                    ".NET Architect",
+                    "DotNet Developer",
+                    "Full Stack .NET",
+                    "Backend Developer C#",
+                    "Software Engineer .NET",
+                    "Software Engineer C#",
                 ]
             )
         if re.search(r"\bjava\b", lowered):
             terms.extend(
                 [
-                    "Spring Boot",
-                    "Senior Software Engineer Java",
+                    "Java Developer",
+                    "Java Engineer",
+                    "Spring Boot Developer",
+                    "Java Full Stack",
                     "Backend Java Developer",
-                    "Java Full Stack Developer",
-                    "Microservices Java",
-                    "Java Cloud Developer",
+                    "Java Software Engineer",
                     "Lead Java Developer",
                     "Principal Java Developer",
                 ]
@@ -637,8 +702,19 @@ class JobRepository:
         self.session.flush()
         return company
 
+    @staticmethod
+    def _clean_company_name(name: str | None) -> str | None:
+        if not name:
+            return name
+        import re as _re
+        # Strip aggregator prefixes like "Jobs via Dice", "Posted via LinkedIn"
+        cleaned = _re.sub(r"^(?:jobs?\s+via|posted\s+(?:via|on|by)|via)\s+", "", name.strip(), flags=_re.IGNORECASE)
+        # Strip trailing aggregator suffixes like "- via Dice"
+        cleaned = _re.sub(r"\s*[-–]\s*(?:via|on)\s+\w+$", "", cleaned, flags=_re.IGNORECASE)
+        return cleaned.strip() or name
+
     def _normalize_job(self, raw_job: dict[str, Any]) -> dict[str, Any]:
-        company_name = raw_job.get("company") or raw_job.get("company_name")
+        company_name = self._clean_company_name(raw_job.get("company") or raw_job.get("company_name"))
         normalized = {
             "fingerprint": raw_job.get("fingerprint") or fingerprint_job(raw_job),
             "source": raw_job.get("site") or raw_job.get("source") or "unknown",

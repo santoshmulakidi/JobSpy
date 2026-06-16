@@ -202,7 +202,8 @@ Project: Project name or brief domain context
 Environment: technologies
 
 EDUCATION
-Degree, school, year if available.
+Each degree on its own line using this exact format: Degree Name, Field | University Name, Location | Year
+Example: Master of Science, Computer Science | Northwestern Polytechnic University, Fremont, CA | 2016
 
 CRITICAL: Include every section from the original: contact info, summary, skills, EVERY work experience employer with all dates intact, education, certifications. Do not drop, merge, or summarize any employer or role. The number of employer blocks in your output must equal the number in the base resume.
 ATS rules for this section:

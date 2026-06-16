@@ -15,16 +15,24 @@ import type {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_JOB_API_URL ?? "http://127.0.0.1:8000";
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(path: string, init?: RequestInit, timeoutMs = 30_000): Promise<T> {
+  const controller = new AbortController();
+  const timer = typeof window !== "undefined" ? setTimeout(() => controller.abort(), timeoutMs) : null;
   const cacheOptions = typeof window === "undefined" ? { next: { revalidate: 60 } } : {};
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
-    ...cacheOptions,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...init?.headers,
+      },
+      ...cacheOptions,
+    });
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
@@ -57,11 +65,38 @@ export async function searchJobs(payload: Record<string, unknown>) {
   });
 }
 
+export async function getCollectionRuns(keyword?: string | null): Promise<{ bucket: string; count: number }[]> {
+  const params = new URLSearchParams();
+  if (keyword) params.set("keyword", keyword);
+  const qs = params.toString();
+  return request<{ bucket: string; count: number }[]>(`/jobs/collection-runs${qs ? `?${qs}` : ""}`);
+}
+
+export async function getJobsByRun(bucket: string, keyword?: string | null): Promise<Job[]> {
+  // bucket format from API: "2026-06-15 18:45" (UTC, space-separated)
+  const parts = bucket.split(" ");
+  const datePart = parts[0] ?? "";
+  const timeParts = (parts[1] ?? "00:00").split(":").map(Number);
+  const hh = timeParts[0] ?? 0;
+  const mm = timeParts[1] ?? 0;
+  const endMm = (mm + 15) % 60;
+  const endHh = mm + 15 >= 60 ? hh + 1 : hh;
+  const endBucket = `${datePart} ${String(endHh).padStart(2, "0")}:${String(endMm).padStart(2, "0")}`;
+  const params = new URLSearchParams({
+    first_seen_after: bucket,
+    first_seen_before: endBucket,
+    limit: "500",
+    offset: "0",
+  });
+  if (keyword) params.set("keyword", keyword);
+  return request<Job[]>(`/jobs?${params.toString()}`);
+}
+
 export async function collectJobs(payload: CollectPayload) {
   return request<CollectResult>("/collect", {
     method: "POST",
     body: JSON.stringify(payload),
-  });
+  }, 5 * 60_000); // 5 min — scraping multiple sites takes time
 }
 
 export async function markJobApplied(jobId: number, payload: Record<string, unknown> = { status: "Applied" }) {
@@ -106,7 +141,7 @@ export async function rebuildResume(payload: {
   return request<ResumeRebuildResult>("/resume/rebuild", {
     method: "POST",
     body: JSON.stringify(payload),
-  });
+  }, 180_000); // 3 min — AI + fallback chain can be slow
 }
 
 export async function exportResumeDocx(resumeText: string, filename = "resume"): Promise<{ blob: Blob; savedTo: string | null }> {
@@ -143,4 +178,38 @@ export function resumeModelChoices(): ResumeModelChoice[] {
 
 export async function getSchedulerStatus() {
   return request<SchedulerStatus>("/scheduler/status");
+}
+
+export async function getArchivedJobs(keyword?: string, limit = 200) {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (keyword) params.set("keyword", keyword);
+  return request<Job[]>(`/jobs/archived?${params}`);
+}
+
+export async function updateApplicationStage(applicationId: number, status: string, notes?: string) {
+  return request<{ ok: boolean }>(`/applications/${applicationId}/stage`, {
+    method: "PATCH",
+    body: JSON.stringify({ status, notes: notes ?? null }),
+  });
+}
+
+export async function saveJobNotes(jobId: number, notes: string) {
+  return request<{ ok: boolean }>(`/jobs/${jobId}/notes`, {
+    method: "POST",
+    body: JSON.stringify({ notes }),
+  });
+}
+
+export async function generateCoverLetter(payload: {
+  base_resume: string;
+  job_description: string;
+  job_title?: string | null;
+  company_name?: string | null;
+  provider?: string | null;
+  model?: string | null;
+}) {
+  return request<{ provider: string; model: string | null; cover_letter: string }>("/resume/cover-letter", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }

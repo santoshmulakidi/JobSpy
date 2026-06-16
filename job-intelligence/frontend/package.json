@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build",
-    "start": "next start --port 3000",
+    "start": "next build && cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public && node .next/standalone/server.js",
+    "serve": "cp -r .next/static .next/standalone/.next/static && (cp -r public .next/standalone/public 2>/dev/null || true) && node .next/standalone/server.js",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },

@@ -31,9 +31,14 @@ class AtsCareerPageCollector(Collector):
         if request.visa_friendly_only:
             targets = [target for target in targets if self._is_visa_friendly(target)]
 
+        _BLOCKED_DOMAINS = {"metacareers.com"}
+
         for target in targets:
             url = target.get("career_url")
             if not url:
+                continue
+            domain = urlparse(url).netloc.lstrip("www.")
+            if any(domain.endswith(b) for b in _BLOCKED_DOMAINS):
                 continue
             try:
                 target_jobs = self._collect_target(target, request)

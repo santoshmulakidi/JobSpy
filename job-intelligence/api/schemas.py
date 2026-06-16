@@ -3,21 +3,41 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer, field_validator, model_validator
 
 
 class CollectRequest(BaseModel):
     search_term: str
-    location: str | None = None
+    location: str = "United States"
     sites: list[str] = Field(default_factory=lambda: ["linkedin", "indeed"])
     results_wanted: int = Field(default=1000, ge=1, le=5000)
-    country_indeed: str = Field(default="usa", frozen=True)
+    country_indeed: str = "usa"
     is_remote: bool = False
     job_type: str | None = None
     hours_old: float | None = Field(default=None, gt=0)
     use_company_targets: bool = False
     company_target_limit: int = Field(default=25, ge=1, le=100)
     visa_friendly_only: bool = False
+    skip_expand: bool = False
+
+    @field_validator("country_indeed", mode="before")
+    @classmethod
+    def _lock_country(cls, v: str) -> str:
+        return "usa"
+
+    @field_validator("location", mode="before")
+    @classmethod
+    def _lock_location(cls, v: str | None) -> str:
+        if not v or not v.strip():
+            return "United States"
+        # Reject any non-USA location strings
+        usa_terms = {"united states", "usa", "us", "america", "remote", "united states of america"}
+        if v.strip().lower() not in usa_terms:
+            # Allow state names and city, state formats — block country names
+            import re
+            if re.search(r"\b(canada|uk|united kingdom|india|australia|germany|france|mexico|brazil)\b", v.lower()):
+                return "United States"
+        return v
 
 
 class CollectResponse(BaseModel):
@@ -77,8 +97,18 @@ class JobOut(BaseModel):
     trust_reasons: list[str] = Field(default_factory=list)
     application_status: str | None = None
     applied_at: datetime | None = None
+    easy_apply: bool = False
+    salary_display: str | None = None
 
     model_config = {"from_attributes": True}
+
+    @field_serializer("first_seen_at", "last_seen_at", "applied_at")
+    def _serialize_dt(self, v: datetime | None) -> str | None:
+        if v is None:
+            return None
+        # SQLite returns naive datetimes; they are always UTC — append Z so browsers
+        # parse them correctly instead of treating them as local time.
+        return v.isoformat() + "Z"
 
 
 class ProfileIn(BaseModel):
@@ -99,11 +129,44 @@ class ProfileOut(ProfileIn):
     model_config = {"from_attributes": True}
 
 
+APPLICATION_STAGES = [
+    "Saved",
+    "Applied",
+    "Phone Screen",
+    "Technical Interview",
+    "Onsite Interview",
+    "Offer",
+    "Accepted",
+    "Rejected",
+    "Withdrawn",
+]
+
+
 class ApplicationIn(BaseModel):
     status: str = "Applied"
     resume_text: str | None = None
     cover_letter_text: str | None = None
     notes: str | None = None
+
+
+class ApplicationStageUpdate(BaseModel):
+    status: str
+    notes: str | None = None
+
+
+class CoverLetterRequest(BaseModel):
+    base_resume: str = Field(min_length=50)
+    job_description: str = Field(min_length=50)
+    job_title: str | None = None
+    company_name: str | None = None
+    provider: str | None = None
+    model: str | None = None
+
+
+class CoverLetterResponse(BaseModel):
+    provider: str
+    model: str | None
+    cover_letter: str
 
 
 class ApplicationOut(BaseModel):

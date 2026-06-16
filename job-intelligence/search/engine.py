@@ -24,6 +24,8 @@ class SearchEngine:
         min_salary: float | None = None,
         max_salary: float | None = None,
         qualification_status: str | None = None,
+        first_seen_after: str | None = None,
+        first_seen_before: str | None = None,
         limit: int = 100,
         offset: int = 0,
     ):
@@ -38,6 +40,8 @@ class SearchEngine:
             remote=remote,
             min_salary=min_salary,
             max_salary=max_salary,
+            first_seen_after=first_seen_after,
+            first_seen_before=first_seen_before,
             limit=500 if qualification_status else limit,
             offset=0 if qualification_status else offset,
         )

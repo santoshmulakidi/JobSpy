@@ -162,7 +162,8 @@ class CollectionService:
 
     @staticmethod
     def _normalize_job_type_request(request: CollectionRequest) -> CollectionRequest:
-        request = request.model_copy(update={"search_term": CollectionService._expanded_family_search_term(request.search_term)})
+        if not request.skip_expand:
+            request = request.model_copy(update={"search_term": CollectionService._expanded_family_search_term(request.search_term)})
         keyword_job_types = {"c2c": "C2C", "w2": "W2"}
         if request.job_type not in keyword_job_types:
             return request
