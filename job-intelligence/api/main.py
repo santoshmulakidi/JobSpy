@@ -468,6 +468,107 @@ def generate_cover_letter(payload: CoverLetterRequest):
     raise HTTPException(status_code=503, detail="All AI providers unavailable. Configure an API key.")
 
 
+@app.post("/resume/cover-letter-docx")
+def export_cover_letter_docx(payload: CoverLetterRequest):
+    """Export an already-generated cover letter as a Word .docx with a professional header."""
+    import re as _re
+    from docx import Document as _Document
+    from docx.shared import Pt as _Pt, Inches as _Inches, RGBColor as _RGB
+    from docx.enum.text import WD_ALIGN_PARAGRAPH as _WD_ALIGN
+    from io import BytesIO as _BytesIO
+
+    cover_letter_text = payload.cover_letter_text
+    if not cover_letter_text or not cover_letter_text.strip():
+        raise HTTPException(status_code=422, detail="cover_letter_text is required")
+
+    # Extract contact info from base_resume
+    resume = payload.base_resume or ""
+    lines = [l.strip() for l in resume.strip().splitlines() if l.strip()]
+    candidate_name = lines[0] if lines else "Candidate"
+
+    email_match = _re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", resume)
+    phone_match = _re.search(r"(\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}", resume)
+    linkedin_match = _re.search(r"linkedin\.com/in/[A-Za-z0-9_-]+", resume, _re.IGNORECASE)
+
+    email = email_match.group(0) if email_match else ""
+    phone = phone_match.group(0) if phone_match else ""
+    linkedin = linkedin_match.group(0) if linkedin_match else ""
+
+    doc = _Document()
+    _BLUE = _RGB(0x1F, 0x3A, 0x5F)
+    _BODY = _RGB(0x1A, 0x1A, 0x1A)
+    _GRAY = _RGB(0x55, 0x55, 0x55)
+
+    # Page margins
+    for section in doc.sections:
+        section.top_margin = _Inches(1.0)
+        section.bottom_margin = _Inches(1.0)
+        section.left_margin = _Inches(1.15)
+        section.right_margin = _Inches(1.15)
+
+    normal = doc.styles["Normal"]
+    normal.font.name = "Arial"
+    normal.font.size = _Pt(11)
+    normal.font.color.rgb = _BODY
+    normal.paragraph_format.space_after = _Pt(0)
+
+    # Name heading
+    p = doc.add_paragraph()
+    p.alignment = _WD_ALIGN.CENTER
+    run = p.add_run(candidate_name)
+    run.bold = True
+    run.font.size = _Pt(16)
+    run.font.color.rgb = _BLUE
+
+    # Contact line
+    contact_parts = [x for x in [email, phone, linkedin] if x]
+    if contact_parts:
+        p2 = doc.add_paragraph()
+        p2.alignment = _WD_ALIGN.CENTER
+        p2.paragraph_format.space_before = _Pt(2)
+        run2 = p2.add_run("  |  ".join(contact_parts))
+        run2.font.size = _Pt(9)
+        run2.font.color.rgb = _GRAY
+
+    # Divider
+    p3 = doc.add_paragraph()
+    p3.paragraph_format.space_before = _Pt(6)
+    p3.paragraph_format.space_after = _Pt(12)
+    from docx.oxml.ns import qn as _qn
+    from docx.oxml import OxmlElement as _OxmlElem
+    pPr = p3._p.get_or_add_pPr()
+    pBdr = _OxmlElem("w:pBdr")
+    bottom = _OxmlElem("w:bottom")
+    bottom.set(_qn("w:val"), "single")
+    bottom.set(_qn("w:sz"), "6")
+    bottom.set(_qn("w:space"), "1")
+    bottom.set(_qn("w:color"), "1F3A5F")
+    pBdr.append(bottom)
+    pPr.append(pBdr)
+
+    # Cover letter body — split by blank lines into paragraphs
+    body_paras = [blk.strip() for blk in _re.split(r"\n{2,}", cover_letter_text.strip()) if blk.strip()]
+    for i, para in enumerate(body_paras):
+        p = doc.add_paragraph()
+        p.paragraph_format.space_before = _Pt(0)
+        p.paragraph_format.space_after = _Pt(10)
+        run = p.add_run(para)
+        run.font.size = _Pt(11)
+        run.font.color.rgb = _BODY
+
+    buf = _BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+
+    safe_name = _re.sub(r"[^a-zA-Z0-9_-]", "_", candidate_name)[:40]
+    filename = f"Cover_Letter_{safe_name}.docx"
+    return Response(
+        content=buf.read(),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @app.post("/jobs/{job_id}/notes")
 def save_job_notes(job_id: int, payload: dict, session: Session = Depends(get_session)):
     """Save quick notes for a job without marking it applied."""

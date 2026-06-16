@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { exportResumeDocx, generateCoverLetter, getJob, getJobs, parseResume, rebuildResume, resumeModelChoices } from "@/lib/api";
+import { exportCoverLetterDocx, exportResumeDocx, generateCoverLetter, getJob, getJobs, parseResume, rebuildResume, resumeModelChoices } from "@/lib/api";
 import { defaultProfiles, loadProfiles, saveProfiles, type JobProfile } from "@/lib/job-profiles";
 import type { ResumeRebuildResult } from "@/types/job";
 
@@ -464,10 +464,12 @@ export default function ResumeLabPage() {
   const [showPreview, setShowPreview] = useState(true);
   const [docxLoading, setDocxLoading] = useState(false);
   const [refinePulse, setRefinePulse] = useState(false);
+  const [activeChipLabel, setActiveChipLabel] = useState<string | null>(null);
   const atsResultRef = useRef<HTMLDivElement>(null);
   const [coverLetter, setCoverLetter] = useState("");
   const [coverLetterProvider, setCoverLetterProvider] = useState("");
   const [coverLetterLoading, setCoverLetterLoading] = useState(false);
+  const [coverLetterDocxLoading, setCoverLetterDocxLoading] = useState(false);
 
   async function downloadWord() {
     if (!rebuildResult) return;
@@ -671,10 +673,11 @@ export default function ResumeLabPage() {
     }
   }
 
-  async function refineRebuiltResume(instructionOverride?: string) {
+  async function refineRebuiltResume(instructionOverride?: string, chipLabel?: string) {
     const instruction = (instructionOverride ?? refineInstruction).trim();
     if (!rebuildResult || !instruction) return;
     setRefineLoading(true);
+    if (chipLabel) setActiveChipLabel(chipLabel);
     try {
       const result = await rebuildResume({
         base_resume: rebuildResult.rebuilt_resume,
@@ -699,6 +702,7 @@ export default function ResumeLabPage() {
       toast.error(error instanceof Error ? error.message : "Refinement failed");
     } finally {
       setRefineLoading(false);
+      setActiveChipLabel(null);
     }
   }
 
@@ -815,6 +819,36 @@ export default function ResumeLabPage() {
       toast.error(error instanceof Error ? error.message : "Cover letter generation failed");
     } finally {
       setCoverLetterLoading(false);
+    }
+  }
+
+  async function downloadCoverLetterDocx() {
+    if (!coverLetter.trim()) return;
+    setCoverLetterDocxLoading(true);
+    try {
+      const resumeSource = rebuildResult?.rebuilt_resume ?? resumeText;
+      const blob = await exportCoverLetterDocx({
+        base_resume: resumeSource,
+        job_description: jobDescription,
+        cover_letter_text: coverLetter,
+        job_title: jobTitle || null,
+        company_name: jobContext.includes(" at ") ? jobContext.split(" at ")[1]?.split(" | ")[0] ?? null : null,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const sanitize = (s: string) => s.replace(/[^a-zA-Z0-9 _-]/g, "").replace(/\s+/g, "_").slice(0, 50);
+      a.download = jobTitle.trim() ? `Cover_Letter_${sanitize(jobTitle)}.docx` : "Cover_Letter.docx";
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Cover letter downloaded as Word document");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Cover letter Word export failed");
+    } finally {
+      setCoverLetterDocxLoading(false);
     }
   }
 
@@ -1127,36 +1161,52 @@ export default function ResumeLabPage() {
                     <FileText className="h-4 w-4" /> Copy prompt
                   </Button>
                 </div>
-                <div className="rounded-lg border p-4 space-y-3">
-                  <p className="text-sm font-medium">Refine this resume</p>
-                  <p className="text-xs text-muted-foreground">Click a suggestion to apply it, or type your own instruction.</p>
-
-                  <div className="space-y-1.5">
-                    <p className="text-xs font-semibold text-muted-foreground">Suggestions</p>
-                    <div className="flex flex-wrap gap-2">
-                      {buildRefineSuggestions().map((s) => (
-                        <button
-                          key={s.label}
-                          type="button"
-                          disabled={refineLoading}
-                          onClick={() => void refineRebuiltResume(s.instruction)}
-                          className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs text-blue-800 transition hover:bg-blue-100 disabled:opacity-50 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-                        >
-                          {s.label}
-                        </button>
-                      ))}
-                    </div>
+                <div className="rounded-lg border p-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-medium">Action plan — click any item to apply</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Sorted by impact. Each click sends an AI refinement pass.</p>
                   </div>
 
-                  <div className="flex gap-2">
+                  {(() => {
+                    const suggestions = buildRefineSuggestions();
+                    if (!suggestions.length) return null;
+                    const priorityColor = (i: number) =>
+                      i === 0 ? "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300 hover:bg-red-100"
+                      : i <= 2 ? "border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-800 dark:bg-orange-900/20 dark:text-orange-300 hover:bg-orange-100"
+                      : "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-100";
+                    return (
+                      <div className="space-y-2">
+                        {suggestions.map((s, i) => {
+                          const isActive = activeChipLabel === s.label;
+                          return (
+                            <button
+                              key={s.label}
+                              type="button"
+                              disabled={refineLoading}
+                              onClick={() => void refineRebuiltResume(s.instruction, s.label)}
+                              className={`w-full text-left flex items-center gap-3 rounded-lg border px-3 py-2.5 text-xs transition disabled:opacity-50 ${priorityColor(i)}`}
+                            >
+                              {isActive
+                                ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                                : <span className="shrink-0 rounded-full bg-current/10 px-1.5 py-0.5 font-bold opacity-60">{i + 1}</span>
+                              }
+                              <span className="font-medium">{s.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+
+                  <div className="flex gap-2 pt-1 border-t">
                     <Input
                       value={refineInstruction}
                       onChange={(e) => setRefineInstruction(e.target.value)}
-                      placeholder='Or type your own, e.g. "remove oldest job", "make bullets shorter"'
+                      placeholder='Custom instruction, e.g. "remove oldest job", "shorten bullets"'
                       onKeyDown={(e) => { if (e.key === "Enter" && !refineLoading) void refineRebuiltResume(); }}
                     />
-                    <Button onClick={() => refineRebuiltResume()} disabled={refineLoading || !refineInstruction.trim()}>
-                      {refineLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                    <Button onClick={() => void refineRebuiltResume()} disabled={refineLoading || !refineInstruction.trim()}>
+                      {refineLoading && !activeChipLabel ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                       Refine
                     </Button>
                   </div>
@@ -1188,22 +1238,9 @@ export default function ResumeLabPage() {
                   <Button variant="outline" onClick={() => copyText(coverLetter, "Cover letter copied")}>
                     <Copy className="h-4 w-4" /> Copy
                   </Button>
-                  <Button variant="outline" onClick={() => {
-                    const sanitize = (s: string) => s.replace(/[^a-zA-Z0-9 _-]/g, "").replace(/\s+/g, "_").slice(0, 50);
-                    const name = jobTitle.trim() ? `Cover_Letter_${sanitize(jobTitle)}` : "Cover_Letter";
-                    const blob = new Blob([coverLetter], { type: "text/plain" });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = `${name}.txt`;
-                    a.style.display = "none";
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    toast.success("Cover letter downloaded");
-                  }}>
-                    <Download className="h-4 w-4" /> Download (.txt)
+                  <Button variant="outline" onClick={downloadCoverLetterDocx} disabled={coverLetterDocxLoading}>
+                    {coverLetterDocxLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                    Download Word (.docx)
                   </Button>
                 </>
               )}

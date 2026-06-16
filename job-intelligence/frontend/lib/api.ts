@@ -213,3 +213,22 @@ export async function generateCoverLetter(payload: {
     body: JSON.stringify(payload),
   });
 }
+
+export async function exportCoverLetterDocx(payload: {
+  base_resume: string;
+  job_description: string;
+  cover_letter_text: string;
+  job_title?: string | null;
+  company_name?: string | null;
+}): Promise<Blob> {
+  const response = await fetch(`${API_BASE_URL}/resume/cover-letter-docx`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`Cover letter export failed: ${response.status}${detail ? ` - ${detail}` : ""}`);
+  }
+  return response.blob();
+}
