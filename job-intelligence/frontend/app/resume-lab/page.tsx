@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { exportResumeDocx, getJob, getJobs, parseResume, rebuildResume, resumeModelChoices } from "@/lib/api";
+import { exportResumeDocx, generateCoverLetter, getJob, getJobs, parseResume, rebuildResume, resumeModelChoices } from "@/lib/api";
 import { defaultProfiles, loadProfiles, saveProfiles, type JobProfile } from "@/lib/job-profiles";
 import type { ResumeRebuildResult } from "@/types/job";
 
@@ -465,6 +465,9 @@ export default function ResumeLabPage() {
   const [docxLoading, setDocxLoading] = useState(false);
   const [refinePulse, setRefinePulse] = useState(false);
   const atsResultRef = useRef<HTMLDivElement>(null);
+  const [coverLetter, setCoverLetter] = useState("");
+  const [coverLetterProvider, setCoverLetterProvider] = useState("");
+  const [coverLetterLoading, setCoverLetterLoading] = useState(false);
 
   async function downloadWord() {
     if (!rebuildResult) return;
@@ -782,6 +785,37 @@ export default function ResumeLabPage() {
     });
 
     return out;
+  }
+
+  async function generateCoverLetterText() {
+    const resumeSource = rebuildResult?.rebuilt_resume ?? resumeText;
+    if (resumeSource.trim().length < 50) {
+      toast.error("Generate or paste a resume first");
+      return;
+    }
+    if (jobDescription.trim().length < 50) {
+      toast.error("Add a job description first");
+      return;
+    }
+    setCoverLetterLoading(true);
+    setCoverLetter("");
+    try {
+      const result = await generateCoverLetter({
+        base_resume: resumeSource,
+        job_description: jobDescription,
+        job_title: jobTitle || null,
+        company_name: jobContext.includes(" at ") ? jobContext.split(" at ")[1]?.split(" | ")[0] ?? null : null,
+        provider: selectedModel.slice(0, selectedModel.indexOf("|")),
+        model: selectedModel.slice(selectedModel.indexOf("|") + 1),
+      });
+      setCoverLetter(result.cover_letter);
+      setCoverLetterProvider(result.provider);
+      toast.success(`Cover letter generated with ${result.provider}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Cover letter generation failed");
+    } finally {
+      setCoverLetterLoading(false);
+    }
   }
 
   async function copyText(text: string, message: string) {
@@ -1131,6 +1165,50 @@ export default function ResumeLabPage() {
             ) : (
               <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
                 Attach a base resume, add a job description, then click Rebuild Resume.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="surface shadow-none">
+          <CardHeader>
+            <CardTitle>Cover letter</CardTitle>
+            <CardDescription>
+              Generated from your {rebuildResult ? "rebuilt resume" : "base resume"} and the job description above.
+              {jobContext !== "No job selected" ? ` Targeting: ${jobContext}` : ""}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={generateCoverLetterText} disabled={coverLetterLoading}>
+                {coverLetterLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                Generate Cover Letter
+              </Button>
+              {coverLetter && (
+                <>
+                  <Button variant="outline" onClick={() => copyText(coverLetter, "Cover letter copied")}>
+                    <Copy className="h-4 w-4" /> Copy
+                  </Button>
+                </>
+              )}
+            </div>
+            {coverLetter ? (
+              <div className="space-y-2">
+                {coverLetterProvider && (
+                  <p className="text-xs text-muted-foreground">
+                    Generated with <span className="font-medium">{coverLetterProvider}</span> · uses {rebuildResult ? "rebuilt resume" : "base resume"}
+                  </p>
+                )}
+                <Textarea
+                  value={coverLetter}
+                  onChange={(e) => setCoverLetter(e.target.value)}
+                  className="min-h-80 font-sans text-sm leading-relaxed"
+                />
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
+                {rebuildResult
+                  ? "Resume rebuilt — click Generate Cover Letter to create a tailored cover letter."
+                  : "Add a job description and resume, then click Generate Cover Letter."}
               </div>
             )}
           </CardContent>
