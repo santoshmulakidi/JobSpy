@@ -322,7 +322,7 @@ export function JobsClient() {
       description,
       returnTo: "/jobs",
     }));
-    router.push(`/resume-lab?jobId=${job.id}`);
+    window.open(`/resume-lab?jobId=${job.id}`, "_blank", "noopener");
   }
 
   return (

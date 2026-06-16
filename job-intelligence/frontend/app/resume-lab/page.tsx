@@ -1188,6 +1188,23 @@ export default function ResumeLabPage() {
                   <Button variant="outline" onClick={() => copyText(coverLetter, "Cover letter copied")}>
                     <Copy className="h-4 w-4" /> Copy
                   </Button>
+                  <Button variant="outline" onClick={() => {
+                    const sanitize = (s: string) => s.replace(/[^a-zA-Z0-9 _-]/g, "").replace(/\s+/g, "_").slice(0, 50);
+                    const name = jobTitle.trim() ? `Cover_Letter_${sanitize(jobTitle)}` : "Cover_Letter";
+                    const blob = new Blob([coverLetter], { type: "text/plain" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `${name}.txt`;
+                    a.style.display = "none";
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    toast.success("Cover letter downloaded");
+                  }}>
+                    <Download className="h-4 w-4" /> Download (.txt)
+                  </Button>
                 </>
               )}
             </div>
