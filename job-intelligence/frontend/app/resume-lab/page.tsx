@@ -543,7 +543,11 @@ export default function ResumeLabPage() {
             description?: string;
             jobUrl?: string | null;
             returnTo?: string;
+            preloadedResume?: string;
           };
+          if (parsed.preloadedResume?.trim()) {
+            setRebuildResult({ provider: "saved", model: null, rebuilt_resume: parsed.preloadedResume, change_summary: [], warnings: [], prompt: "" });
+          }
           if (parsed.jobUrl) setJobUrl(parsed.jobUrl);
           if (!jobId || parsed.id === jobId) {
             setJobContext(`${parsed.title ?? "Selected job"}${parsed.company ? ` at ${parsed.company}` : ""}${parsed.location ? ` | ${parsed.location}` : ""}`);

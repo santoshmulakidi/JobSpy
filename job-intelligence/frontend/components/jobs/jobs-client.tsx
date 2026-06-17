@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { generateColdEmail, getArchivedJobs, getCollectionRuns, getDocumentGenerationJobs, getJobDocuments, getJobsByRun, markJobApplied, queueDocumentGeneration, resumeModelChoices, saveJobNotes, searchJobs } from "@/lib/api";
+import { exportResumeDocx, generateColdEmail, getArchivedJobs, getCollectionRuns, getDocumentGenerationJobs, getJobDocuments, getJobsByRun, markJobApplied, queueDocumentGeneration, resumeModelChoices, saveJobNotes, searchJobs } from "@/lib/api";
 import { compactLocation, defaultProfiles, expandSearchTerm, loadProfiles, type JobProfile } from "@/lib/job-profiles";
 import { formatDate } from "@/lib/utils";
 import type { AIGenerationJob, ColdEmailResult, Job, JobDocuments } from "@/types/job";
@@ -115,6 +115,16 @@ export function JobsClient() {
     loadCollectionRuns(null);
     getDocumentGenerationJobs(25).then(setGenerationJobs).catch(() => {});
   }, []);
+
+  // Poll while any job is queued or running
+  useEffect(() => {
+    const active = generationJobs.some((j) => j.status === "queued" || j.status === "running");
+    if (!active) return;
+    const id = setInterval(() => {
+      getDocumentGenerationJobs(25).then(setGenerationJobs).catch(() => {});
+    }, 5000);
+    return () => clearInterval(id);
+  }, [generationJobs]);
 
   function loadCollectionRuns(_kw: string | null) {
     // Always show total batch counts (not keyword-filtered) so user sees "402 new" matching the Collect page
@@ -841,15 +851,39 @@ function JobDetailsPanel({
             <h3 className="mb-2 text-sm font-medium">Saved AI documents</h3>
             <div className="space-y-2 text-xs text-muted-foreground">
               {documents.resume_versions.slice(0, 3).map((version) => (
-                <div key={`resume-${version.id}`} className="flex items-center justify-between gap-2">
-                  <span>Resume · {version.provider ?? "AI"} · {new Date(version.created_at).toLocaleString()}</span>
-                  <Button size="sm" variant="ghost" onClick={() => copyText(version.content_text, "Resume version copied")}>Copy</Button>
+                <div key={`resume-${version.id}`} className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="shrink-0">Resume · {version.provider ?? "AI"} · {new Date(version.created_at).toLocaleString()}</span>
+                  <div className="flex gap-1 shrink-0">
+                    <Button size="sm" variant="ghost" onClick={() => copyText(version.content_text, "Resume copied")}>Copy</Button>
+                    <Button size="sm" variant="ghost" onClick={() => {
+                      const company = version.company_name ?? job.company_name ?? "";
+                      const title = version.job_title ?? job.title ?? "";
+                      const name = version.content_text.split("\n")[0]?.trim().replace(/\s+/g, "_") ?? "resume";
+                      const filename = `${name}_${title.replace(/[^a-z0-9]+/gi, "_")}`.slice(0, 80);
+                      exportResumeDocx(version.content_text, filename).then(({ blob, savedTo }) => {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a"); a.href = url; a.download = `${filename}.docx`; a.click(); URL.revokeObjectURL(url);
+                        toast.success(savedTo ? `Saved to ${savedTo}` : "Downloaded");
+                      }).catch((e) => toast.error(String(e)));
+                    }}>Download</Button>
+                    <Button size="sm" variant="ghost" onClick={() => {
+                      window.sessionStorage.setItem("resumeLabJob", JSON.stringify({
+                        id: job.id, title: job.title, company: job.company_name,
+                        location: job.location, jobUrl: job.job_url,
+                        description: job.description ?? "", returnTo: "/jobs",
+                        preloadedResume: version.content_text,
+                      }));
+                      window.open(`/resume-lab?jobId=${job.id}`, "_blank", "noopener");
+                    }}>Refine ↗</Button>
+                  </div>
                 </div>
               ))}
               {documents.cover_letter_versions.slice(0, 3).map((version) => (
-                <div key={`cover-${version.id}`} className="flex items-center justify-between gap-2">
-                  <span>Cover letter · {version.provider ?? "AI"} · {new Date(version.created_at).toLocaleString()}</span>
-                  <Button size="sm" variant="ghost" onClick={() => copyText(version.content_text, "Cover letter copied")}>Copy</Button>
+                <div key={`cover-${version.id}`} className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="shrink-0">Cover letter · {version.provider ?? "AI"} · {new Date(version.created_at).toLocaleString()}</span>
+                  <div className="flex gap-1 shrink-0">
+                    <Button size="sm" variant="ghost" onClick={() => copyText(version.content_text, "Cover letter copied")}>Copy</Button>
+                  </div>
                 </div>
               ))}
             </div>
