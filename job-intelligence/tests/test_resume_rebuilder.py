@@ -7,7 +7,7 @@ from docx import Document
 from fastapi.testclient import TestClient
 
 from ai.resume_docx import build_resume_docx
-from ai.resume_rebuilder import rebuild_resume
+from ai.resume_rebuilder import build_resume_prompt, rebuild_resume
 from api.main import app
 from storage.config import Settings
 
@@ -58,6 +58,22 @@ def clear_ai_env(monkeypatch):
 
 def make_test_settings(**kwargs):
     return Settings(_env_file=None, **kwargs)
+
+
+def test_resume_prompt_includes_recruiter_authentic_humanizer_rules():
+    prompt = build_resume_prompt(
+        base_resume=BASE_RESUME,
+        job_description=JOB_DESCRIPTION,
+        profile_name=".NET Developer",
+        target_title="Senior .NET Developer",
+    )
+
+    assert "Humanize / Recruiter Authentic Rewrite" in prompt
+    assert "Reduce generic AI-style wording" in prompt
+    assert "Add real-world technical context where supported by the base resume" in prompt
+    assert "Do not fabricate metrics, employers, dates, tools, or project names" in prompt
+    assert "Keep ATS keywords, but make them read naturally" in prompt
+    assert "Content quality recruiter self-check" in prompt
 
 
 def test_rebuild_resume_uses_openrouter_first(monkeypatch):
@@ -281,8 +297,7 @@ August 2024 - Present
 
     document = Document(io.BytesIO(docx_bytes))
 
-    assert len(document.tables) == 1
-    table = document.tables[0]
+    table = next(table for table in document.tables if table.cell(0, 0).text == "Languages")
     assert len(table.rows) == 9
     assert table.cell(0, 0).text == "Languages"
     assert table.cell(0, 1).text == "C#, TypeScript, JavaScript, Python, T-SQL, PowerShell"

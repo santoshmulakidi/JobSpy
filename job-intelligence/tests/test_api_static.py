@@ -1,10 +1,13 @@
 import base64
 import io
 import zipfile
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
 from api.main import app, _split_collection_messages
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_local_dashboard_is_served():
@@ -222,6 +225,30 @@ def test_admin_css_uses_design_tokens():
     assert "backdrop-filter: var(--blur)" in response.text
 
 
+def test_resume_lab_has_action_plan_completion_and_warning_fixes():
+    source = (PROJECT_ROOT / "frontend/app/resume-lab/page.tsx").read_text()
+
+    assert "completedSuggestionIds" in source
+    assert "setCompletedSuggestionIds" in source
+    assert "isCompleted" in source
+    assert "Fix warning:" in source
+    assert "Build a truthful fix for this warning" in source
+    assert "No action items left" in source
+
+
+def test_resume_lab_recruiter_quality_checks_avoid_noisy_metrics_and_phrases():
+    source = (PROJECT_ROOT / "frontend/app/resume-lab/page.tsx").read_text()
+
+    assert "metricIssueLimit" in source
+    assert "metrics/context" in source
+    assert "metricCandidateCount" in source
+    assert "const normalized = cleaned.replace" in source
+    assert "normalized.includes(\".\")" in source
+    assert '"indianapolis"' in source
+    assert '"contract"' in source
+    assert "Add metrics to ${noMetric} bullets" not in source
+
+
 def test_admin_theme_script_is_served():
     client = TestClient(app)
 
@@ -248,6 +275,61 @@ def test_refresh_endpoint_is_registered():
     assert "/scheduler/status" in paths
     assert "/scheduler/start" in paths
     assert "/scheduler/stop" in paths
+    assert "/resume/cold-email" in paths
+
+
+def test_cold_email_endpoint_returns_copy_ready_messages(monkeypatch):
+    client = TestClient(app)
+
+    def fake_chat_completion(*, provider, messages, settings):
+        assert provider["name"] == "gemini"
+        prompt = messages[0]["content"]
+        assert "Recruiter Name: Priya Shah" in prompt
+        assert "Job Title: Senior .NET Developer" in prompt
+        assert "Company: Contoso" in prompt
+        return """
+SUBJECT:
+Senior .NET Developer | Azure/.NET background
+
+EMAIL:
+Hi Priya,
+
+I saw the Senior .NET Developer role at Contoso and wanted to reach out directly. My background includes ASP.NET Core, Azure, SQL Server, and React delivery for enterprise systems.
+
+Would you be open to a quick conversation this week?
+
+LINKEDIN:
+Hi Priya, I saw Contoso's Senior .NET Developer role. My background is in .NET, Azure, SQL Server, and React. Would it be worth connecting?
+
+FOLLOW_UP:
+Hi Priya, just following up on my note about the Senior .NET Developer role at Contoso. Happy to share more context if helpful.
+"""
+
+    monkeypatch.setattr("ai.resume_rebuilder._chat_completion", fake_chat_completion)
+
+    response = client.post(
+        "/resume/cold-email",
+        json={
+            "job_title": "Senior .NET Developer",
+            "company_name": "Contoso",
+            "job_description": "Build ASP.NET Core APIs on Azure with SQL Server and React.",
+            "candidate_summary": "Senior .NET Developer with Azure and React experience.",
+            "recruiter_name": "Priya Shah",
+            "recruiter_email": "priya@example.com",
+            "tone": "warm",
+            "provider": "gemini",
+            "model": "gemini-2.5-flash",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["provider"] == "gemini"
+    assert body["subject"] == "Senior .NET Developer | Azure/.NET background"
+    assert body["recruiter_email"] == "priya@example.com"
+    assert "Hi Priya" in body["email_body"]
+    assert "Would it be worth connecting?" in body["linkedin_message"]
+    assert "just following up" in body["follow_up_message"]
 
 
 def test_resume_parse_endpoint_reads_txt_and_docx():

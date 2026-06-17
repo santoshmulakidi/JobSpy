@@ -233,6 +233,12 @@ ATS SCORE TARGET — reach 90%+:
 - Front-load the highest-frequency JD keywords in the TECHNICAL SKILLS section and again inside the two most recent role bullets.
 - Do not replace multi-word JD phrases with only acronyms. Keep both: "Continuous Integration/Continuous Delivery (CI/CD)".
 
+Humanize / Recruiter Authentic Rewrite rules:
+- Reduce generic AI-style wording and make the resume read like a real recruiter-ready technical resume.
+- Add real-world technical context where supported by the base resume, including domains, system names, integrations, constraints, deadlines, cloud services, databases, CI/CD pipelines, testing, UAT, migrations, and production support.
+- Keep ATS keywords, but make them read naturally inside truthful project context.
+- Do not fabricate metrics, employers, dates, tools, or project names. Also do not fabricate cloud services, visa status, responsibilities, or business results.
+
 Humanize / anti-AI-detection rules — AI detectors flag uniform structure; breaking these specifically reduces detection:
 - Do NOT make all bullets the same length or the same sentence structure. Mix short punchy bullets with longer contextual ones inside every role.
 - Do NOT use the same action verb to start more than 2 bullets across the whole resume.
@@ -243,7 +249,7 @@ Humanize / anti-AI-detection rules — AI detectors flag uniform structure; brea
 - Vary ending structures: not every bullet ends with a technology name or a result. Some can end mid-thought if that's how the work actually was.
 - Do not fabricate metrics, employers, dates, tools, project names, cloud services, visa status, or business results.
 
-Content quality self-check before returning:
+Content quality recruiter self-check before returning:
 - Read each role's bullets. If they all follow the same [Verb] [tech] for [generic outcome] pattern, rewrite half of them to be structurally different.
 - Confirm no verb appears as a bullet opener more than twice total across the whole resume.
 - Confirm the summary is 3 sentences or fewer and does not contain the words "passionate", "driven", "results-oriented", or "leverage".

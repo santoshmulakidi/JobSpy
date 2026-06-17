@@ -4,13 +4,13 @@ Standalone local job intelligence platform powered by [JobSpy](https://github.co
 
 The app collects jobs from multiple sources, stores them locally, tracks changes,
 supports H1B/visa-friendly job discovery, and provides FastAPI APIs plus a
-modern glass-themed dashboard.
+modern Next.js dashboard.
 
 ## Features
 
-- Local FastAPI application
-- Plain HTML/CSS/JavaScript UI, no frontend build step
-- Glass-themed main dashboard with Amethyst, Light, and Dark modes
+- FastAPI backend
+- Next.js frontend with dashboard, jobs, collect, Resume Lab, applications, saved searches, and sources pages
+- Glass-themed dashboard with Amethyst, Light, and Dark modes
 - Separate admin dashboard at `/admin`
 - Job collection with JobSpy sources:
   - LinkedIn
@@ -49,6 +49,11 @@ job-intelligence/
 ├── api/
 ├── collectors/
 ├── dashboard/
+├── frontend/
+│   ├── app/
+│   ├── components/
+│   ├── lib/
+│   └── types/
 ├── data/
 │   └── company_targets.json
 ├── docs/
@@ -71,7 +76,14 @@ job-intelligence/
 
 ## Local URLs
 
-After starting the API:
+Current Next.js UI:
+
+- Frontend: http://127.0.0.1:3000/
+- Jobs: http://127.0.0.1:3000/jobs
+- Collect: http://127.0.0.1:3000/collect
+- Resume Lab: http://127.0.0.1:3000/resume-lab
+
+FastAPI backend:
 
 - Main dashboard: http://127.0.0.1:8000/
 - Admin dashboard: http://127.0.0.1:8000/admin
@@ -105,6 +117,14 @@ Run the app:
 
 ```bash
 uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+Run the Next.js frontend in a second terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev -- --hostname 127.0.0.1 --port 3000
 ```
 
 Run tests:
@@ -146,6 +166,14 @@ Run the app:
 uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
+Run the Next.js frontend in a second PowerShell window:
+
+```powershell
+cd frontend
+npm install
+npm run dev -- --hostname 127.0.0.1 --port 3000
+```
+
 Run tests:
 
 ```powershell
@@ -154,7 +182,7 @@ python -m pytest tests
 
 ## Basic Usage
 
-1. Open http://127.0.0.1:8000/
+1. Open http://127.0.0.1:3000/
 2. Go to **Collect**
 3. Choose a preset or select sources manually
 4. Click **Start Collection**
@@ -242,6 +270,22 @@ export JOB_INTELLIGENCE_DEFAULT_SITES="linkedin,indeed,google,career_page,jobrig
 $env:JOB_INTELLIGENCE_SCHEDULER_HOURS="1"
 $env:JOB_INTELLIGENCE_DEFAULT_SITES="linkedin,indeed,google,career_page,jobright_h1b,dice"
 ```
+
+## Oracle Free Tier Deployment
+
+Use the Docker Compose deployment for Oracle Cloud Free Tier:
+
+- Deployment guide: [docs/oracle-free-tier-deploy.md](docs/oracle-free-tier-deploy.md)
+- Public app URL after deployment: `http://<ORACLE_PUBLIC_IP>`
+- Backend health check through Nginx: `http://<ORACLE_PUBLIC_IP>/api/health`
+
+The Docker stack runs:
+
+- `nginx` on port `80`
+- `frontend` on internal port `3000`
+- `api` on internal port `8000`
+- `scheduler` for hourly refresh
+- a persistent SQLite Docker volume
 
 ## API Endpoints
 

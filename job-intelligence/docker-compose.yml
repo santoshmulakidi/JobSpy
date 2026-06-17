@@ -1,56 +1,52 @@
 services:
-  postgres:
-    image: postgres:16
-    environment:
-      POSTGRES_DB: jobintel
-      POSTGRES_USER: jobintel
-      POSTGRES_PASSWORD: jobintel
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U jobintel -d jobintel"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
+  # ── FastAPI backend ──────────────────────────────────────────────────────────
   api:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile.api
+    restart: always
+    env_file: .env
     environment:
-      JOB_INTELLIGENCE_DATABASE_URL: postgresql+psycopg://jobintel:jobintel@postgres:5432/jobintel
-    ports:
-      - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
+      JOB_INTELLIGENCE_DATABASE_URL: sqlite:////data/job_intelligence.db
 
-  dashboard:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-    command: ["streamlit", "run", "dashboard/app.py", "--server.address", "0.0.0.0", "--server.port", "8501"]
-    environment:
-      JOB_INTELLIGENCE_DATABASE_URL: postgresql+psycopg://jobintel:jobintel@postgres:5432/jobintel
-    ports:
-      - "8501:8501"
-    depends_on:
-      postgres:
-        condition: service_healthy
+    volumes:
+      - db-data:/data
 
+  # ── Hourly scheduler ────────────────────────────────────────────────────────
   scheduler:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile.api
     command: ["python", "-m", "scheduler.runner"]
+    restart: always
+    env_file: .env
     environment:
-      JOB_INTELLIGENCE_DATABASE_URL: postgresql+psycopg://jobintel:jobintel@postgres:5432/jobintel
-      JOB_INTELLIGENCE_SCHEDULER_HOURS: "4"
+      JOB_INTELLIGENCE_DATABASE_URL: sqlite:////data/job_intelligence.db
+
+    volumes:
+      - db-data:/data         # same volume as API — shares the SQLite file
+
+  # ── Next.js frontend ─────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_JOB_API_URL: /api   # Nginx routes /api → FastAPI
+    restart: always
+
+  # ── Nginx reverse proxy (single public entry point) ──────────────────────────
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      postgres:
-        condition: service_healthy
+      - api
+      - frontend
 
 volumes:
-  postgres-data:
+  db-data:   # SQLite file + backups persist here across restarts and upgrades
