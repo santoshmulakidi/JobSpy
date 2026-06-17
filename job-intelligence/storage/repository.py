@@ -339,7 +339,7 @@ class JobRepository:
         self,
         *,
         job_ids: Iterable[int],
-        generation_type: str,
+        generation_type: DocumentKind | str,
         base_resume: str,
         profile_name: str | None = None,
         provider: str | None = None,

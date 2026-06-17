@@ -118,7 +118,7 @@ async def _ai_generation_loop() -> None:
             repository = JobRepository(session)
             generation_job = repository.next_queued_ai_generation_job()
             if generation_job is None:
-                await asyncio.sleep(5)
+                await asyncio.sleep(30)  # ponytail: idle back-off, 5s burned CPU for nothing
                 continue
             generation_job_id = generation_job.id
         except Exception:
