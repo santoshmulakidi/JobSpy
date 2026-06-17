@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class CollectionRequest(BaseModel):
     search_term: str
-    location: str = "United States"
+    location: str | None = "United States"
     sites: list[str] = Field(default_factory=lambda: ["linkedin", "indeed"])
     results_wanted: int = Field(default=1000, ge=1, le=5000)
     country_indeed: str = "usa"

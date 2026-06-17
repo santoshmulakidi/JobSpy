@@ -136,8 +136,11 @@ def test_job_lifecycle_archives_old_jobs_deletes_expired_and_preserves_applied()
         run,
     )
     old_job.first_seen_at = datetime.now(UTC) - timedelta(days=2)
+    old_job.last_seen_at = datetime.now(UTC) - timedelta(days=2)
     expired_job.first_seen_at = datetime.now(UTC) - timedelta(days=8)
+    expired_job.last_seen_at = datetime.now(UTC) - timedelta(days=8)
     applied_job.first_seen_at = datetime.now(UTC) - timedelta(days=8)
+    applied_job.last_seen_at = datetime.now(UTC) - timedelta(days=8)
     repository.upsert_application(job_id=applied_job.id, status="Applied")
     session.commit()
 
@@ -192,7 +195,7 @@ def test_upsert_sanitizes_change_history_json():
                 "company": "Acme",
                 "location": "Dallas, TX",
                 "job_url": "https://example.com/456",
-                "date_posted": date(2026, 6, 2),
+                "date_posted": date.today(),
                 "min_amount": float("nan"),
             }
         ],
@@ -201,7 +204,7 @@ def test_upsert_sanitizes_change_history_json():
     session.commit()
 
     change = session.query(JobChange).one()
-    assert change.after["date_posted"] == "2026-06-02"
+    assert change.after["date_posted"] == date.today().isoformat()
     assert change.after["raw"]["min_amount"] is None
 
 
@@ -461,7 +464,7 @@ def test_list_jobs_orders_by_latest_posting_date():
                 "company": "Acme",
                 "location": "Dallas, TX",
                 "job_url": "https://example.com/old",
-                "date_posted": date(2026, 1, 1),
+                "date_posted": date.today() - timedelta(days=1),
             },
             {
                 "site": "indeed",
@@ -470,7 +473,7 @@ def test_list_jobs_orders_by_latest_posting_date():
                 "company": "Acme",
                 "location": "Dallas, TX",
                 "job_url": "https://example.com/new",
-                "date_posted": date(2026, 6, 1),
+                "date_posted": date.today(),
             },
         ],
         run,
@@ -597,7 +600,7 @@ def test_list_jobs_expands_dotnet_and_java_keyword_families():
             {
                 "site": "linkedin",
                 "id": "spring",
-                "title": "Backend Engineer",
+                "title": "Java Software Engineer",
                 "company": "Acme",
                 "location": "Remote",
                 "job_url": "https://example.com/spring",
@@ -672,7 +675,7 @@ def test_job_computes_visa_score_and_apply_priority():
             {
                 "site": "jobright_h1b",
                 "id": "h1b-1",
-                "title": "Backend Engineer",
+                "title": "Senior .NET Developer",
                 "company": "Sponsor Co",
                 "location": "Remote",
                 "job_url": "https://example.com/h1b-1",
