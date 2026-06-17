@@ -161,12 +161,37 @@ class CoverLetterRequest(BaseModel):
     company_name: str | None = None
     provider: str | None = None
     model: str | None = None
+    cover_letter_text: str | None = None
 
 
 class CoverLetterResponse(BaseModel):
     provider: str
     model: str | None
     cover_letter: str
+
+
+class ColdEmailRequest(BaseModel):
+    job_title: str = Field(min_length=1, max_length=500)
+    company_name: str | None = None
+    job_description: str = Field(min_length=20)
+    candidate_summary: str = Field(min_length=20)
+    recruiter_name: str | None = None
+    recruiter_email: str | None = None
+    contact_role: str | None = None
+    tone: str = "concise"
+    provider: str | None = None
+    model: str | None = None
+
+
+class ColdEmailResponse(BaseModel):
+    provider: str
+    model: str | None
+    subject: str
+    email_body: str
+    linkedin_message: str
+    follow_up_message: str
+    recruiter_name: str | None = None
+    recruiter_email: str | None = None
 
 
 class ApplicationOut(BaseModel):

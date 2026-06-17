@@ -100,6 +100,17 @@ export type ResumeRebuildResult = {
   prompt: string;
 };
 
+export type ColdEmailResult = {
+  provider: string;
+  model: string | null;
+  subject: string;
+  email_body: string;
+  linkedin_message: string;
+  follow_up_message: string;
+  recruiter_name: string | null;
+  recruiter_email: string | null;
+};
+
 export type ResumeModelChoice = {
   provider: string;
   model: string;

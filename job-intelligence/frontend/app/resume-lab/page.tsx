@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Copy, Download, Eye, FileText, Loader2, Save, Sparkles, Upload, Wand2 } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Copy, Download, Eye, FileText, Loader2, Save, Sparkles, Upload, Wand2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -89,7 +89,7 @@ function computeAts(resumeText: string, jd: string): AtsResult {
     // generic verbs / filler seen polluting keyword lists
     "such","while","make","made","makes","impact","eager","curious","hands","ideal","developing","grow","contribute","contributing","enabled","actual","supports","support","performs","perform","stays","stay","conducts","conduct","collaborates","collaborate","produces","produce","carries","carry","knowing","know","applies","apply","tracks","track","belongs","belong","family","jobs","increasing","increase","responsibility","competency","motivated","opportunity","turn","deliver","delivers","build","builds","enhance","enhances","real","value","partners","partner","others","throughout","needed","need","meet","meets","effort","help","helps","join","joining","looking","seeking","want","wants","like","love","passion","passionate","excited","drive","driven","focus","focused","success","successful","ensure","ensures","various","multiple","several","etc","day","daily","year","years","month","plus","preferred","nice","bonus","etc","good","best","better","key","core","overall","general","specific","relevant","appropriate","necessary","effective","efficient","proper","ongoing","current","future","existing","new","large","small","fast","quick","easy","hard","complex","simple",
     // JD job-grade / level boilerplate (not skills)
-    "title","grade","level","levels","selected","limited","medium","completion","complexity","execute","executes","roadmap","efforts","effort","leads","lead","scope","band","tier","rank","ranking","seniority","range","salary","compensation","pay","hourly","annual","bonus","equity","benefits","perks","eligible","eligibility"]);
+    "title","grade","level","levels","selected","limited","medium","completion","complexity","execute","executes","roadmap","efforts","effort","leads","lead","scope","band","tier","rank","ranking","seniority","range","salary","compensation","pay","hourly","annual","bonus","equity","benefits","perks","eligible","eligibility","indianapolis","contract","contracts","w2","c2c","onsite","hybrid","remote"]);
 
   // Also extract capitalized tech terms not in our list (e.g. "Verint", "Dynamics CRM").
   // Reject any phrase containing a stop/filler word, which kills JD section-header
@@ -99,11 +99,13 @@ function computeAts(resumeText: string, jd: string): AtsResult {
   const metaNoise = new Set(["Apply","End","Date","View","Posted","Today","Ohio","Texas","San","Antonio","Findlay","Full","Time","Position","Summary","Key","This","You","At","MPC","An","In","For","The","And","Or","With","Of","To","A","Is","Are","Was","Be","By","As","On","Not","From","That","Which","Have","Has","Will","Can","May","Its","Our","Their","Your","We","It","If","Who","When","Where","How","Education","Experience","Skills","Requirements","Responsibilities","Qualifications","Summary","Overview","About","Benefits","Description"]);
   for (const t of capTerms) {
     const cleaned = t.trim();
-    const words = cleaned.toLowerCase().split(" ");
-    const firstWord = cleaned.split(" ")[0] ?? "";
+    const normalized = cleaned.replace(/[.,;:]+$/g, "").replace(/[.,;:]\s+/g, " ");
+    const words = normalized.toLowerCase().split(" ");
+    const firstWord = normalized.split(" ")[0] ?? "";
     // Drop if it leads with metadata, or any token is a stop word, or any token is a JD header
+    if (normalized.includes(".")) continue;
     if (metaNoise.has(firstWord) || words.some(w => STOP.has(w) || metaNoise.has(w.charAt(0).toUpperCase() + w.slice(1)))) continue;
-    if (cleaned.length > 3) jdSkills.add(cleaned.toLowerCase());
+    if (normalized.length > 3) jdSkills.add(normalized.toLowerCase());
   }
 
   const phraseMatches: string[] = [];
@@ -223,7 +225,6 @@ function analyzeWriting(resumeText: string): WritingReport {
     // metric presence
     const hasMetric = METRIC_RE.test(b);
     if (hasMetric) withMetrics++;
-    else issues.push({ severity: "medium", bullet: b, problem: "No measurable result (add a number, %, or scale)" });
 
     // weak opener
     const weak = WEAK_OPENERS.find(w => lower.startsWith(w));
@@ -263,9 +264,22 @@ function analyzeWriting(resumeText: string): WritingReport {
     issues.push({ severity: "medium", bullet: "", problem: `Buzzword "${bw}" — replace with a concrete achievement` });
   }
 
+  const metricIssueLimit = 8;
+  const metricCandidates = bullets
+    .filter((bullet) => !METRIC_RE.test(bullet))
+    .filter((bullet) => /\b(built|designed|developed|implemented|optimized|migrated|automated|reduced|improved|integrated|deployed|created|led|managed|refactored|monitored|configured|tested|validated|enhanced)\b/i.test(bullet))
+    .slice(0, metricIssueLimit);
+  for (const bullet of metricCandidates) {
+    issues.push({
+      severity: "medium",
+      bullet,
+      problem: "Could use a measurable result or concrete technical scope",
+    });
+  }
+
   // Content quality score
   const total = bullets.length || 1;
-  const metricRatio = withMetrics / total;          // want high
+  const metricRatio = Math.min((withMetrics / total) / 0.25, 1); // target roughly 25% metric/scope bullets, not every bullet
   const weakRatio = weakVerbCount / total;          // want low
   const repeatPenalty = Math.min(repeatedVerbs.reduce((s, r) => s + (r.count - 2), 0) * 2, 20);
   const buzzPenalty = Math.min(buzzwords.length * 4, 20);
@@ -301,6 +315,13 @@ interface StructCheck {
 interface StructReport {
   score: number;
   checks: StructCheck[];
+}
+
+interface RefineSuggestion {
+  id: string;
+  label: string;
+  instruction: string;
+  isCompleted?: boolean;
 }
 
 function analyzeStructure(resumeText: string): StructReport {
@@ -452,6 +473,7 @@ export default function ResumeLabPage() {
   const [jobDescription, setJobDescription] = useState("");
   const [jobContext, setJobContext] = useState("No job selected");
   const [jobTitle, setJobTitle] = useState("");
+  const [jobUrl, setJobUrl] = useState<string | null>(null);
   const [returnTo, setReturnTo] = useState<string | null>(null);
   const [rebuildLoading, setRebuildLoading] = useState(false);
   const [rebuildResult, setRebuildResult] = useState<ResumeRebuildResult | null>(null);
@@ -465,6 +487,8 @@ export default function ResumeLabPage() {
   const [docxLoading, setDocxLoading] = useState(false);
   const [refinePulse, setRefinePulse] = useState(false);
   const [activeChipLabel, setActiveChipLabel] = useState<string | null>(null);
+  const [completedSuggestionIds, setCompletedSuggestionIds] = useState<string[]>([]);
+  const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
   const atsResultRef = useRef<HTMLDivElement>(null);
   const [coverLetter, setCoverLetter] = useState("");
   const [coverLetterProvider, setCoverLetterProvider] = useState("");
@@ -517,8 +541,10 @@ export default function ResumeLabPage() {
             company?: string | null;
             location?: string | null;
             description?: string;
+            jobUrl?: string | null;
             returnTo?: string;
           };
+          if (parsed.jobUrl) setJobUrl(parsed.jobUrl);
           if (!jobId || parsed.id === jobId) {
             setJobContext(`${parsed.title ?? "Selected job"}${parsed.company ? ` at ${parsed.company}` : ""}${parsed.location ? ` | ${parsed.location}` : ""}`);
             if (parsed.title) setJobTitle(parsed.title);
@@ -532,6 +558,7 @@ export default function ResumeLabPage() {
               setJobDescription(job.description ?? "");
               setJobContext(`${job.title}${job.company_name ? ` at ${job.company_name}` : ""}${job.location ? ` | ${job.location}` : ""}`);
               setJobTitle(job.title);
+              if (job.job_url) setJobUrl(job.job_url);
               return;
             }
             if (parsed.title) {
@@ -647,6 +674,7 @@ export default function ResumeLabPage() {
     setRebuildResult(null);
     setAtsBefore(null);
     setAtsAfter(null);
+    setCompletedSuggestionIds([]);
     try {
       const before = computeAts(resumeText, jobDescription);
       const result = await rebuildResume({
@@ -673,7 +701,7 @@ export default function ResumeLabPage() {
     }
   }
 
-  async function refineRebuiltResume(instructionOverride?: string, chipLabel?: string) {
+  async function refineRebuiltResume(instructionOverride?: string, chipLabel?: string, markIds?: string[]) {
     const instruction = (instructionOverride ?? refineInstruction).trim();
     if (!rebuildResult || !instruction) return;
     setRefineLoading(true);
@@ -691,6 +719,10 @@ export default function ResumeLabPage() {
       setRebuildResult(result);
       setAtsAfter(computeAts(result.rebuilt_resume, jobDescription));
       setRefineInstruction("");
+      const idsToMark = markIds ?? (chipLabel ? [chipLabel] : []);
+      if (idsToMark.length) {
+        setCompletedSuggestionIds((current) => [...new Set([...current, ...idsToMark])]);
+      }
       toast.success("Resume refined");
       // Scroll to score panel and pulse to show what updated
       setTimeout(() => {
@@ -707,8 +739,8 @@ export default function ResumeLabPage() {
   }
 
   // Data-driven refine suggestions based on the current ATS gap analysis.
-  function buildRefineSuggestions(): { label: string; instruction: string }[] {
-    const out: { label: string; instruction: string }[] = [];
+  function buildRefineSuggestions(): RefineSuggestion[] {
+    const out: RefineSuggestion[] = [];
     const ats = atsAfter;
     const resume = rebuildResult?.rebuilt_resume ?? "";
     const bulletCount = (resume.match(/^\s*[-•*]\s+/gm) ?? []).length;
@@ -719,6 +751,7 @@ export default function ResumeLabPage() {
 
     if (missingKeywords.length) {
       out.push({
+        id: "ats-missing-keywords",
         label: `Add ${missingKeywords.length} missing keywords`,
         instruction:
           `Naturally weave these job-description keywords into the most relevant bullets and the skills section, only where truthful: ${missingKeywords.join(", ")}. Use the exact spelling from the job description. Do not fabricate experience.`,
@@ -727,6 +760,7 @@ export default function ResumeLabPage() {
 
     if (ats && ats.score < 80) {
       out.push({
+        id: "ats-raise-score",
         label: `Raise ATS score (now ${ats.score}%) toward 85%+`,
         instruction:
           `The resume currently scores ${ats.score}% against this job description. Increase keyword and phrase coverage by mirroring the exact job-description terminology across the summary, skills, and experience bullets wherever the candidate genuinely has that experience. Prioritize required keywords. Do not invent skills or employers.`,
@@ -735,6 +769,7 @@ export default function ResumeLabPage() {
 
     if (bulletCount < 24) {
       out.push({
+        id: "content-add-recent-bullets",
         label: "Add 2-3 achievement bullets per recent role",
         instruction:
           "For the two most recent roles, add 2 to 3 additional achievement bullets that incorporate missing job-description keywords. Start each with a varied action verb and include a measurable result only when the base resume supports it. Keep all existing bullets.",
@@ -744,38 +779,43 @@ export default function ResumeLabPage() {
     // Content-quality driven chips — only appear when the analyzer finds the issue.
     const wr = resume ? analyzeWriting(resume) : null;
     if (wr && wr.totalBullets) {
-      const noMetric = wr.totalBullets - wr.withMetrics;
       if (wr.weakVerbCount > 0) {
         out.push({
+          id: "quality-weak-openers",
           label: `Fix ${wr.weakVerbCount} weak opener${wr.weakVerbCount > 1 ? "s" : ""}`,
           instruction:
-            "Rewrite every bullet that starts with a weak phrase (Responsible for, Worked on, Assisted, Helped, Involved in, Various, Successfully) so it begins with a strong, specific action verb. Keep the facts identical.",
+            "Fix Content quality (recruiter view): rewrite every bullet that starts with a weak phrase (Responsible for, Worked on, Assisted, Helped, Involved in, Various, Successfully) so it begins with a strong, specific action verb. Keep the facts identical and preserve the existing resume format.",
         });
       }
-      if (noMetric >= 3) {
+      const metricCandidateCount = wr.issues.filter((issue) => issue.problem.includes("measurable result or concrete technical scope")).length;
+      if (metricCandidateCount >= 3) {
         out.push({
-          label: `Add metrics to ${noMetric} bullets`,
+          id: "quality-metrics-or-context",
+          label: `Improve ${metricCandidateCount} bullets with metrics/context`,
           instruction:
-            "Strengthen the bullets that have no measurable result by adding concrete, realistic metrics (percentages, counts, time saved, scale, user volume) only where the original resume context supports them. Do not fabricate numbers.",
+            "Fix Content quality (recruiter view): strengthen bullets that have no measurable result. Add concrete metrics only where the base resume supports them; otherwise add truthful scope, system, domain, integration, production support, migration, testing, or cloud context. Do not fabricate numbers.",
         });
       }
       if (wr.repeatedVerbs.length > 0) {
         const verbs = wr.repeatedVerbs.map(r => r.verb).join(", ");
         out.push({
+          id: "quality-repeated-verbs",
           label: `Vary repeated verbs (${verbs})`,
           instruction:
-            `These action verbs are overused at the start of bullets: ${verbs}. Replace the repeats with varied, equally strong action verbs (built, designed, reduced, automated, migrated, led, shipped, integrated, optimized, architected) without changing the meaning.`,
+            `Fix Content quality (recruiter view): these action verbs are overused at the start of bullets: ${verbs}. Replace the repeats with varied, equally strong action verbs without changing meaning, facts, employers, dates, or tools.`,
         });
       }
       if (wr.buzzwords.length > 0) {
         out.push({
+          id: "quality-buzzwords",
           label: `Remove ${wr.buzzwords.length} buzzword${wr.buzzwords.length > 1 ? "s" : ""}`,
           instruction:
-            `Remove these filler buzzwords and replace each with a concrete, specific achievement: ${wr.buzzwords.join(", ")}. Keep the writing plain and factual.`,
+            `Fix Content quality (recruiter view): remove these filler buzzwords and replace each with concrete, specific project context from the resume: ${wr.buzzwords.join(", ")}. Keep the writing plain, factual, and recruiter-authentic.`,
         });
       }
     } else {
       out.push({
+        id: "quality-add-metrics",
         label: "Add measurable metrics to bullets",
         instruction:
           "Strengthen existing bullets by adding concrete, realistic metrics (percentages, counts, time saved, scale) only where the original resume context supports them. Do not fabricate numbers that contradict the source.",
@@ -783,12 +823,27 @@ export default function ResumeLabPage() {
     }
 
     out.push({
+      id: "quality-tighten-summary",
       label: "Tighten summary with top JD keywords",
       instruction:
-        "Rewrite the professional summary into 3 to 4 sharp sentences that lead with the most important job-description keywords and the candidate's strongest matching experience. Keep it truthful and free of AI filler words.",
+        "Fix Content quality (recruiter view): rewrite the professional summary into 3 to 4 sharp sentences that lead with the most important job-description keywords and the candidate's strongest matching experience. Keep it truthful, specific, and free of AI filler words.",
     });
 
-    return out;
+    for (const [index, warning] of (rebuildResult?.warnings ?? []).entries()) {
+      const trimmedWarning = warning.trim();
+      if (!trimmedWarning) continue;
+      out.push({
+        id: `warning-${index}-${trimmedWarning.slice(0, 32).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+        label: `Fix warning: ${trimmedWarning.slice(0, 46)}${trimmedWarning.length > 46 ? "..." : ""}`,
+        instruction:
+          `Build a truthful fix for this warning: "${trimmedWarning}". If it is a keyword gap and the base resume supports the skill, add the exact phrase naturally in the relevant skills or experience section. If the base resume does not support it, keep it out of the resume and add a brief KEYWORD GAPS note. Do not fabricate experience, tools, metrics, employers, dates, visa status, or project names.`,
+      });
+    }
+
+    return out.map((suggestion) => ({
+      ...suggestion,
+      isCompleted: completedSuggestionIds.includes(suggestion.id),
+    })).filter((suggestion) => !suggestion.isCompleted);
   }
 
   async function generateCoverLetterText() {
@@ -838,7 +893,10 @@ export default function ResumeLabPage() {
       const a = document.createElement("a");
       a.href = url;
       const sanitize = (s: string) => s.replace(/[^a-zA-Z0-9 _-]/g, "").replace(/\s+/g, "_").slice(0, 50);
-      a.download = jobTitle.trim() ? `Cover_Letter_${sanitize(jobTitle)}.docx` : "Cover_Letter.docx";
+      const candidateName = sanitize((rebuildResult?.rebuilt_resume ?? resumeText).trim().split("\n")[0]?.trim() || "Candidate");
+      a.download = jobTitle.trim()
+        ? `${candidateName}_Cover_Letter_${sanitize(jobTitle)}.docx`
+        : `${candidateName}_Cover_Letter.docx`;
       a.style.display = "none";
       document.body.appendChild(a);
       a.click();
@@ -916,7 +974,14 @@ export default function ResumeLabPage() {
         <Card className="surface shadow-none">
           <CardHeader>
             <CardTitle>Job description</CardTitle>
-            <CardDescription>{jobContext}</CardDescription>
+            <CardDescription className="flex items-center gap-2 flex-wrap">
+              <span>{jobContext}</span>
+              {jobUrl && (
+                <a href={jobUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline text-xs font-medium shrink-0">
+                  Apply <ArrowUpRight className="h-3 w-3" />
+                </a>
+              )}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Textarea
@@ -1169,31 +1234,89 @@ export default function ResumeLabPage() {
 
                   {(() => {
                     const suggestions = buildRefineSuggestions();
-                    if (!suggestions.length) return null;
+                    if (!suggestions.length) {
+                      return (
+                        <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-xs text-green-800 dark:border-green-800 dark:bg-green-900/20 dark:text-green-300">
+                          No action items left. Rebuild or edit the resume again to refresh the action plan.
+                        </div>
+                      );
+                    }
                     const priorityColor = (i: number) =>
                       i === 0 ? "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300 hover:bg-red-100"
                       : i <= 2 ? "border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-800 dark:bg-orange-900/20 dark:text-orange-300 hover:bg-orange-100"
                       : "border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-100";
+                    const applySelected = async () => {
+                      const selected = suggestions.filter(s => selectedSuggestions.has(s.id));
+                      if (!selected.length) return;
+                      const combined = selected.map(s => s.instruction).join("\n\n");
+                      const ids = selected.map(s => s.id);
+                      setSelectedSuggestions(new Set());
+                      await refineRebuiltResume(combined, "multi-select", ids);
+                    };
+                    const allSelected = suggestions.every(s => selectedSuggestions.has(s.id));
                     return (
                       <div className="space-y-2">
+                        <div className="flex items-center justify-between pb-1">
+                          <span className="text-xs font-medium text-muted-foreground">Click items to select, then apply together</span>
+                          <button
+                            type="button"
+                            disabled={refineLoading}
+                            onClick={() => setSelectedSuggestions(allSelected ? new Set() : new Set(suggestions.map(s => s.id)))}
+                            className="text-xs text-primary hover:underline disabled:opacity-50"
+                          >
+                            {allSelected ? "Deselect all" : "Select all"}
+                          </button>
+                        </div>
                         {suggestions.map((s, i) => {
-                          const isActive = activeChipLabel === s.label;
+                          const isActive = activeChipLabel === s.id || (activeChipLabel === "multi-select" && selectedSuggestions.has(s.id));
+                          const isSelected = selectedSuggestions.has(s.id);
                           return (
                             <button
-                              key={s.label}
+                              key={s.id}
                               type="button"
                               disabled={refineLoading}
-                              onClick={() => void refineRebuiltResume(s.instruction, s.label)}
-                              className={`w-full text-left flex items-center gap-3 rounded-lg border px-3 py-2.5 text-xs transition disabled:opacity-50 ${priorityColor(i)}`}
+                              onClick={() => {
+                                setSelectedSuggestions(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(s.id)) next.delete(s.id); else next.add(s.id);
+                                  return next;
+                                });
+                              }}
+                              className={`w-full text-left flex items-center gap-3 rounded-lg border px-3 py-2.5 text-xs transition disabled:opacity-50 ${isSelected ? "ring-2 ring-primary ring-offset-1 " : ""}${priorityColor(i)}`}
                             >
-                              {isActive
+                              {isActive && activeChipLabel === "multi-select"
                                 ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
-                                : <span className="shrink-0 rounded-full bg-current/10 px-1.5 py-0.5 font-bold opacity-60">{i + 1}</span>
+                                : isSelected
+                                  ? <span className="shrink-0 text-primary font-bold">✓</span>
+                                  : <span className="shrink-0 rounded-full bg-current/10 px-1.5 py-0.5 font-bold opacity-60">{i + 1}</span>
                               }
                               <span className="font-medium">{s.label}</span>
                             </button>
                           );
                         })}
+                        {selectedSuggestions.size > 0 && (
+                          <div className="flex gap-2 pt-1">
+                            <button
+                              type="button"
+                              disabled={refineLoading}
+                              onClick={() => void applySelected()}
+                              className="flex-1 rounded-lg border border-primary bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition"
+                            >
+                              {refineLoading && activeChipLabel === "multi-select"
+                                ? <span className="flex items-center justify-center gap-1.5"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Applying…</span>
+                                : `Apply ${selectedSuggestions.size} selected`
+                              }
+                            </button>
+                            <button
+                              type="button"
+                              disabled={refineLoading}
+                              onClick={() => setSelectedSuggestions(new Set())}
+                              className="rounded-lg border px-3 py-2 text-xs text-muted-foreground hover:bg-muted transition disabled:opacity-50"
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}

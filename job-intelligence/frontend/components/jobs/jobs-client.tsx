@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, CheckCircle2, Copy, FileText, Search } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Copy, FileText, Loader2, Mail, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -14,10 +14,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getArchivedJobs, getCollectionRuns, getJobsByRun, markJobApplied, saveJobNotes, searchJobs } from "@/lib/api";
+import { Textarea } from "@/components/ui/textarea";
+import { generateColdEmail, getArchivedJobs, getCollectionRuns, getJobsByRun, markJobApplied, saveJobNotes, searchJobs } from "@/lib/api";
 import { compactLocation, defaultProfiles, expandSearchTerm, loadProfiles, type JobProfile } from "@/lib/job-profiles";
 import { formatDate } from "@/lib/utils";
-import type { Job } from "@/types/job";
+import type { ColdEmailResult, Job } from "@/types/job";
 
 const PAGE_SIZE = 30;
 const CANDIDATE_LIMIT = 500;
@@ -537,12 +538,25 @@ function JobDetailsPanel({
   onClose: () => void;
 }) {
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [coldEmailOpen, setColdEmailOpen] = useState(false);
+  const [coldEmailLoading, setColdEmailLoading] = useState(false);
+  const [coldEmail, setColdEmail] = useState<ColdEmailResult | null>(null);
+  const [recruiterName, setRecruiterName] = useState("");
+  const [recruiterEmail, setRecruiterEmail] = useState("");
+  const [contactRole, setContactRole] = useState("Recruiter");
+  const [outreachTone, setOutreachTone] = useState("concise");
+  const [candidateSummary, setCandidateSummary] = useState("Senior .NET/Azure developer with experience in ASP.NET Core, C#, Azure, SQL Server, React, Angular, APIs, microservices, and enterprise delivery.");
   const [notes, setNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
   const canEmbedPreview = job?.job_url ? canEmbedJobUrl(job.job_url) : false;
 
   useEffect(() => {
     setNotes("");
+    setColdEmail(null);
+    setRecruiterName("");
+    setRecruiterEmail("");
+    setContactRole("Recruiter");
+    setOutreachTone("concise");
   }, [job?.id]);
 
   useEffect(() => {
@@ -585,6 +599,68 @@ function JobDetailsPanel({
   async function copyJobDetails() {
     await navigator.clipboard.writeText(jobDetailsText());
     toast.success("Job details copied");
+  }
+
+  function coldEmailText(result = coldEmail) {
+    if (!result) return "";
+    return [
+      `Subject: ${result.subject}`,
+      "",
+      result.email_body,
+      "",
+      "LinkedIn message:",
+      result.linkedin_message,
+      "",
+      "Follow-up:",
+      result.follow_up_message,
+    ].join("\n");
+  }
+
+  async function copyText(text: string, message: string) {
+    await navigator.clipboard.writeText(text);
+    toast.success(message);
+  }
+
+  async function handleGenerateColdEmail() {
+    if (!job) return;
+    if (candidateSummary.trim().length < 20) {
+      toast.error("Add a short candidate summary first");
+      return;
+    }
+    setColdEmailLoading(true);
+    try {
+      const result = await generateColdEmail({
+        job_title: job.title,
+        company_name: job.company_name,
+        job_description: job.description?.trim() || jobDetailsText(),
+        candidate_summary: candidateSummary,
+        recruiter_name: recruiterName || null,
+        recruiter_email: recruiterEmail || null,
+        contact_role: contactRole || null,
+        tone: outreachTone,
+      });
+      setColdEmail(result);
+      toast.success("Cold email generated");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not generate cold email");
+    } finally {
+      setColdEmailLoading(false);
+    }
+  }
+
+  async function saveColdEmailToNotes() {
+    if (!job || !coldEmail) return;
+    const text = coldEmailText(coldEmail);
+    setSavingNotes(true);
+    try {
+      await saveJobNotes(job.id, text);
+      setNotes(text);
+      toast.success("Cold email saved to notes");
+    } catch {
+      toast.error("Could not save cold email notes");
+    } finally {
+      setSavingNotes(false);
+    }
   }
 
   if (!job) {
@@ -638,6 +714,7 @@ function JobDetailsPanel({
           </Button>
           <Button variant="outline" onClick={() => onApply(job)}><CheckCircle2 className="h-4 w-4" /> Mark applied</Button>
           <Button variant="outline" onClick={copyJobDetails}><Copy className="h-4 w-4" /> Copy JD</Button>
+          <Button variant="outline" onClick={() => setColdEmailOpen(true)}><Mail className="h-4 w-4" /> Cold email</Button>
           {job.job_url ? <Button variant="outline" onClick={() => setPreviewOpen(true)}><Search className="h-4 w-4" /> Preview</Button> : null}
           {job.job_url ? (
             <Button asChild variant="ghost">
@@ -670,6 +747,106 @@ function JobDetailsPanel({
             {job.description?.trim() || "No job description stored for this job yet."}
           </div>
         </div>
+
+        <Dialog open={coldEmailOpen} onOpenChange={setColdEmailOpen}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Recruiter cold email</DialogTitle>
+              <DialogDescription>
+                Generate copy-ready outreach for {job.company_name ?? "this company"}. This does not send email.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+              <div className="space-y-3">
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium" htmlFor="recruiter-name">Recruiter name</label>
+                  <Input id="recruiter-name" value={recruiterName} onChange={(event) => setRecruiterName(event.target.value)} placeholder="Optional, e.g. Priya" />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium" htmlFor="recruiter-email">Recruiter email</label>
+                  <Input id="recruiter-email" type="email" value={recruiterEmail} onChange={(event) => setRecruiterEmail(event.target.value)} placeholder="Optional" />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium" htmlFor="contact-role">Contact type</label>
+                  <Input id="contact-role" value={contactRole} onChange={(event) => setContactRole(event.target.value)} placeholder="Recruiter, hiring manager, referral contact" />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium" htmlFor="outreach-tone">Tone</label>
+                  <Select value={outreachTone} onValueChange={setOutreachTone}>
+                    <SelectTrigger id="outreach-tone"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="concise">Concise</SelectItem>
+                      <SelectItem value="warm">Warm</SelectItem>
+                      <SelectItem value="direct">Direct</SelectItem>
+                      <SelectItem value="referral-style">Referral-style</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium" htmlFor="candidate-summary">Candidate summary</label>
+                  <Textarea
+                    id="candidate-summary"
+                    value={candidateSummary}
+                    onChange={(event) => setCandidateSummary(event.target.value)}
+                    className="min-h-32 text-sm"
+                    placeholder="Short truthful summary of your strongest fit for this job"
+                  />
+                </div>
+                <Button onClick={handleGenerateColdEmail} disabled={coldEmailLoading} className="w-full">
+                  {coldEmailLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  Generate outreach
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {coldEmail ? (
+                  <>
+                    <div className="rounded-lg border bg-background/70 p-3">
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <h3 className="text-sm font-medium">Subject</h3>
+                        <Button size="sm" variant="ghost" onClick={() => copyText(coldEmail.subject, "Subject copied")}><Copy className="h-4 w-4" /> Copy</Button>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{coldEmail.subject}</p>
+                    </div>
+                    <div className="rounded-lg border bg-background/70 p-3">
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <h3 className="text-sm font-medium">Email body</h3>
+                        <Button size="sm" variant="ghost" onClick={() => copyText(coldEmail.email_body, "Email copied")}><Copy className="h-4 w-4" /> Copy</Button>
+                      </div>
+                      <div className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{coldEmail.email_body}</div>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="rounded-lg border bg-background/70 p-3">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <h3 className="text-sm font-medium">LinkedIn</h3>
+                          <Button size="sm" variant="ghost" onClick={() => copyText(coldEmail.linkedin_message, "LinkedIn message copied")}><Copy className="h-4 w-4" /> Copy</Button>
+                        </div>
+                        <p className="text-sm leading-6 text-muted-foreground">{coldEmail.linkedin_message}</p>
+                      </div>
+                      <div className="rounded-lg border bg-background/70 p-3">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <h3 className="text-sm font-medium">Follow-up</h3>
+                          <Button size="sm" variant="ghost" onClick={() => copyText(coldEmail.follow_up_message, "Follow-up copied")}><Copy className="h-4 w-4" /> Copy</Button>
+                        </div>
+                        <p className="text-sm leading-6 text-muted-foreground">{coldEmail.follow_up_message}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" onClick={() => copyText(coldEmailText(), "All outreach copied")}><Copy className="h-4 w-4" /> Copy all</Button>
+                      <Button variant="outline" onClick={saveColdEmailToNotes} disabled={savingNotes}>
+                        {savingNotes ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                        Save to notes
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex min-h-96 items-center justify-center rounded-xl border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
+                    Add recruiter details if you have them, then generate a short email, LinkedIn note, and follow-up for this job.
+                  </div>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
           <DialogContent className="max-w-5xl">

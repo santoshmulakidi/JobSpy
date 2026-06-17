@@ -4,6 +4,7 @@ import asyncio
 import base64
 import io
 import logging
+import re
 import time
 from pathlib import Path
 import zipfile
@@ -24,6 +25,8 @@ from api.schemas import (
     BulkRebuildOut,
     BulkRebuildRequest,
     ApplicationStageUpdate,
+    ColdEmailRequest,
+    ColdEmailResponse,
     CollectRequest,
     CollectResponse,
     CompanyOut,
@@ -468,6 +471,77 @@ def generate_cover_letter(payload: CoverLetterRequest):
     raise HTTPException(status_code=503, detail="All AI providers unavailable. Configure an API key.")
 
 
+def _extract_labeled_message_section(text: str, label: str) -> str:
+    labels = ("SUBJECT", "EMAIL", "LINKEDIN", "FOLLOW_UP", "FOLLOW UP")
+    label_pattern = "|".join(re.escape(item) for item in labels)
+    pattern = rf"(?is)\b{re.escape(label)}\s*:\s*(.*?)(?=\n\s*(?:{label_pattern})\s*:|\Z)"
+    match = re.search(pattern, text.strip())
+    if not match:
+        return ""
+    return match.group(1).strip()
+
+
+@app.post("/resume/cold-email", response_model=ColdEmailResponse)
+def generate_cold_email(payload: ColdEmailRequest):
+    from ai.resume_rebuilder import _provider_order, _chat_completion  # noqa: PLC0415
+
+    providers = _provider_order(settings, selected_provider=payload.provider, selected_model=payload.model)
+    if not providers:
+        raise HTTPException(status_code=503, detail="No AI provider configured. Add an API key in .env.")
+
+    recruiter_name = (payload.recruiter_name or "").strip() or "there"
+    company_name = (payload.company_name or "").strip() or "the company"
+    contact_role = (payload.contact_role or "").strip() or "recruiter or hiring contact"
+    tone = (payload.tone or "concise").strip()
+    prompt = (
+        "Create copy-ready recruiter outreach for a job seeker. Return plain text only with exactly these labels:\n"
+        "SUBJECT:\nEMAIL:\nLINKEDIN:\nFOLLOW_UP:\n\n"
+        "Rules:\n"
+        "- Keep the email under 160 words.\n"
+        "- Keep the LinkedIn message under 450 characters.\n"
+        "- Keep the follow-up under 80 words.\n"
+        "- Do not invent referrals, interviews, metrics, immigration status, or personal relationships.\n"
+        "- Use a direct professional tone and avoid AI filler like passionate, excited, leverage, utilize, spearhead.\n"
+        "- Mention the specific role and company.\n"
+        "- Include 2 to 4 relevant skills from the candidate summary and job description.\n"
+        "- End the email with a light call to action.\n\n"
+        f"Tone: {tone}\n"
+        f"Recruiter Name: {recruiter_name}\n"
+        f"Recruiter Email: {payload.recruiter_email or 'Not provided'}\n"
+        f"Contact Role: {contact_role}\n"
+        f"Job Title: {payload.job_title.strip()}\n"
+        f"Company: {company_name}\n\n"
+        f"Candidate Summary:\n{payload.candidate_summary.strip()}\n\n"
+        f"Job Description:\n{payload.job_description.strip()}"
+    )
+    messages = [{"role": "user", "content": prompt}]
+    for provider in providers:
+        try:
+            text = _chat_completion(provider=provider, messages=messages, settings=settings)
+            subject = _extract_labeled_message_section(text, "SUBJECT")
+            email_body = _extract_labeled_message_section(text, "EMAIL")
+            linkedin_message = _extract_labeled_message_section(text, "LINKEDIN")
+            follow_up_message = (
+                _extract_labeled_message_section(text, "FOLLOW_UP")
+                or _extract_labeled_message_section(text, "FOLLOW UP")
+            )
+            if not subject or not email_body:
+                raise ValueError("AI response did not include required cold email sections")
+            return ColdEmailResponse(
+                provider=provider["name"],
+                model=provider.get("model"),
+                subject=subject,
+                email_body=email_body,
+                linkedin_message=linkedin_message,
+                follow_up_message=follow_up_message,
+                recruiter_name=payload.recruiter_name,
+                recruiter_email=payload.recruiter_email,
+            )
+        except Exception:
+            continue
+    raise HTTPException(status_code=503, detail="All AI providers unavailable. Configure an API key.")
+
+
 @app.post("/resume/cover-letter-docx")
 def export_cover_letter_docx(payload: CoverLetterRequest):
     """Export an already-generated cover letter as a Word .docx with a professional header."""
@@ -512,43 +586,38 @@ def export_cover_letter_docx(payload: CoverLetterRequest):
     normal.font.color.rgb = _BODY
     normal.paragraph_format.space_after = _Pt(0)
 
-    # Name heading
-    p = doc.add_paragraph()
-    p.alignment = _WD_ALIGN.CENTER
-    run = p.add_run(candidate_name)
-    run.bold = True
-    run.font.size = _Pt(16)
-    run.font.color.rgb = _BLUE
+    # Date line only at the top (no name/contact header)
+    from datetime import date as _date
+    p_date = doc.add_paragraph()
+    p_date.paragraph_format.space_after = _Pt(12)
+    run_date = p_date.add_run(_date.today().strftime("%B %d, %Y"))
+    run_date.font.size = _Pt(11)
+    run_date.font.color.rgb = _GRAY
 
-    # Contact line
-    contact_parts = [x for x in [email, phone, linkedin] if x]
-    if contact_parts:
-        p2 = doc.add_paragraph()
-        p2.alignment = _WD_ALIGN.CENTER
-        p2.paragraph_format.space_before = _Pt(2)
-        run2 = p2.add_run("  |  ".join(contact_parts))
-        run2.font.size = _Pt(9)
-        run2.font.color.rgb = _GRAY
+    # Salutation
+    p_sal = doc.add_paragraph()
+    p_sal.paragraph_format.space_after = _Pt(10)
+    run_sal = p_sal.add_run("Dear Hiring Manager,")
+    run_sal.font.size = _Pt(11)
+    run_sal.font.color.rgb = _BODY
 
-    # Divider
-    p3 = doc.add_paragraph()
-    p3.paragraph_format.space_before = _Pt(6)
-    p3.paragraph_format.space_after = _Pt(12)
-    from docx.oxml.ns import qn as _qn
-    from docx.oxml import OxmlElement as _OxmlElem
-    pPr = p3._p.get_or_add_pPr()
-    pBdr = _OxmlElem("w:pBdr")
-    bottom = _OxmlElem("w:bottom")
-    bottom.set(_qn("w:val"), "single")
-    bottom.set(_qn("w:sz"), "6")
-    bottom.set(_qn("w:space"), "1")
-    bottom.set(_qn("w:color"), "1F3A5F")
-    pBdr.append(bottom)
-    pPr.append(pBdr)
+    # Strip AI-generated header blocks (salutation, address, company, date lines at top)
+    # and closing block (sincerely/regards + name) from body to avoid duplication
+    _skip_pat = _re.compile(
+        r"^(dear\s|to\s+whom\s+it\s+may|hiring\s+manager|sincerely|regards|best\s+regards|yours\s+truly)",
+        _re.IGNORECASE,
+    )
+    raw_paras = [blk.strip() for blk in _re.split(r"\n{2,}", cover_letter_text.strip()) if blk.strip()]
+    # Drop the last paragraph if it looks like a closing (sincerely / name)
+    while raw_paras and _skip_pat.match(raw_paras[-1]):
+        raw_paras.pop()
+    # Also drop the second-to-last if the last was the name after sincerely was already removed
+    # (handle "Sincerely,\n\nJohn Smith" split into two paras)
+    if raw_paras and _re.match(r"^[A-Z][a-z]+ [A-Z][a-z]+$", raw_paras[-1]):
+        raw_paras.pop()
+    body_paras = [p for p in raw_paras if not _skip_pat.match(p)]
 
-    # Cover letter body — split by blank lines into paragraphs
-    body_paras = [blk.strip() for blk in _re.split(r"\n{2,}", cover_letter_text.strip()) if blk.strip()]
-    for i, para in enumerate(body_paras):
+    for para in body_paras:
         p = doc.add_paragraph()
         p.paragraph_format.space_before = _Pt(0)
         p.paragraph_format.space_after = _Pt(10)
@@ -556,16 +625,52 @@ def export_cover_letter_docx(payload: CoverLetterRequest):
         run.font.size = _Pt(11)
         run.font.color.rgb = _BODY
 
+    # Closing signature — name + contact once
+    doc.add_paragraph()
+    p_close = doc.add_paragraph()
+    p_close.paragraph_format.space_after = _Pt(4)
+    close_run = p_close.add_run("Sincerely,")
+    close_run.font.size = _Pt(11)
+    close_run.font.color.rgb = _BODY
+
+    p_sig_name = doc.add_paragraph()
+    p_sig_name.paragraph_format.space_before = _Pt(16)
+    r_sig = p_sig_name.add_run(candidate_name)
+    r_sig.bold = True
+    r_sig.font.size = _Pt(11)
+    r_sig.font.color.rgb = _BLUE
+
+    contact_sig = [x for x in [email, phone] if x]
+    if contact_sig:
+        p_sig_contact = doc.add_paragraph()
+        p_sig_contact.paragraph_format.space_before = _Pt(2)
+        r_contact = p_sig_contact.add_run("  |  ".join(contact_sig))
+        r_contact.font.size = _Pt(9)
+        r_contact.font.color.rgb = _GRAY
+
     buf = _BytesIO()
     doc.save(buf)
     buf.seek(0)
 
     safe_name = _re.sub(r"[^a-zA-Z0-9_-]", "_", candidate_name)[:40]
     filename = f"Cover_Letter_{safe_name}.docx"
+
+    # Save a copy to ~/Downloads/JobIntelligence/
+    import os as _os
+    from pathlib import Path as _Path
+    downloads_dir = _Path.home() / "Downloads" / "JobIntelligence"
+    downloads_dir.mkdir(parents=True, exist_ok=True)
+    buf_bytes = buf.read()
+    with open(downloads_dir / filename, "wb") as f:
+        f.write(buf_bytes)
+
     return Response(
-        content=buf.read(),
+        content=buf_bytes,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "X-Saved-To": str(downloads_dir / filename),
+        },
     )
 
 
@@ -639,7 +744,9 @@ def export_resume_docx(payload: dict):
     filename = (payload.get("filename") or "resume").strip() or "resume"
     filename = "".join(c for c in filename if c.isalnum() or c in "-_ ").strip() or "resume"
     docx_bytes = build_resume_docx(resume_text, candidate_name=payload.get("candidate_name"))
-    downloads_path = Path.home() / "Downloads" / f"{filename}.docx"
+    ji_dir = Path.home() / "Downloads" / "JobIntelligence"
+    ji_dir.mkdir(parents=True, exist_ok=True)
+    downloads_path = ji_dir / f"{filename}.docx"
     try:
         downloads_path.write_bytes(docx_bytes)
     except OSError:

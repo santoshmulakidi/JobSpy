@@ -1,5 +1,6 @@
 import type {
   Application,
+  ColdEmailResult,
   CollectPayload,
   CollectResult,
   CompanyTarget,
@@ -212,6 +213,24 @@ export async function generateCoverLetter(payload: {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export async function generateColdEmail(payload: {
+  job_title: string;
+  company_name?: string | null;
+  job_description: string;
+  candidate_summary: string;
+  recruiter_name?: string | null;
+  recruiter_email?: string | null;
+  contact_role?: string | null;
+  tone?: string | null;
+  provider?: string | null;
+  model?: string | null;
+}) {
+  return request<ColdEmailResult>("/resume/cold-email", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }, 120_000);
 }
 
 export async function exportCoverLetterDocx(payload: {

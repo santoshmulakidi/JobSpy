@@ -37,7 +37,7 @@ class Settings(BaseSettings):
         default=None,
         validation_alias=AliasChoices("JOB_INTELLIGENCE_GROQ_API_KEY", "GROQ_API_KEY"),
     )
-    groq_model: str = "llama-4-maverick-17b-128e-instruct"
+    groq_model: str = "llama-3.3-70b-versatile"
     groq_base_url: str = "https://api.groq.com/openai/v1"
     gemini_api_key: str | None = Field(
         default=None,

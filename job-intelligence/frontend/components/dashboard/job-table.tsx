@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { ArrowUpRight, ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
+import { ArrowUpRight, ChevronDown, ChevronUp, ChevronsUpDown, ExternalLink, FileText } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,87 @@ function formatCollected(iso: string | null | undefined): string {
   return `${formatted} ${tz}`;
 }
 
+function JobContextMenu({
+  job,
+  x,
+  y,
+  onClose,
+  onSelect,
+}: {
+  job: Job;
+  x: number;
+  y: number;
+  onClose: () => void;
+  onSelect?: ((job: Job) => void) | undefined;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handler(e: MouseEvent | KeyboardEvent) {
+      if (e instanceof KeyboardEvent && e.key !== "Escape") return;
+      if (e instanceof MouseEvent && ref.current?.contains(e.target as Node)) return;
+      onClose();
+    }
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("keydown", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", handler);
+    };
+  }, [onClose]);
+
+  function openResumeLab() {
+    window.sessionStorage.setItem("resumeLabJob", JSON.stringify({
+      id: job.id,
+      title: job.title,
+      company: job.company_name,
+      location: job.location,
+      jobUrl: job.job_url,
+      description: job.description ?? "",
+      returnTo: "/jobs",
+    }));
+    window.open(`/resume-lab?jobId=${job.id}`, "_blank", "noopener");
+    onClose();
+  }
+
+  return (
+    <div
+      ref={ref}
+      style={{ position: "fixed", top: y, left: x, zIndex: 9999 }}
+      className="min-w-[200px] rounded-lg border bg-popover py-1 shadow-lg text-sm"
+    >
+      {job.job_url && (
+        <a
+          href={job.job_url}
+          target="_blank"
+          rel="noreferrer"
+          onClick={onClose}
+          className="flex items-center gap-2 px-3 py-2 hover:bg-accent cursor-pointer text-foreground"
+        >
+          <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+          Open job in new tab
+        </a>
+      )}
+      <button
+        type="button"
+        onClick={() => { onSelect?.(job); onClose(); }}
+        className="flex w-full items-center gap-2 px-3 py-2 hover:bg-accent cursor-pointer text-left"
+      >
+        <FileText className="h-3.5 w-3.5 shrink-0" />
+        View job details
+      </button>
+      <button
+        type="button"
+        onClick={openResumeLab}
+        className="flex w-full items-center gap-2 px-3 py-2 hover:bg-accent cursor-pointer text-left"
+      >
+        <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
+        Open Resume Lab in new tab
+      </button>
+    </div>
+  );
+}
+
 export function JobTable({
   jobs,
   onApply,
@@ -77,6 +158,7 @@ export function JobTable({
 }) {
   const [sortKey, setSortKey] = useState<SortKey>("posted");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [ctxMenu, setCtxMenu] = useState<{ job: Job; x: number; y: number } | null>(null);
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -102,6 +184,16 @@ export function JobTable({
   }
 
   return (
+    <>
+    {ctxMenu && (
+      <JobContextMenu
+        job={ctxMenu.job}
+        x={ctxMenu.x}
+        y={ctxMenu.y}
+        onClose={() => setCtxMenu(null)}
+        onSelect={onSelect ?? undefined}
+      />
+    )}
     <Card className="surface shadow-none">
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle>{title}</CardTitle>
@@ -130,6 +222,7 @@ export function JobTable({
                   selectedJobId === job.id && "bg-primary/8",
                 )}
                 onClick={() => onSelect?.(job)}
+                onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ job, x: e.clientX, y: e.clientY }); }}
               >
                 <TableCell className="max-w-[300px]">
                   <div className="flex items-center gap-1.5 flex-wrap">
@@ -182,6 +275,7 @@ export function JobTable({
         </Table>
       </CardContent>
     </Card>
+    </>
   );
 }
 

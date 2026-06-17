@@ -81,14 +81,20 @@ def rebuild_resume(
                 "- Use all-caps section headings exactly as written above.\n"
                 "- Experience entries must use this pattern: Role | Company | Location, next line dates, optional Project line, then concise bullets, then optional Environment line.\n"
                 "- Do not output a different resume format, table format, markdown format, or paragraph-only resume.\n\n"
-                "WRITING STYLE — humanizer rules:\n"
-                "- No em dashes (-- or -). Use a comma, colon, or new sentence instead.\n"
-                "- No AI vocabulary: avoid pivotal, leverage, showcase, foster, utilize, spearhead, vibrant, "
-                "testament, underscore, groundbreaking, robust, seamless, revolutionize, transformative, innovative.\n"
-                "- Active voice: 'Built X' not 'X was built'.\n"
-                "- Varied action verbs: do not start every bullet with the same word.\n"
-                "- No generic conclusions ('Excited to contribute...', 'Passionate about...').\n"
-                "- Numbers and metrics only when the source resume supports them; do not fabricate percentages."
+                "WRITING STYLE — anti-AI-detection rules (these are critical — AI detectors flag 80%+ of AI resumes on these patterns):\n"
+                "- No em dashes (-- or —). Use a comma, colon, or new sentence.\n"
+                "- No AI vocabulary: avoid pivotal, leverage, showcase, foster, utilize, spearhead, vibrant, testament, underscore, groundbreaking, robust, seamless, revolutionize, transformative, innovative, delivering scalable solutions, high-quality solutions, adept, proficient in, passionate about, results-driven, detail-oriented, dynamic, synergy, ecosystem, best-in-class.\n"
+                "- Active voice: 'Built X' not 'X was built', 'Reduced latency' not 'Latency was reduced'.\n"
+                "- VARY bullet length deliberately: mix short (8-12 words) and longer (18-25 word) bullets within each role. Never let 3 consecutive bullets be the same length.\n"
+                "- VARY bullet structure: not every bullet should follow '[Verb] [tech] to [outcome]'. Some bullets can start with context ('When the team needed X, built Y'), some can be compound ('Designed the schema and wrote the migration scripts'), some can lead with the constraint ('Under a 6-week deadline, delivered ...').\n"
+                "- Vary action verbs aggressively: built, wrote, designed, cut, migrated, shipped, debugged, refactored, integrated, wired up, set up, replaced, reduced, consolidated, extended, ported, connected, automated, validated, tested, reviewed, documented, configured, deployed, diagnosed.\n"
+                "- No uniform parallel structure across bullets within a role — this is the single biggest AI tell.\n"
+                "- No generic openers per role: the first bullet of each role must reference the specific product, team, or constraint — not a generic architecture description.\n"
+                "- Professional Summary: write 3 sentences maximum. Lead with a concrete technical claim, not a career philosophy. Do not start with the candidate's name or 'I'.\n"
+                "- No generic conclusions or mission statements anywhere in the resume.\n"
+                "- Numbers and metrics only when the source resume supports them; do not fabricate percentages.\n"
+                "- Occasionally drop a filler word or use a contraction mid-bullet to break uniformity (e.g., 'didn't need', 'it wasn't').\n"
+                "- Read the final output aloud mentally. If every bullet sounds like it came from the same template, rewrite until they don't."
             ),
         },
         {"role": "user", "content": prompt},
@@ -99,7 +105,11 @@ def rebuild_resume(
             "content": (
                 f"Refine the resume you just produced with this instruction: {refine_instruction.strip()}\n"
                 "Keep all employers, dates, and facts unchanged. "
-                "Apply the same writing style rules: no em dashes, no AI vocabulary, active voice, no bold bullet headers. "
+                "Apply the same writing rules: no em dashes, no AI vocabulary (leverage, utilize, spearhead, robust, seamless, pivotal, transformative, results-driven, passionate, proven), active voice only. "
+                "Critical: vary bullet length and structure — mix short (8-12 word) and longer (18-25 word) bullets, and vary the opening pattern so not every bullet starts with [Verb] [tech]. "
+                "Never write 'Designed and implemented' or 'Developed and maintained'. "
+                "Do not fabricate any facts. "
+                "Make it sound recruiter-authentic by reducing generic AI-style wording, varying sentence structure, and adding real-world technical context only where supported by the base resume. "
                 "Return the same three sections in the same order: REVISED RESUME, CHANGE SUMMARY, KEYWORD GAPS."
             ),
         })
@@ -161,7 +171,7 @@ def build_resume_prompt(
         if employer_count
         else "Include every employer and role from the base resume. Do not drop any."
     )
-    return f"""Rebuild this resume to rank higher in ATS for the target job. Preserve all facts.
+    return f"""Rebuild this resume to score 90%+ on ATS keyword matching for the target job. Preserve all facts exactly — no invented employers, dates, metrics, tools, or credentials.
 
 Profile: {profile_name or "Not specified"}
 Target title/company: {target_title or "Not specified"}
@@ -216,6 +226,27 @@ ATS rules for this section:
 - Plain text only, no markdown, no asterisks, no bold, no bullet symbols like * or **
 - Varied action verbs: built, designed, reduced, automated, migrated, led, shipped, integrated
 - No em dashes. No AI vocabulary: leverage, utilize, spearhead, robust, seamless, pivotal, transformative
+
+ATS SCORE TARGET — reach 90%+:
+- Every skill, tool, methodology, and phrase from the JD that the candidate actually has must appear verbatim in the resume.
+- Mirror exact JD phrasing: if JD says "event-driven architecture", write "event-driven architecture", not just "event-driven".
+- Front-load the highest-frequency JD keywords in the TECHNICAL SKILLS section and again inside the two most recent role bullets.
+- Do not replace multi-word JD phrases with only acronyms. Keep both: "Continuous Integration/Continuous Delivery (CI/CD)".
+
+Humanize / anti-AI-detection rules — AI detectors flag uniform structure; breaking these specifically reduces detection:
+- Do NOT make all bullets the same length or the same sentence structure. Mix short punchy bullets with longer contextual ones inside every role.
+- Do NOT use the same action verb to start more than 2 bullets across the whole resume.
+- Do NOT write "Designed and implemented" or "Developed and maintained" — these are the most flagged AI phrases.
+- Remove all buzzwords: scalable solutions, high-quality solutions, modern engineering practices, strong background, proven ability, best practices, industry-standard, cutting-edge, state-of-the-art.
+- At least 2 bullets per role must reference a specific system name, team name, integration, constraint, or deadline from the base resume — not a generic architecture pattern.
+- The professional summary must make one concrete claim about the candidate's actual domain and one real technical achievement. No mission statements.
+- Vary ending structures: not every bullet ends with a technology name or a result. Some can end mid-thought if that's how the work actually was.
+- Do not fabricate metrics, employers, dates, tools, project names, cloud services, visa status, or business results.
+
+Content quality self-check before returning:
+- Read each role's bullets. If they all follow the same [Verb] [tech] for [generic outcome] pattern, rewrite half of them to be structurally different.
+- Confirm no verb appears as a bullet opener more than twice total across the whole resume.
+- Confirm the summary is 3 sentences or fewer and does not contain the words "passionate", "driven", "results-oriented", or "leverage".
 
 CHANGE SUMMARY
 3 to 5 plain-text bullet points (no asterisks) explaining what changed and why it will rank higher.
