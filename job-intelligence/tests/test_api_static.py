@@ -308,7 +308,10 @@ FOLLOW_UP:
 Hi Priya, just following up on my note about the Senior .NET Developer role at Contoso. Happy to share more context if helpful.
 """
 
-    monkeypatch.setattr("ai.resume_rebuilder._chat_completion", fake_chat_completion)
+    import ai.resume_rebuilder as _reb
+    monkeypatch.setattr(_reb, "_chat_completion", fake_chat_completion)
+    # _provider_order checks for real API keys; patch to return a fake provider
+    monkeypatch.setattr(_reb, "_provider_order", lambda settings, **kw: [{"name": "gemini", "model": "gemini-2.5-flash"}])
 
     response = client.post(
         "/resume/cold-email",
