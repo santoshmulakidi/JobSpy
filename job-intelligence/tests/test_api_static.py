@@ -276,6 +276,9 @@ def test_refresh_endpoint_is_registered():
     assert "/scheduler/start" in paths
     assert "/scheduler/stop" in paths
     assert "/resume/cold-email" in paths
+    assert "/documents/generate" in paths
+    assert "/documents/generation-jobs" in paths
+    assert "/jobs/{job_id}/documents" in paths
 
 
 def test_cold_email_endpoint_returns_copy_ready_messages(monkeypatch):

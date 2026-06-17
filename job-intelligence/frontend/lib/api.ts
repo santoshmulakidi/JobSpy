@@ -1,10 +1,13 @@
 import type {
   Application,
+  AIGenerationJob,
   ColdEmailResult,
   CollectPayload,
   CollectResult,
   CompanyTarget,
+  DocumentGenerationResult,
   Job,
+  JobDocuments,
   ResumeParseResult,
   ResumeRebuildResult,
   SavedSearch,
@@ -213,6 +216,29 @@ export async function generateCoverLetter(payload: {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export async function queueDocumentGeneration(payload: {
+  job_ids: number[];
+  generation_type: "resume" | "cover_letter" | "both";
+  base_resume: string;
+  profile_name?: string | null;
+  provider?: string | null;
+  model?: string | null;
+  force_regenerate?: boolean;
+}) {
+  return request<DocumentGenerationResult>("/documents/generate", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getDocumentGenerationJobs(limit = 100) {
+  return request<AIGenerationJob[]>(`/documents/generation-jobs?limit=${limit}`);
+}
+
+export async function getJobDocuments(jobId: number) {
+  return request<JobDocuments>(`/jobs/${jobId}/documents`);
 }
 
 export async function generateColdEmail(payload: {

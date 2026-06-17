@@ -251,6 +251,78 @@ class ResumeRebuildResponse(BaseModel):
     prompt: str
 
 
+class DocumentGenerationRequest(BaseModel):
+    job_ids: list[int] = Field(min_length=1, max_length=100)
+    generation_type: str = Field(pattern="^(resume|cover_letter|both)$")
+    base_resume: str = Field(min_length=50)
+    profile_name: str | None = None
+    provider: str | None = None
+    model: str | None = None
+    force_regenerate: bool = False
+
+
+class ResumeVersionOut(BaseModel):
+    id: int
+    job_id: int
+    profile_name: str | None
+    company_name: str | None
+    job_title: str | None
+    provider: str | None
+    model: str | None
+    content_text: str
+    ats_before_score: int | None
+    ats_after_score: int | None
+    warnings: list[str] = Field(default_factory=list)
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class CoverLetterVersionOut(BaseModel):
+    id: int
+    job_id: int
+    profile_name: str | None
+    company_name: str | None
+    job_title: str | None
+    provider: str | None
+    model: str | None
+    content_text: str
+    warnings: list[str] = Field(default_factory=list)
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AIGenerationJobOut(BaseModel):
+    id: int
+    job_id: int
+    profile_name: str | None
+    generation_type: str
+    status: str
+    company_name: str | None
+    job_title: str | None
+    provider: str | None
+    model: str | None
+    error: str | None
+    resume_version_id: int | None
+    cover_letter_version_id: int | None
+    created_at: datetime
+    started_at: datetime | None
+    finished_at: datetime | None
+
+    model_config = {"from_attributes": True}
+
+
+class DocumentGenerationResponse(BaseModel):
+    queued: int
+    jobs: list[AIGenerationJobOut]
+
+
+class JobDocumentsOut(BaseModel):
+    resume_versions: list[ResumeVersionOut] = Field(default_factory=list)
+    cover_letter_versions: list[CoverLetterVersionOut] = Field(default_factory=list)
+
+
 class BulkRebuildRequest(BaseModel):
     job_ids: list[int] = Field(min_length=1, max_length=200)
     base_resume: str = Field(min_length=50)

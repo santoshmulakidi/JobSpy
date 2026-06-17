@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, CheckCircle2, Copy, FileText, Loader2, Mail, Search } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Copy, FileText, Loader2, Mail, Search, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -15,10 +15,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { generateColdEmail, getArchivedJobs, getCollectionRuns, getJobsByRun, markJobApplied, saveJobNotes, searchJobs } from "@/lib/api";
+import { generateColdEmail, getArchivedJobs, getCollectionRuns, getDocumentGenerationJobs, getJobDocuments, getJobsByRun, markJobApplied, queueDocumentGeneration, resumeModelChoices, saveJobNotes, searchJobs } from "@/lib/api";
 import { compactLocation, defaultProfiles, expandSearchTerm, loadProfiles, type JobProfile } from "@/lib/job-profiles";
 import { formatDate } from "@/lib/utils";
-import type { ColdEmailResult, Job } from "@/types/job";
+import type { AIGenerationJob, ColdEmailResult, Job, JobDocuments } from "@/types/job";
 
 const PAGE_SIZE = 30;
 const CANDIDATE_LIMIT = 500;
@@ -70,6 +70,12 @@ export function JobsClient() {
   const [pageSize, setPageSize] = useState(30);
   const [availableSources, setAvailableSources] = useState<{ source: string; job_count: number }[]>([]);
   const [lastSearchMode, setLastSearchMode] = useState<"feed" | "search">("feed");
+  const [selectedJobIds, setSelectedJobIds] = useState<Set<number>>(new Set());
+  const [generationType, setGenerationType] = useState<"resume" | "cover_letter" | "both">("both");
+  const [generationModel, setGenerationModel] = useState("gemini|gemini-2.5-flash");
+  const [queueingDocuments, setQueueingDocuments] = useState(false);
+  const [generationJobs, setGenerationJobs] = useState<AIGenerationJob[]>([]);
+  const modelChoices = useMemo(() => resumeModelChoices(), []);
 
   // Derive state counts from loaded jobs — used to populate the state dropdown.
   const stateCounts = useMemo(() => {
@@ -107,6 +113,7 @@ export function JobsClient() {
     ).catch(() => {});
     // Load initial collection run buckets (no keyword yet — keyword loads after profile is set)
     loadCollectionRuns(null);
+    getDocumentGenerationJobs(25).then(setGenerationJobs).catch(() => {});
   }, []);
 
   function loadCollectionRuns(_kw: string | null) {
@@ -312,6 +319,61 @@ export function JobsClient() {
     }
   }
 
+  function toggleJobSelection(job: Job) {
+    setSelectedJobIds((current) => {
+      const next = new Set(current);
+      if (next.has(job.id)) next.delete(job.id);
+      else next.add(job.id);
+      return next;
+    });
+  }
+
+  function toggleVisibleSelection(visibleJobs: Job[]) {
+    setSelectedJobIds((current) => {
+      const next = new Set(current);
+      const allVisibleSelected = visibleJobs.length > 0 && visibleJobs.every((job) => next.has(job.id));
+      for (const job of visibleJobs) {
+        if (allVisibleSelected) next.delete(job.id);
+        else next.add(job.id);
+      }
+      return next;
+    });
+  }
+
+  async function generateSelectedDocuments() {
+    const selectedProfile = profiles.find((profile) => profile.id === profileId);
+    const baseResume = selectedProfile?.baseResume?.trim();
+    if (!baseResume || baseResume.length < 50) {
+      toast.error("Add a base resume to this profile in Resume Lab first");
+      return;
+    }
+    const jobIds = Array.from(selectedJobIds);
+    if (jobIds.length === 0) {
+      toast.error("Select at least one job");
+      return;
+    }
+    const [provider, model] = generationModel.split("|");
+    setQueueingDocuments(true);
+    try {
+      const result = await queueDocumentGeneration({
+        job_ids: jobIds,
+        generation_type: generationType,
+        base_resume: baseResume,
+        profile_name: selectedProfile?.name ?? profileId,
+        provider: provider ?? null,
+        model: model ?? null,
+      });
+      setSelectedJobIds(new Set());
+      const latest = await getDocumentGenerationJobs(25);
+      setGenerationJobs(latest);
+      toast.success(`Queued ${result.queued} document job${result.queued === 1 ? "" : "s"}`);
+    } catch (caught) {
+      toast.error(caught instanceof Error ? caught.message : "Could not queue document generation");
+    } finally {
+      setQueueingDocuments(false);
+    }
+  }
+
   function openResumeLab(job: Job) {
     const description = job.description?.trim() || "";
     window.sessionStorage.setItem("resumeLabJob", JSON.stringify({
@@ -484,6 +546,47 @@ export function JobsClient() {
       {error ? <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{error}</div> : null}
       <div className={selectedJob ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]" : "grid gap-4"}>
         <div className="space-y-3">
+          <Card className="surface shadow-none">
+            <CardContent className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-sm font-medium">AI document queue</p>
+                <p className="text-xs text-muted-foreground">
+                  {selectedJobIds.size
+                    ? `${selectedJobIds.size} selected. Missing JDs will be fetched from the job URL first.`
+                    : "Select jobs, then generate resume only, cover letter only, or both."}
+                </p>
+                {generationJobs.length > 0 ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Latest: {generationJobs.slice(0, 4).map((job) => `${job.company_name ?? job.job_title ?? `Job ${job.job_id}`}: ${job.status}`).join(" · ")}
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Select value={generationType} onValueChange={(value: "resume" | "cover_letter" | "both") => setGenerationType(value)}>
+                  <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="resume">Resume only</SelectItem>
+                    <SelectItem value="cover_letter">Cover letter only</SelectItem>
+                    <SelectItem value="both">Resume + cover letter</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={generationModel} onValueChange={setGenerationModel}>
+                  <SelectTrigger className="w-full sm:w-72"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {modelChoices.map((choice) => (
+                      <SelectItem key={`${choice.provider}|${choice.model}`} value={`${choice.provider}|${choice.model}`}>
+                        {choice.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button onClick={generateSelectedDocuments} disabled={queueingDocuments || selectedJobIds.size === 0}>
+                  {queueingDocuments ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  Generate
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
           {loading ? (
             <JobsSkeleton />
           ) : (
@@ -491,6 +594,9 @@ export function JobsClient() {
               jobs={jobs}
               onApply={applyJob}
               onSelect={setSelectedJob}
+              selectedJobIds={selectedJobIds}
+              onToggleJobSelection={toggleJobSelection}
+              onToggleVisibleSelection={toggleVisibleSelection}
               selectedJobId={selectedJob?.id ?? null}
             />
           )}
@@ -548,6 +654,7 @@ function JobDetailsPanel({
   const [candidateSummary, setCandidateSummary] = useState("Senior .NET/Azure developer with experience in ASP.NET Core, C#, Azure, SQL Server, React, Angular, APIs, microservices, and enterprise delivery.");
   const [notes, setNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [documents, setDocuments] = useState<JobDocuments | null>(null);
   const canEmbedPreview = job?.job_url ? canEmbedJobUrl(job.job_url) : false;
 
   useEffect(() => {
@@ -557,6 +664,10 @@ function JobDetailsPanel({
     setRecruiterEmail("");
     setContactRole("Recruiter");
     setOutreachTone("concise");
+    setDocuments(null);
+    if (job?.id) {
+      getJobDocuments(job.id).then(setDocuments).catch(() => {});
+    }
   }, [job?.id]);
 
   useEffect(() => {
@@ -724,6 +835,26 @@ function JobDetailsPanel({
             </Button>
           ) : null}
         </div>
+
+        {documents && (documents.resume_versions.length > 0 || documents.cover_letter_versions.length > 0) ? (
+          <div className="rounded-lg border bg-background/70 p-3">
+            <h3 className="mb-2 text-sm font-medium">Saved AI documents</h3>
+            <div className="space-y-2 text-xs text-muted-foreground">
+              {documents.resume_versions.slice(0, 3).map((version) => (
+                <div key={`resume-${version.id}`} className="flex items-center justify-between gap-2">
+                  <span>Resume · {version.provider ?? "AI"} · {new Date(version.created_at).toLocaleString()}</span>
+                  <Button size="sm" variant="ghost" onClick={() => copyText(version.content_text, "Resume version copied")}>Copy</Button>
+                </div>
+              ))}
+              {documents.cover_letter_versions.slice(0, 3).map((version) => (
+                <div key={`cover-${version.id}`} className="flex items-center justify-between gap-2">
+                  <span>Cover letter · {version.provider ?? "AI"} · {new Date(version.created_at).toLocaleString()}</span>
+                  <Button size="sm" variant="ghost" onClick={() => copyText(version.content_text, "Cover letter copied")}>Copy</Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div>
           <h3 className="mb-2 text-sm font-medium">Notes</h3>

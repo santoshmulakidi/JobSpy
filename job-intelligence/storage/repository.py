@@ -11,12 +11,17 @@ from sqlalchemy.orm import Session
 
 from collectors.dedup import fingerprint_job
 from storage.models import (
+    AIGenerationJob,
+    AIGenerationStatus,
     Application,
     ChangeType,
+    CoverLetterVersion,
     Company,
+    DocumentKind,
     Job,
     JobChange,
     JobStatus,
+    ResumeVersion,
     SavedSearch,
     SearchRun,
     UserProfile,
@@ -329,6 +334,213 @@ class JobRepository:
         application.updated_at = utc_now()
         self.session.flush()
         return application
+
+    def enqueue_ai_generation_jobs(
+        self,
+        *,
+        job_ids: Iterable[int],
+        generation_type: str,
+        base_resume: str,
+        profile_name: str | None = None,
+        provider: str | None = None,
+        model: str | None = None,
+        force_regenerate: bool = False,
+    ) -> list[AIGenerationJob]:
+        document_kind = DocumentKind(generation_type)
+        queued: list[AIGenerationJob] = []
+        for job_id in job_ids:
+            job = self.get_job(job_id)
+            if job is None:
+                continue
+            generation_job = AIGenerationJob(
+                job_id=job.id,
+                profile_name=profile_name,
+                generation_type=document_kind,
+                status=AIGenerationStatus.QUEUED,
+                company_name=job.company_name,
+                job_title=job.title,
+                provider=provider,
+                model=model,
+                base_resume=base_resume,
+                force_regenerate=force_regenerate,
+            )
+            self.session.add(generation_job)
+            queued.append(generation_job)
+        self.session.flush()
+        return queued
+
+    def list_ai_generation_jobs(self, *, limit: int = 100) -> list[AIGenerationJob]:
+        return list(
+            self.session.scalars(
+                select(AIGenerationJob)
+                .order_by(AIGenerationJob.created_at.desc(), AIGenerationJob.id.desc())
+                .limit(limit)
+            )
+        )
+
+    def next_queued_ai_generation_job(self) -> AIGenerationJob | None:
+        return self.session.scalar(
+            select(AIGenerationJob)
+            .where(AIGenerationJob.status == AIGenerationStatus.QUEUED)
+            .order_by(AIGenerationJob.created_at.asc(), AIGenerationJob.id.asc())
+            .limit(1)
+        )
+
+    def mark_ai_generation_running(self, generation_job: AIGenerationJob) -> None:
+        generation_job.status = AIGenerationStatus.RUNNING
+        generation_job.started_at = utc_now()
+        generation_job.updated_at = utc_now()
+        self.session.flush()
+
+    def mark_ai_generation_completed(
+        self,
+        generation_job: AIGenerationJob,
+        *,
+        resume_version: ResumeVersion | None = None,
+        cover_letter_version: CoverLetterVersion | None = None,
+    ) -> None:
+        generation_job.status = AIGenerationStatus.COMPLETED
+        generation_job.resume_version_id = resume_version.id if resume_version else generation_job.resume_version_id
+        generation_job.cover_letter_version_id = (
+            cover_letter_version.id if cover_letter_version else generation_job.cover_letter_version_id
+        )
+        generation_job.finished_at = utc_now()
+        generation_job.updated_at = utc_now()
+        generation_job.error = None
+        self.session.flush()
+
+    def mark_ai_generation_failed(
+        self,
+        generation_job: AIGenerationJob,
+        *,
+        status: AIGenerationStatus = AIGenerationStatus.FAILED,
+        error: str,
+    ) -> None:
+        generation_job.status = status
+        generation_job.error = error
+        generation_job.finished_at = utc_now()
+        generation_job.updated_at = utc_now()
+        self.session.flush()
+
+    def save_resume_version(
+        self,
+        *,
+        job: Job,
+        profile_name: str | None,
+        provider: str | None,
+        model: str | None,
+        content_text: str,
+        job_description_snapshot: str | None,
+        ats_before_score: int | None,
+        ats_after_score: int | None,
+        warnings: list[str],
+        prompt: str | None,
+    ) -> ResumeVersion:
+        version = ResumeVersion(
+            job_id=job.id,
+            profile_name=profile_name,
+            company_name=job.company_name,
+            job_title=job.title,
+            provider=provider,
+            model=model,
+            content_text=content_text,
+            job_description_snapshot=job_description_snapshot,
+            ats_before_score=ats_before_score,
+            ats_after_score=ats_after_score,
+            warnings=warnings,
+            prompt=prompt,
+        )
+        self.session.add(version)
+        self.session.flush()
+        return version
+
+    def save_cover_letter_version(
+        self,
+        *,
+        job: Job,
+        profile_name: str | None,
+        provider: str | None,
+        model: str | None,
+        content_text: str,
+        job_description_snapshot: str | None,
+        warnings: list[str],
+        prompt: str | None,
+    ) -> CoverLetterVersion:
+        version = CoverLetterVersion(
+            job_id=job.id,
+            profile_name=profile_name,
+            company_name=job.company_name,
+            job_title=job.title,
+            provider=provider,
+            model=model,
+            content_text=content_text,
+            job_description_snapshot=job_description_snapshot,
+            warnings=warnings,
+            prompt=prompt,
+        )
+        self.session.add(version)
+        self.session.flush()
+        return version
+
+    def find_latest_resume_version(
+        self,
+        *,
+        job_id: int,
+        profile_name: str | None,
+        provider: str | None,
+        model: str | None,
+    ) -> ResumeVersion | None:
+        return self.session.scalar(
+            select(ResumeVersion)
+            .where(
+                ResumeVersion.job_id == job_id,
+                ResumeVersion.profile_name == profile_name,
+                ResumeVersion.provider == provider,
+                ResumeVersion.model == model,
+            )
+            .order_by(ResumeVersion.created_at.desc(), ResumeVersion.id.desc())
+            .limit(1)
+        )
+
+    def find_latest_cover_letter_version(
+        self,
+        *,
+        job_id: int,
+        profile_name: str | None,
+        provider: str | None,
+        model: str | None,
+    ) -> CoverLetterVersion | None:
+        return self.session.scalar(
+            select(CoverLetterVersion)
+            .where(
+                CoverLetterVersion.job_id == job_id,
+                CoverLetterVersion.profile_name == profile_name,
+                CoverLetterVersion.provider == provider,
+                CoverLetterVersion.model == model,
+            )
+            .order_by(CoverLetterVersion.created_at.desc(), CoverLetterVersion.id.desc())
+            .limit(1)
+        )
+
+    def get_job_documents(self, job_id: int) -> dict[str, list[ResumeVersion] | list[CoverLetterVersion]]:
+        resume_versions = list(
+            self.session.scalars(
+                select(ResumeVersion)
+                .where(ResumeVersion.job_id == job_id)
+                .order_by(ResumeVersion.created_at.desc(), ResumeVersion.id.desc())
+            )
+        )
+        cover_letter_versions = list(
+            self.session.scalars(
+                select(CoverLetterVersion)
+                .where(CoverLetterVersion.job_id == job_id)
+                .order_by(CoverLetterVersion.created_at.desc(), CoverLetterVersion.id.desc())
+            )
+        )
+        return {
+            "resume_versions": resume_versions,
+            "cover_letter_versions": cover_letter_versions,
+        }
 
     def list_saved_searches(self) -> list[SavedSearch]:
         return list(

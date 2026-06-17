@@ -100,6 +100,62 @@ export type ResumeRebuildResult = {
   prompt: string;
 };
 
+export type ResumeVersion = {
+  id: number;
+  job_id: number;
+  profile_name: string | null;
+  company_name: string | null;
+  job_title: string | null;
+  provider: string | null;
+  model: string | null;
+  content_text: string;
+  ats_before_score: number | null;
+  ats_after_score: number | null;
+  warnings: string[];
+  created_at: string;
+};
+
+export type CoverLetterVersion = {
+  id: number;
+  job_id: number;
+  profile_name: string | null;
+  company_name: string | null;
+  job_title: string | null;
+  provider: string | null;
+  model: string | null;
+  content_text: string;
+  warnings: string[];
+  created_at: string;
+};
+
+export type JobDocuments = {
+  resume_versions: ResumeVersion[];
+  cover_letter_versions: CoverLetterVersion[];
+};
+
+export type AIGenerationJob = {
+  id: number;
+  job_id: number;
+  profile_name: string | null;
+  generation_type: "resume" | "cover_letter" | "both";
+  status: "queued" | "running" | "completed" | "failed" | "needs_jd";
+  company_name: string | null;
+  job_title: string | null;
+  provider: string | null;
+  model: string | null;
+  error: string | null;
+  resume_version_id: number | null;
+  cover_letter_version_id: number | null;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+};
+
+export type DocumentGenerationResult = {
+  queued: number;
+  jobs: AIGenerationJob[];
+};
+
 export type ColdEmailResult = {
   provider: string;
   model: string | null;

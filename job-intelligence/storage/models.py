@@ -37,6 +37,20 @@ class ChangeType(str, enum.Enum):
     REMOVED = "removed"
 
 
+class AIGenerationStatus(str, enum.Enum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    NEEDS_JD = "needs_jd"
+
+
+class DocumentKind(str, enum.Enum):
+    RESUME = "resume"
+    COVER_LETTER = "cover_letter"
+    BOTH = "both"
+
+
 def utc_now() -> datetime:
     return datetime.now(UTC)
 
@@ -292,6 +306,99 @@ class Application(Base):
     )
 
     job: Mapped[Job] = relationship()
+
+
+class ResumeVersion(Base):
+    __tablename__ = "resume_versions"
+    __table_args__ = (
+        Index("ix_resume_versions_job_created", "job_id", "created_at"),
+        Index("ix_resume_versions_cache", "job_id", "profile_name", "provider", "model"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id"), index=True)
+    profile_id: Mapped[int | None] = mapped_column(ForeignKey("user_profiles.id"), nullable=True)
+    profile_name: Mapped[str | None] = mapped_column(String(160), index=True)
+    company_name: Mapped[str | None] = mapped_column(String(255), index=True)
+    job_title: Mapped[str | None] = mapped_column(String(500))
+    job_description_snapshot: Mapped[str | None] = mapped_column(Text)
+    provider: Mapped[str | None] = mapped_column(String(80), index=True)
+    model: Mapped[str | None] = mapped_column(String(160), index=True)
+    content_text: Mapped[str] = mapped_column(Text)
+    ats_before_score: Mapped[int | None] = mapped_column(Integer)
+    ats_after_score: Mapped[int | None] = mapped_column(Integer)
+    warnings: Mapped[list[str]] = mapped_column(JSON, default=list)
+    prompt: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
+
+    job: Mapped[Job] = relationship()
+    profile: Mapped[UserProfile | None] = relationship()
+
+
+class CoverLetterVersion(Base):
+    __tablename__ = "cover_letter_versions"
+    __table_args__ = (
+        Index("ix_cover_letter_versions_job_created", "job_id", "created_at"),
+        Index("ix_cover_letter_versions_cache", "job_id", "profile_name", "provider", "model"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id"), index=True)
+    profile_id: Mapped[int | None] = mapped_column(ForeignKey("user_profiles.id"), nullable=True)
+    profile_name: Mapped[str | None] = mapped_column(String(160), index=True)
+    company_name: Mapped[str | None] = mapped_column(String(255), index=True)
+    job_title: Mapped[str | None] = mapped_column(String(500))
+    job_description_snapshot: Mapped[str | None] = mapped_column(Text)
+    provider: Mapped[str | None] = mapped_column(String(80), index=True)
+    model: Mapped[str | None] = mapped_column(String(160), index=True)
+    content_text: Mapped[str] = mapped_column(Text)
+    warnings: Mapped[list[str]] = mapped_column(JSON, default=list)
+    prompt: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
+
+    job: Mapped[Job] = relationship()
+    profile: Mapped[UserProfile | None] = relationship()
+
+
+class AIGenerationJob(Base):
+    __tablename__ = "ai_generation_jobs"
+    __table_args__ = (
+        Index("ix_ai_generation_jobs_status_created", "status", "created_at"),
+        Index("ix_ai_generation_jobs_job_created", "job_id", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id"), index=True)
+    profile_id: Mapped[int | None] = mapped_column(ForeignKey("user_profiles.id"), nullable=True)
+    profile_name: Mapped[str | None] = mapped_column(String(160), index=True)
+    generation_type: Mapped[DocumentKind] = mapped_column(Enum(DocumentKind), default=DocumentKind.BOTH)
+    status: Mapped[AIGenerationStatus] = mapped_column(
+        Enum(AIGenerationStatus),
+        default=AIGenerationStatus.QUEUED,
+        index=True,
+    )
+    company_name: Mapped[str | None] = mapped_column(String(255), index=True)
+    job_title: Mapped[str | None] = mapped_column(String(500))
+    provider: Mapped[str | None] = mapped_column(String(80))
+    model: Mapped[str | None] = mapped_column(String(160))
+    base_resume: Mapped[str] = mapped_column(Text)
+    error: Mapped[str | None] = mapped_column(Text)
+    resume_version_id: Mapped[int | None] = mapped_column(ForeignKey("resume_versions.id"), nullable=True)
+    cover_letter_version_id: Mapped[int | None] = mapped_column(ForeignKey("cover_letter_versions.id"), nullable=True)
+    force_regenerate: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
+    )
+
+    job: Mapped[Job] = relationship()
+    profile: Mapped[UserProfile | None] = relationship()
+    resume_version: Mapped[ResumeVersion | None] = relationship(foreign_keys=[resume_version_id])
+    cover_letter_version: Mapped[CoverLetterVersion | None] = relationship(foreign_keys=[cover_letter_version_id])
 
 
 class SavedSearch(Base):

@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from analytics import AnalyticsEngine
 from ai import rebuild_resume
 from api.schemas import (
+    AIGenerationJobOut,
     AnalyticsOut,
     ApplicationIn,
     ApplicationOut,
@@ -31,6 +32,9 @@ from api.schemas import (
     CollectResponse,
     CompanyOut,
     CompanyTargetOut,
+    DocumentGenerationRequest,
+    DocumentGenerationResponse,
+    JobDocumentsOut,
     CoverLetterRequest,
     CoverLetterResponse,
     JobOut,
@@ -55,7 +59,7 @@ from search import SearchEngine
 from storage.backups import backup_sqlite_database
 from storage.config import get_settings
 from storage.database import SessionLocal, get_session, init_database
-from storage.models import Application, ChangeType, UserProfile
+from storage.models import AIGenerationJob, AIGenerationStatus, Application, ChangeType, DocumentKind, UserProfile
 from storage.repository import JobRepository
 from search.scoring import score_job
 from search.trust import score_trust
@@ -102,6 +106,242 @@ async def _lifecycle_loop() -> None:
         finally:
             session.close()
         await asyncio.sleep(3600)
+
+
+async def _ai_generation_loop() -> None:
+    """Process queued resume/cover-letter generations in the API container."""
+    log = logging.getLogger(__name__)
+    while True:
+        generation_job_id: int | None = None
+        session = SessionLocal()
+        try:
+            repository = JobRepository(session)
+            generation_job = repository.next_queued_ai_generation_job()
+            if generation_job is None:
+                await asyncio.sleep(5)
+                continue
+            generation_job_id = generation_job.id
+        except Exception:
+            session.rollback()
+            log.exception("AI generation worker failed")
+            await asyncio.sleep(10)
+        finally:
+            session.close()
+        if generation_job_id is None:
+            continue
+        try:
+            await asyncio.to_thread(_process_ai_generation_job_by_id, generation_job_id)
+        except Exception:
+            log.exception("AI generation job %s failed outside worker guard", generation_job_id)
+            await asyncio.sleep(10)
+
+
+def _generation_job_out(generation_job: AIGenerationJob) -> AIGenerationJobOut:
+    return AIGenerationJobOut.model_validate(generation_job)
+
+
+def _fetch_job_description_from_url(url: str | None) -> str | None:
+    if not url:
+        return None
+    try:
+        import httpx
+        response = httpx.get(
+            url,
+            follow_redirects=True,
+            timeout=20,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+                )
+            },
+        )
+        response.raise_for_status()
+    except Exception:
+        return None
+
+    html = response.text
+    html = re.sub(r"(?is)<(script|style|noscript).*?</\1>", " ", html)
+    html = re.sub(r"(?is)<br\s*/?>", "\n", html)
+    html = re.sub(r"(?is)</(p|div|li|section|article|h[1-6])>", "\n", html)
+    text = re.sub(r"(?is)<[^>]+>", " ", html)
+    text = re.sub(r"&nbsp;", " ", text)
+    text = re.sub(r"&amp;", "&", text)
+    text = re.sub(r"\n\s*\n+", "\n\n", text)
+    text = re.sub(r"[ \t]+", " ", text).strip()
+    if len(text) < 250:
+        return None
+    return text[:20000]
+
+
+def _ensure_job_description(job) -> str | None:
+    description = (job.description or "").strip()
+    if len(description) >= 50:
+        return description
+    fetched = _fetch_job_description_from_url(job.job_url_direct or job.job_url)
+    if fetched:
+        job.description = fetched
+        return fetched
+    return None
+
+
+def _generate_cover_letter_text(
+    *,
+    base_resume: str,
+    job_description: str,
+    job_title: str | None,
+    company_name: str | None,
+    provider: str | None,
+    model: str | None,
+) -> CoverLetterResponse:
+    from ai.resume_rebuilder import _provider_order, _chat_completion  # noqa: PLC0415
+
+    providers = _provider_order(settings, selected_provider=provider, selected_model=model)
+    prompt = (
+        f"Write a concise, professional cover letter (3-4 paragraphs, plain text, no filler phrases) "
+        f"for this candidate applying to the role below.\n\n"
+        f"Job Title: {job_title or 'Not specified'}\n"
+        f"Company: {company_name or 'Not specified'}\n\n"
+        f"Job Description:\n{job_description.strip()}\n\n"
+        f"Candidate Resume:\n{base_resume.strip()}\n\n"
+        "Requirements:\n"
+        "- Open with a strong hook referencing the specific role and company\n"
+        "- Paragraph 2: most relevant experience matching the JD requirements\n"
+        "- Paragraph 3: specific technical value-add (tools, achievements)\n"
+        "- Close with a clear call to action\n"
+        "- Plain text only, no bullet points, no markdown\n"
+        "- Under 350 words\n"
+        "- No AI filler: no 'leverage', 'utilize', 'spearhead', 'passionate', 'excited to'"
+    )
+    messages = [{"role": "user", "content": prompt}]
+    for p in providers:
+        try:
+            text = _chat_completion(provider=p, messages=messages, settings=settings)
+            label = p["name"]
+            if p.get("key_index") and len(settings.gemini_api_keys) > 1:
+                label = f"{p['name']} (key {p['key_index']})"
+            return CoverLetterResponse(provider=label, model=p["model"], cover_letter=text.strip())
+        except Exception:
+            continue
+    raise HTTPException(status_code=503, detail="All AI providers unavailable. Configure an API key.")
+
+
+def process_ai_generation_job(session: Session, generation_job_id: int) -> None:
+    repository = JobRepository(session)
+    generation_job = session.get(AIGenerationJob, generation_job_id)
+    if generation_job is None or generation_job.status != AIGenerationStatus.QUEUED:
+        return
+
+    repository.mark_ai_generation_running(generation_job)
+    session.commit()
+
+    job = repository.get_job(generation_job.job_id)
+    if job is None:
+        repository.mark_ai_generation_failed(generation_job, error="job not found")
+        session.commit()
+        return
+
+    job_description = _ensure_job_description(job)
+    if not job_description:
+        repository.mark_ai_generation_failed(
+            generation_job,
+            status=AIGenerationStatus.NEEDS_JD,
+            error="No job description found. Open the job and paste the JD before generating documents.",
+        )
+        session.commit()
+        return
+
+    resume_version = None
+    cover_letter_version = None
+    generation_type = generation_job.generation_type
+    target_title = (
+        f"{job.title or 'Software Engineer'}"
+        f"{' at ' + job.company_name if job.company_name else ''}"
+        f"{' | ' + job.location if job.location else ''}"
+    )
+
+    try:
+        if generation_type in {DocumentKind.RESUME, DocumentKind.BOTH}:
+            cached = None if generation_job.force_regenerate else repository.find_latest_resume_version(
+                job_id=job.id,
+                profile_name=generation_job.profile_name,
+                provider=generation_job.provider,
+                model=generation_job.model,
+            )
+            if cached:
+                resume_version = cached
+            else:
+                result = rebuild_resume(
+                    base_resume=generation_job.base_resume,
+                    job_description=job_description,
+                    profile_name=generation_job.profile_name,
+                    target_title=target_title,
+                    provider=generation_job.provider,
+                    model=generation_job.model,
+                    settings=settings,
+                )
+                if result.provider == "prompt_only":
+                    raise RuntimeError("; ".join(result.warnings) or "All AI providers unavailable")
+                resume_version = repository.save_resume_version(
+                    job=job,
+                    profile_name=generation_job.profile_name,
+                    provider=result.provider,
+                    model=result.model,
+                    content_text=result.rebuilt_resume,
+                    job_description_snapshot=job_description,
+                    ats_before_score=None,
+                    ats_after_score=None,
+                    warnings=result.warnings,
+                    prompt=result.prompt,
+                )
+
+        if generation_type in {DocumentKind.COVER_LETTER, DocumentKind.BOTH}:
+            cached = None if generation_job.force_regenerate else repository.find_latest_cover_letter_version(
+                job_id=job.id,
+                profile_name=generation_job.profile_name,
+                provider=generation_job.provider,
+                model=generation_job.model,
+            )
+            if cached:
+                cover_letter_version = cached
+            else:
+                cover_source = resume_version.content_text if resume_version else generation_job.base_resume
+                cover_result = _generate_cover_letter_text(
+                    base_resume=cover_source,
+                    job_description=job_description,
+                    job_title=job.title,
+                    company_name=job.company_name,
+                    provider=generation_job.provider,
+                    model=generation_job.model,
+                )
+                cover_letter_version = repository.save_cover_letter_version(
+                    job=job,
+                    profile_name=generation_job.profile_name,
+                    provider=cover_result.provider,
+                    model=cover_result.model,
+                    content_text=cover_result.cover_letter,
+                    job_description_snapshot=job_description,
+                    warnings=[],
+                    prompt=None,
+                )
+
+        repository.mark_ai_generation_completed(
+            generation_job,
+            resume_version=resume_version,
+            cover_letter_version=cover_letter_version,
+        )
+        session.commit()
+    except Exception as exc:
+        repository.mark_ai_generation_failed(generation_job, error=str(exc))
+        session.commit()
+
+
+def _process_ai_generation_job_by_id(generation_job_id: int) -> None:
+    session = SessionLocal()
+    try:
+        process_ai_generation_job(session, generation_job_id)
+    finally:
+        session.close()
 
 
 
@@ -242,6 +482,7 @@ def _extract_docx_text(content: bytes) -> str:
 async def startup() -> None:
     init_database()
     asyncio.create_task(_lifecycle_loop())
+    asyncio.create_task(_ai_generation_loop())
 
 
 @app.get("/health")
@@ -443,32 +684,14 @@ def update_application_stage(application_id: int, payload: ApplicationStageUpdat
 
 @app.post("/resume/cover-letter", response_model=CoverLetterResponse)
 def generate_cover_letter(payload: CoverLetterRequest):
-    from ai.resume_rebuilder import _provider_order, _chat_completion, _message_content  # noqa: PLC0415
-    providers = _provider_order(settings, selected_provider=payload.provider, selected_model=payload.model)
-    prompt = (
-        f"Write a concise, professional cover letter (3-4 paragraphs, plain text, no filler phrases) "
-        f"for this candidate applying to the role below.\n\n"
-        f"Job Title: {payload.job_title or 'Not specified'}\n"
-        f"Company: {payload.company_name or 'Not specified'}\n\n"
-        f"Job Description:\n{payload.job_description.strip()}\n\n"
-        f"Candidate Resume:\n{payload.base_resume.strip()}\n\n"
-        "Requirements:\n"
-        "- Open with a strong hook referencing the specific role and company\n"
-        "- Paragraph 2: most relevant experience matching the JD requirements\n"
-        "- Paragraph 3: specific technical value-add (tools, achievements)\n"
-        "- Close with a clear call to action\n"
-        "- Plain text only, no bullet points, no markdown\n"
-        "- Under 350 words\n"
-        "- No AI filler: no 'leverage', 'utilize', 'spearhead', 'passionate', 'excited to'"
+    return _generate_cover_letter_text(
+        base_resume=payload.base_resume,
+        job_description=payload.job_description,
+        job_title=payload.job_title,
+        company_name=payload.company_name,
+        provider=payload.provider,
+        model=payload.model,
     )
-    messages = [{"role": "user", "content": prompt}]
-    for p in providers:
-        try:
-            text = _chat_completion(provider=p, messages=messages, settings=settings)
-            return CoverLetterResponse(provider=p["name"], model=p["model"], cover_letter=text.strip())
-        except Exception:
-            continue
-    raise HTTPException(status_code=503, detail="All AI providers unavailable. Configure an API key.")
 
 
 def _extract_labeled_message_section(text: str, label: str) -> str:
@@ -732,6 +955,39 @@ def rebuild_resume_endpoint(payload: ResumeRebuildRequest):
         warnings=result.warnings,
         prompt=result.prompt,
     )
+
+
+@app.post("/documents/generate", response_model=DocumentGenerationResponse)
+def queue_document_generation(payload: DocumentGenerationRequest, session: Session = Depends(get_session)):
+    repository = JobRepository(session)
+    queued = repository.enqueue_ai_generation_jobs(
+        job_ids=payload.job_ids,
+        generation_type=payload.generation_type,
+        base_resume=payload.base_resume,
+        profile_name=payload.profile_name,
+        provider=payload.provider,
+        model=payload.model,
+        force_regenerate=payload.force_regenerate,
+    )
+    session.commit()
+    return DocumentGenerationResponse(
+        queued=len(queued),
+        jobs=[_generation_job_out(job) for job in queued],
+    )
+
+
+@app.get("/documents/generation-jobs", response_model=list[AIGenerationJobOut])
+def get_document_generation_jobs(limit: int = Query(default=100, ge=1, le=500), session: Session = Depends(get_session)):
+    return [_generation_job_out(job) for job in JobRepository(session).list_ai_generation_jobs(limit=limit)]
+
+
+@app.get("/jobs/{job_id}/documents", response_model=JobDocumentsOut)
+def get_job_documents(job_id: int, session: Session = Depends(get_session)):
+    repository = JobRepository(session)
+    if repository.get_job(job_id) is None:
+        raise HTTPException(status_code=404, detail="job not found")
+    documents = repository.get_job_documents(job_id)
+    return JobDocumentsOut(**documents)
 
 
 @app.post("/resume/export-docx")

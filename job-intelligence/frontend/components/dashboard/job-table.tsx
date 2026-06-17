@@ -147,12 +147,18 @@ export function JobTable({
   jobs,
   onApply,
   onSelect,
+  selectedJobIds,
+  onToggleJobSelection,
+  onToggleVisibleSelection,
   selectedJobId,
   title = "Active jobs",
 }: {
   jobs: Job[];
   onApply?: (job: Job) => void;
   onSelect?: (job: Job) => void;
+  selectedJobIds?: Set<number>;
+  onToggleJobSelection?: (job: Job) => void;
+  onToggleVisibleSelection?: (jobs: Job[]) => void;
   selectedJobId?: number | null;
   title?: string;
 }) {
@@ -170,6 +176,7 @@ export function JobTable({
   }
 
   const sorted = sortJobs(jobs, sortKey, sortDir);
+  const allVisibleSelected = sorted.length > 0 && sorted.every((job) => selectedJobIds?.has(job.id));
 
   function Th({ col, label }: { col: SortKey; label: string }) {
     return (
@@ -203,6 +210,18 @@ export function JobTable({
         <Table>
           <TableHeader>
             <TableRow>
+              {onToggleJobSelection ? (
+                <TableHead className="w-10">
+                  <input
+                    type="checkbox"
+                    aria-label="Select visible jobs"
+                    checked={allVisibleSelected}
+                    onChange={() => onToggleVisibleSelection?.(sorted)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-4 w-4 rounded border"
+                  />
+                </TableHead>
+              ) : null}
               <Th col="title"   label="Role" />
               <Th col="company" label="Company" />
               <Th col="salary"  label="Salary" />
@@ -224,6 +243,18 @@ export function JobTable({
                 onClick={() => onSelect?.(job)}
                 onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ job, x: e.clientX, y: e.clientY }); }}
               >
+                {onToggleJobSelection ? (
+                  <TableCell className="w-10">
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${job.title}`}
+                      checked={Boolean(selectedJobIds?.has(job.id))}
+                      onChange={() => onToggleJobSelection(job)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="h-4 w-4 rounded border"
+                    />
+                  </TableCell>
+                ) : null}
                 <TableCell className="max-w-[300px]">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <div className="line-clamp-2 font-medium leading-5">{cleanTitle(job.title)}</div>

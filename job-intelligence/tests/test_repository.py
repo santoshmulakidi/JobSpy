@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from datetime import UTC, date, datetime, timedelta
 
-from storage.models import Base, ChangeType, JobChange, JobStatus
+from storage.models import AIGenerationStatus, Base, ChangeType, JobChange, JobStatus
 from storage.repository import JobRepository
 
 
@@ -173,6 +173,125 @@ def test_saved_searches_can_be_created_and_deleted():
     assert repository.delete_saved_search(saved_search.id) is False
     session.commit()
     assert repository.list_saved_searches() == []
+
+
+def test_document_versions_and_generation_queue_are_saved_per_job():
+    session = make_session()
+    repository = JobRepository(session)
+    run = repository.create_search_run(
+        search_term="Engineer",
+        location="Remote",
+        sites=["linkedin"],
+        results_wanted=10,
+        started_at=datetime.now(UTC),
+    )
+    job = repository.upsert_jobs(
+        [
+            {
+                "site": "linkedin",
+                "id": "doc-1",
+                "title": "Senior .NET Developer",
+                "company": "Contoso",
+                "location": "Remote",
+                "job_url": "https://example.com/doc-1",
+                "description": "Build ASP.NET Core APIs on Azure.",
+            }
+        ],
+        run,
+    )[0]
+
+    queued = repository.enqueue_ai_generation_jobs(
+        job_ids=[job.id],
+        generation_type="both",
+        base_resume="Senior .NET Developer with Azure and ASP.NET Core experience.",
+        profile_name=".NET Developer",
+        provider="gemini",
+        model="gemini-2.5-flash",
+    )
+    session.commit()
+
+    assert len(queued) == 1
+    assert queued[0].status == AIGenerationStatus.QUEUED
+    assert queued[0].company_name == "Contoso"
+
+    resume = repository.save_resume_version(
+        job=job,
+        profile_name=".NET Developer",
+        provider="gemini",
+        model="gemini-2.5-flash",
+        content_text="Tailored resume for Contoso",
+        job_description_snapshot=job.description,
+        ats_before_score=67,
+        ats_after_score=85,
+        warnings=["Confirm Kubernetes"],
+        prompt="prompt text",
+    )
+    cover = repository.save_cover_letter_version(
+        job=job,
+        profile_name=".NET Developer",
+        provider="gemini",
+        model="gemini-2.5-flash",
+        content_text="Cover letter for Contoso",
+        job_description_snapshot=job.description,
+        warnings=[],
+        prompt="cover prompt",
+    )
+    repository.mark_ai_generation_completed(queued[0], resume_version=resume, cover_letter_version=cover)
+    session.commit()
+
+    documents = repository.get_job_documents(job.id)
+    assert documents["resume_versions"][0].company_name == "Contoso"
+    assert documents["resume_versions"][0].content_text == "Tailored resume for Contoso"
+    assert documents["resume_versions"][0].ats_after_score == 85
+    assert documents["cover_letter_versions"][0].content_text == "Cover letter for Contoso"
+    assert repository.list_ai_generation_jobs()[0].status == AIGenerationStatus.COMPLETED
+
+
+def test_latest_document_cache_prevents_duplicate_rebuilds():
+    session = make_session()
+    repository = JobRepository(session)
+    run = repository.create_search_run(
+        search_term="Engineer",
+        location="Remote",
+        sites=["indeed"],
+        results_wanted=10,
+        started_at=datetime.now(UTC),
+    )
+    job = repository.upsert_jobs(
+        [
+            {
+                "site": "indeed",
+                "id": "cache-1",
+                "title": "Azure Developer",
+                "company": "Fabrikam",
+                "description": "Azure Functions and SQL Server.",
+            }
+        ],
+        run,
+    )[0]
+    repository.save_resume_version(
+        job=job,
+        profile_name="Azure",
+        provider="gemini",
+        model="gemini-2.5-flash",
+        content_text="Cached resume",
+        job_description_snapshot=job.description,
+        ats_before_score=None,
+        ats_after_score=None,
+        warnings=[],
+        prompt="prompt",
+    )
+    session.commit()
+
+    cached = repository.find_latest_resume_version(
+        job_id=job.id,
+        profile_name="Azure",
+        provider="gemini",
+        model="gemini-2.5-flash",
+    )
+
+    assert cached is not None
+    assert cached.content_text == "Cached resume"
 
 
 def test_upsert_sanitizes_change_history_json():
