@@ -473,6 +473,7 @@ export default function ResumeLabPage() {
   const [jobDescription, setJobDescription] = useState("");
   const [jobContext, setJobContext] = useState("No job selected");
   const [jobTitle, setJobTitle] = useState("");
+  const [jobCompany, setJobCompany] = useState("");
   const [jobUrl, setJobUrl] = useState<string | null>(null);
   const [returnTo, setReturnTo] = useState<string | null>(null);
   const [rebuildLoading, setRebuildLoading] = useState(false);
@@ -499,10 +500,11 @@ export default function ResumeLabPage() {
     if (!rebuildResult) return;
     setDocxLoading(true);
     try {
-      const candidateName = rebuildResult.rebuilt_resume.trim().split("\n")[0]?.trim() || "Santosh_Mulakidi";
-      const title = jobTitle.trim() || "Resume";
       const sanitize = (s: string) => s.replace(/[^a-zA-Z0-9 _-]/g, "").replace(/\s+/g, "_").slice(0, 50);
-      const name = `${sanitize(candidateName)}_${sanitize(title)}`;
+      const candidateName = sanitize(rebuildResult.rebuilt_resume.trim().split("\n")[0]?.trim() || "Santosh_Mulakidi");
+      const titlePart = sanitize(jobTitle.trim() || "Resume");
+      const companyPart = sanitize(jobCompany.trim());
+      const name = [candidateName, titlePart, companyPart].filter(Boolean).join("_").replace(/_+/g, "_").slice(0, 120);
       const { blob, savedTo } = await exportResumeDocx(rebuildResult.rebuilt_resume, name);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -552,6 +554,7 @@ export default function ResumeLabPage() {
           if (!jobId || parsed.id === jobId) {
             setJobContext(`${parsed.title ?? "Selected job"}${parsed.company ? ` at ${parsed.company}` : ""}${parsed.location ? ` | ${parsed.location}` : ""}`);
             if (parsed.title) setJobTitle(parsed.title);
+            if (parsed.company) setJobCompany(parsed.company);
             setReturnTo(parsed.returnTo ?? "/jobs");
             if (parsed.description?.trim()) {
               setJobDescription(parsed.description);
@@ -562,6 +565,7 @@ export default function ResumeLabPage() {
               setJobDescription(job.description ?? "");
               setJobContext(`${job.title}${job.company_name ? ` at ${job.company_name}` : ""}${job.location ? ` | ${job.location}` : ""}`);
               setJobTitle(job.title);
+              if (job.company_name) setJobCompany(job.company_name);
               if (job.job_url) setJobUrl(job.job_url);
               return;
             }
@@ -574,6 +578,7 @@ export default function ResumeLabPage() {
               if (matchedJob) {
                 setJobDescription(matchedJob.description ?? "");
                 setJobContext(`${matchedJob.title}${matchedJob.company_name ? ` at ${matchedJob.company_name}` : ""}${matchedJob.location ? ` | ${matchedJob.location}` : ""}`);
+                if (matchedJob.company_name) setJobCompany(matchedJob.company_name);
                 window.sessionStorage.setItem("resumeLabJob", JSON.stringify({
                   id: matchedJob.id,
                   title: matchedJob.title,
@@ -599,6 +604,8 @@ export default function ResumeLabPage() {
           const job = await getJob(jobId);
           setJobDescription(job.description ?? "");
           setJobContext(`${job.title}${job.company_name ? ` at ${job.company_name}` : ""}${job.location ? ` | ${job.location}` : ""}`);
+          setJobTitle(job.title);
+          if (job.company_name) setJobCompany(job.company_name);
           setReturnTo("/jobs");
         } catch (error) {
           toast.error(error instanceof Error ? error.message : "Could not load job description");
@@ -898,9 +905,9 @@ export default function ResumeLabPage() {
       a.href = url;
       const sanitize = (s: string) => s.replace(/[^a-zA-Z0-9 _-]/g, "").replace(/\s+/g, "_").slice(0, 50);
       const candidateName = sanitize((rebuildResult?.rebuilt_resume ?? resumeText).trim().split("\n")[0]?.trim() || "Candidate");
-      a.download = jobTitle.trim()
-        ? `${candidateName}_Cover_Letter_${sanitize(jobTitle)}.docx`
-        : `${candidateName}_Cover_Letter.docx`;
+      const titlePart = sanitize(jobTitle.trim());
+      const companyPart = sanitize(jobCompany.trim());
+      a.download = [candidateName, "Cover_Letter", titlePart, companyPart].filter(Boolean).join("_").replace(/_+/g, "_").slice(0, 120) + ".docx";
       a.style.display = "none";
       document.body.appendChild(a);
       a.click();

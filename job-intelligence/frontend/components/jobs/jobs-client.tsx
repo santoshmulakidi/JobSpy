@@ -852,14 +852,21 @@ function JobDetailsPanel({
             <div className="space-y-2 text-xs text-muted-foreground">
               {documents.resume_versions.slice(0, 3).map((version) => (
                 <div key={`resume-${version.id}`} className="flex items-center justify-between gap-2 flex-wrap">
-                  <span className="shrink-0">Resume · {version.provider ?? "AI"} · {new Date(version.created_at).toLocaleString()}</span>
+                  <span className="shrink-0">
+                    Resume · {version.provider ?? "AI"} · {new Date(version.created_at).toLocaleString()}
+                    {version.ats_after_score != null && (
+                      <span className={`ml-2 font-semibold ${version.ats_after_score >= 85 ? "text-green-600" : version.ats_after_score >= 70 ? "text-yellow-600" : "text-red-500"}`}>
+                        ATS {version.ats_after_score}%
+                      </span>
+                    )}
+                  </span>
                   <div className="flex gap-1 shrink-0">
                     <Button size="sm" variant="ghost" onClick={() => copyText(version.content_text, "Resume copied")}>Copy</Button>
                     <Button size="sm" variant="ghost" onClick={() => {
-                      const company = version.company_name ?? job.company_name ?? "";
-                      const title = version.job_title ?? job.title ?? "";
+                      const company = (version.company_name ?? job.company_name ?? "").replace(/[^a-z0-9]+/gi, "_");
+                      const title = (version.job_title ?? job.title ?? "").replace(/[^a-z0-9]+/gi, "_");
                       const name = version.content_text.split("\n")[0]?.trim().replace(/\s+/g, "_") ?? "resume";
-                      const filename = `${name}_${title.replace(/[^a-z0-9]+/gi, "_")}`.slice(0, 80);
+                      const filename = `${name}_${title}_${company}`.replace(/_+/g, "_").slice(0, 100);
                       exportResumeDocx(version.content_text, filename).then(({ blob, savedTo }) => {
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement("a"); a.href = url; a.download = `${filename}.docx`; a.click(); URL.revokeObjectURL(url);

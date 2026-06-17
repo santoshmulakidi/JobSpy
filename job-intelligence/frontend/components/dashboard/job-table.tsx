@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn, formatDate } from "@/lib/utils";
 import type { Job } from "@/types/job";
 
-type SortKey = "title" | "company" | "salary" | "fit" | "visa" | "posted" | "collected";
+type SortKey = "title" | "company" | "salary" | "fit" | "visa" | "posted" | "collected" | "best";
 type SortDir = "asc" | "desc";
 
 function SortIcon({ col, active, dir }: { col: string; active: boolean; dir: SortDir }) {
@@ -33,6 +33,14 @@ function salaryValue(job: Job): number {
 const VISA_ORDER: Record<string, number> = { High: 3, Medium: 2, Low: 1, Unknown: 0 };
 
 function sortJobs(jobs: Job[], key: SortKey, dir: SortDir): Job[] {
+  if (key === "best") {
+    // composite: fit desc, then collected desc (newest batch of high-fit jobs first)
+    return [...jobs].sort((a, b) => {
+      const fitDelta = (b.fit_score ?? 0) - (a.fit_score ?? 0);
+      if (fitDelta !== 0) return fitDelta;
+      return Date.parse(b.first_seen_at ?? "") - Date.parse(a.first_seen_at ?? "");
+    });
+  }
   const sign = dir === "asc" ? 1 : -1;
   return [...jobs].sort((a, b) => {
     let delta = 0;
@@ -162,7 +170,7 @@ export function JobTable({
   selectedJobId?: number | null;
   title?: string;
 }) {
-  const [sortKey, setSortKey] = useState<SortKey>("posted");
+  const [sortKey, setSortKey] = useState<SortKey>("best");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [ctxMenu, setCtxMenu] = useState<{ job: Job; x: number; y: number } | null>(null);
 
@@ -222,6 +230,8 @@ export function JobTable({
                   />
                 </TableHead>
               ) : null}
+
+              <Th col="best"    label="Best ★" />
               <Th col="title"   label="Role" />
               <Th col="company" label="Company" />
               <Th col="salary"  label="Salary" />
