@@ -542,12 +542,16 @@ def get_collection_runs(keyword: str | None = None, session: Session = Depends(g
     return [{"bucket": b, "count": c} for b, c in result]
 
 
+_DIRECT_SOURCES = {"greenhouse", "lever", "ashby"}
+
+
 @app.get("/jobs", response_model=list[JobOut])
 def get_jobs(
     keyword: str | None = None,
     company: str | None = None,
     location: str | None = None,
     source: str | None = None,
+    direct: bool | None = None,
     visa_status: str | None = None,
     job_type: str | None = None,
     work_mode: str | None = None,
@@ -561,6 +565,9 @@ def get_jobs(
     offset: int = Query(default=0, ge=0),
     session: Session = Depends(get_session),
 ):
+    from sqlalchemy import or_ as sa_or
+    from storage.models import Job as JobModel
+
     repository = JobRepository(session)
     jobs = SearchEngine(session).search(
         keyword=keyword,
@@ -579,6 +586,10 @@ def get_jobs(
         limit=limit,
         offset=offset,
     )
+    if direct is True:
+        jobs = [j for j in jobs if j.source in _DIRECT_SOURCES]
+    elif direct is False:
+        jobs = [j for j in jobs if j.source not in _DIRECT_SOURCES]
     return _jobs_out(repository, jobs)
 
 
@@ -1331,3 +1342,13 @@ def scheduler_trigger():
     t = threading.Thread(target=run_collection, daemon=True, name="manual-collect")
     t.start()
     return {"status": "triggered", "message": "Collection started in background — check run stats in ~2 min."}
+
+
+@app.post("/direct-jobs/trigger")
+def direct_jobs_trigger():
+    """Fire one direct-portal scrape (Greenhouse/Lever/Ashby) in a background thread."""
+    import threading
+    from scheduler.runner import run_direct_scrape
+    t = threading.Thread(target=run_direct_scrape, daemon=True, name="manual-direct-scrape")
+    t.start()
+    return {"status": "triggered", "message": "Direct portal scrape started — check Jobs > Direct tab in ~3 min."}

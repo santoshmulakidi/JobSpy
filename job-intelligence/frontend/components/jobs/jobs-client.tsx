@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { exportResumeDocx, generateColdEmail, getArchivedJobs, getCollectionRuns, getDocumentGenerationJobs, getJobDocuments, getJobsByRun, markJobApplied, queueDocumentGeneration, resumeModelChoices, saveJobNotes, searchJobs } from "@/lib/api";
+import { exportResumeDocx, generateColdEmail, getArchivedJobs, getCollectionRuns, getDirectJobs, getDocumentGenerationJobs, getJobDocuments, getJobsByRun, markJobApplied, queueDocumentGeneration, resumeModelChoices, saveJobNotes, searchJobs, triggerDirectScrape } from "@/lib/api";
 import { compactLocation, defaultProfiles, expandSearchTerm, loadProfiles, type JobProfile } from "@/lib/job-profiles";
 import { formatDate } from "@/lib/utils";
 import type { AIGenerationJob, ColdEmailResult, Job, JobDocuments } from "@/types/job";
@@ -291,6 +291,32 @@ export function JobsClient() {
     }
   }
 
+  async function loadDirect() {
+    setLoading(true);
+    setError(null);
+    try {
+      const items = await getDirectJobs(500);
+      setRankedJobs(items);
+      setJobs(pageSize === 0 ? items : items.slice(0, pageSize));
+      setPage(0);
+      setSelectedJob(null);
+      setLastSearchMode("search");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not load direct jobs");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleTriggerDirectScrape() {
+    try {
+      const res = await triggerDirectScrape();
+      toast.success(res.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to trigger scrape");
+    }
+  }
+
   async function goToPage(nextPage: number) {
     if (nextPage < 0) return;
     if (lastSearchMode === "search") {
@@ -540,6 +566,7 @@ export function JobsClient() {
           <Tabs value={tab} onValueChange={(value) => {
             setTab(value);
             if (value === "archived") loadArchived();
+            if (value === "direct") loadDirect();
           }}>
             <TabsList>
               <TabsTrigger value="active">Active today</TabsTrigger>
@@ -548,9 +575,17 @@ export function JobsClient() {
               <TabsTrigger value="hybrid">Hybrid</TabsTrigger>
               <TabsTrigger value="onsite">On-site</TabsTrigger>
               <TabsTrigger value="archived">Archived</TabsTrigger>
+              <TabsTrigger value="direct">Direct portals</TabsTrigger>
             </TabsList>
           </Tabs>
-          <Button onClick={runSearch} disabled={tab === "archived"}>Search</Button>
+          <div className="flex gap-2">
+            {tab === "direct" && (
+              <Button variant="outline" size="sm" onClick={handleTriggerDirectScrape}>
+                Refresh now
+              </Button>
+            )}
+            <Button onClick={runSearch} disabled={tab === "archived" || tab === "direct"}>Search</Button>
+          </div>
         </div>
       </div>
       {error ? <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{error}</div> : null}

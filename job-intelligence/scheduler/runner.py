@@ -9,6 +9,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from api.services import CollectionService
 from collectors import CollectionRequest
 from notifications.dispatcher import NotificationDispatcher
+from scraper.direct_jobs import scrape_direct_jobs
 from storage.config import get_settings
 from storage.database import SessionLocal, init_database
 from storage.repository import JobRepository
@@ -150,6 +151,32 @@ def run_collection() -> None:
     dispatcher.send(msg)
 
 
+def run_direct_scrape() -> None:
+    """Scrape Greenhouse/Lever/Ashby for .NET jobs and upsert into DB."""
+    logger.info("direct scrape: starting")
+    try:
+        raw_jobs = scrape_direct_jobs()
+    except Exception:
+        logger.exception("direct scrape: unexpected error")
+        return
+
+    if not raw_jobs:
+        logger.info("direct scrape: no jobs found")
+        return
+
+    session = SessionLocal()
+    try:
+        repo = JobRepository(session)
+        upserted = repo.upsert_jobs(raw_jobs, search_run=None)
+        session.commit()
+        logger.info("direct scrape: upserted %d jobs (raw=%d)", len(upserted), len(raw_jobs))
+    except Exception:
+        logger.exception("direct scrape: DB upsert failed")
+        session.rollback()
+    finally:
+        session.close()
+
+
 def main() -> None:
     settings = get_settings()
     logging.basicConfig(
@@ -158,7 +185,9 @@ def main() -> None:
         datefmt="%H:%M:%S",
     )
     init_database()
-    scheduler = BlockingScheduler()
+    scheduler = BlockingScheduler(timezone="America/Chicago")
+
+    # LinkedIn/Indeed/etc — existing interval
     scheduler.add_job(
         run_collection,
         "interval",
@@ -166,9 +195,32 @@ def main() -> None:
         id="collect_jobs",
         next_run_time=datetime.now(UTC),
     )
+
+    # Direct company portals — 2.5h during day (7AM-7PM CDT), 4h overnight
+    # Day runs: 07:00, 09:30, 12:00, 14:30, 17:00 CDT
+    for hh, mm in [(7, 0), (9, 30), (12, 0), (14, 30), (17, 0)]:
+        scheduler.add_job(
+            run_direct_scrape,
+            "cron",
+            hour=hh, minute=mm,
+            id=f"direct_scrape_{hh:02d}{mm:02d}",
+            max_instances=1,
+            coalesce=True,
+        )
+    # Night runs: 19:00, 23:00, 03:00 CDT (4h apart)
+    for hh, mm in [(19, 0), (23, 0), (3, 0)]:
+        scheduler.add_job(
+            run_direct_scrape,
+            "cron",
+            hour=hh, minute=mm,
+            id=f"direct_scrape_night_{hh:02d}{mm:02d}",
+            max_instances=1,
+            coalesce=True,
+        )
+
     logger.info(
-        "scheduler ready — firing NOW then every %sh | %d requests per run | %d parallel workers",
-        settings.scheduler_hours, len(_KEYWORDS) * len(_TIERS), _MAX_WORKERS,
+        "scheduler ready — LinkedIn/Indeed every %sh | direct portals 8×/day (2.5h day / 4h night CDT)",
+        settings.scheduler_hours,
     )
     scheduler.start()
 

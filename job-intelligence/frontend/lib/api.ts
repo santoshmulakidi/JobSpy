@@ -54,6 +54,14 @@ export async function getJobs(limit = 24, offset = 0) {
   return request<Job[]>(`/jobs?limit=${limit}&offset=${offset}`);
 }
 
+export async function getDirectJobs(limit = 500) {
+  return request<Job[]>(`/jobs?direct=true&limit=${limit}`);
+}
+
+export async function triggerDirectScrape() {
+  return request<{ status: string; message: string }>("/direct-jobs/trigger", { method: "POST" });
+}
+
 export async function getJob(jobId: number) {
   return request<Job>(`/jobs/${jobId}`);
 }
