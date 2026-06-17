@@ -882,7 +882,7 @@ export default function ResumeLabPage() {
     setCoverLetterDocxLoading(true);
     try {
       const resumeSource = rebuildResult?.rebuilt_resume ?? resumeText;
-      const blob = await exportCoverLetterDocx({
+      const { blob, savedTo } = await exportCoverLetterDocx({
         base_resume: resumeSource,
         job_description: jobDescription,
         cover_letter_text: coverLetter,
@@ -902,7 +902,7 @@ export default function ResumeLabPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success("Cover letter downloaded as Word document");
+      toast.success(savedTo ? `Cover letter saved to ${savedTo}` : "Cover letter downloaded as Word document");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Cover letter Word export failed");
     } finally {

@@ -239,7 +239,7 @@ export async function exportCoverLetterDocx(payload: {
   cover_letter_text: string;
   job_title?: string | null;
   company_name?: string | null;
-}): Promise<Blob> {
+}): Promise<{ blob: Blob; savedTo: string | null }> {
   const response = await fetch(`${API_BASE_URL}/resume/cover-letter-docx`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -249,5 +249,5 @@ export async function exportCoverLetterDocx(payload: {
     const detail = await response.text().catch(() => "");
     throw new Error(`Cover letter export failed: ${response.status}${detail ? ` - ${detail}` : ""}`);
   }
-  return response.blob();
+  return { blob: await response.blob(), savedTo: response.headers.get("X-Saved-To") };
 }

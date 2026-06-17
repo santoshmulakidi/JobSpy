@@ -171,7 +171,22 @@ def build_resume_prompt(
         if employer_count
         else "Include every employer and role from the base resume. Do not drop any."
     )
-    return f"""Rebuild this resume to score 90%+ on ATS keyword matching for the target job. Preserve all facts exactly — no invented employers, dates, metrics, tools, or credentials.
+
+    # Pre-compute missing JD keywords so the model injects them on the first pass
+    missing_keywords = _extract_jd_keywords_to_inject(base_resume, job_description)
+    if missing_keywords:
+        keyword_inject_section = (
+            "MANDATORY KEYWORD INJECTION — these JD keywords are missing from the base resume but ARE "
+            "present in the candidate's likely background (standard technologies for this role). "
+            "You MUST weave every one of these into the rebuilt resume wherever truthfully applicable "
+            "(TECHNICAL SKILLS, role bullets, or Environment lines). Do NOT add any that the candidate "
+            "has clearly never used:\n"
+            + "\n".join(f"  • {kw}" for kw in missing_keywords)
+        )
+    else:
+        keyword_inject_section = ""
+
+    return f"""Rebuild this resume to score 85%+ on ATS keyword matching for the target job. Preserve all facts exactly — no invented employers, dates, metrics, tools, or credentials.
 
 Profile: {profile_name or "Not specified"}
 Target title/company: {target_title or "Not specified"}
@@ -182,6 +197,8 @@ Base Resume:
 {base_resume.strip()}
 
 {_jd_section(job_description)}
+
+{keyword_inject_section}
 
 ---
 
@@ -260,6 +277,88 @@ CHANGE SUMMARY
 KEYWORD GAPS
 Plain list of JD keywords and phrases NOT in the candidate background that could not be added. Only list true gaps (skills or tools the candidate has never used). Do NOT list anything already present in the base resume, and never list the candidate degree, education, or years of experience here. Flag [EXACT PHRASE] if the JD uses a specific multi-word term that must appear verbatim when the candidate adds it later.
 """
+
+
+def _extract_jd_keywords_to_inject(base_resume: str, job_description: str) -> list[str]:
+    """Return JD keywords that exist in the resume candidate pool but are absent from the base resume text.
+
+    These are handed to the model as a MUST-INCLUDE list so the first rebuild hits 85%+ ATS
+    without needing multiple refinement passes.
+    """
+    # Same tech list the frontend uses — keep in sync conceptually
+    KNOWN_SKILLS = [
+        # languages
+        "C#", "Java", "Python", "JavaScript", "TypeScript", "SQL", "T-SQL", "HTML", "CSS",
+        "HTML5", "CSS3", "VB.NET", "PowerShell", "Bash",
+        # .NET
+        "ASP.NET", "ASP.NET Core", "ASP.NET MVC", ".NET", ".NET Core", ".NET 6", ".NET 7", ".NET 8",
+        "Entity Framework", "LINQ", "ADO.NET", "WCF", "Web API", "Razor", "Blazor", "SignalR",
+        "Minimal API",
+        # frontend
+        "React", "Angular", "Vue", "Next.js", "Redux", "Webpack", "SASS", "Bootstrap",
+        "jQuery", "AJAX", "Tailwind",
+        # cloud / azure
+        "Azure", "AWS", "GCP", "Azure App Service", "Azure Functions", "Azure SQL", "Azure DevOps",
+        "Azure AD", "Azure Active Directory", "Azure Key Vault", "Azure Service Bus",
+        "Azure Event Grid", "Azure Monitor", "Azure Pipelines", "Azure Container",
+        "Azure Kubernetes", "ARM Templates", "Bicep", "APIM", "API Management",
+        "Application Insights",
+        # devops
+        "Docker", "Kubernetes", "Jenkins", "GitHub Actions", "CI/CD", "DevOps", "DevSecOps",
+        "Terraform", "Ansible", "Helm", "Git", "GitHub", "Bitbucket", "Azure Repos",
+        # security
+        "OAuth", "OAuth 2.0", "JWT", "OpenID Connect", "OWASP", "RBAC",
+        "Role-Based Access Control", "Azure AD B2C", "Zero Trust", "SSL", "TLS",
+        # databases
+        "SQL Server", "PostgreSQL", "MySQL", "Oracle", "MongoDB", "Redis", "SQLite",
+        "Cosmos DB", "Elasticsearch", "NoSQL",
+        # methodologies
+        "Agile", "Scrum", "Kanban", "SDLC", "TDD", "BDD", "Microservices", "RESTful",
+        "REST API", "SOAP", "gRPC", "Event-Driven Architecture", "Domain-Driven Design",
+        "SOLID", "Clean Architecture", "Design Patterns",
+        # tools
+        "Visual Studio", "VS Code", "JIRA", "Confluence", "Postman", "Swagger", "OpenAPI",
+        "SonarQube", "Serilog", "NUnit", "xUnit", "Moq", "Selenium", "Playwright",
+        # reporting
+        "Power BI", "SSRS", "SSIS", "Crystal Reports", "Tableau",
+        # general
+        "Software Development Life Cycle", "Continuous Integration", "Continuous Delivery",
+        "Continuous Deployment", "Infrastructure as Code", "Load Balancing",
+        "High Availability", "Disaster Recovery", "Unit Testing", "Integration Testing",
+        "Code Review", "Pair Programming", "Technical Documentation",
+        "Object-Oriented Programming", "Functional Programming",
+        "Event-Driven", "Message Queue", "RabbitMQ", "Apache Kafka",
+        "Spring Boot", "Hibernate", "Maven", "Gradle",
+        "Node.js", "Express", "FastAPI", "Flask", "Django",
+        "Microservice", "Serverless", "Cloud Native", "Multi-Tenant",
+        "On-Premises", "Hybrid Cloud", "Cross-Functional",
+    ]
+
+    jd_lower = job_description.lower()
+    resume_lower = base_resume.lower()
+
+    missing: list[str] = []
+    for skill in KNOWN_SKILLS:
+        skill_lower = skill.lower()
+        if skill_lower in jd_lower and skill_lower not in resume_lower:
+            missing.append(skill)
+
+    # Also extract quoted or capitalised multi-word phrases from JD not in resume
+    # e.g. "event-driven architecture", "distributed systems"
+    extra_phrases = re.findall(r'"([^"]{4,60})"', job_description)
+    for phrase in extra_phrases:
+        if phrase.lower() in jd_lower and phrase.lower() not in resume_lower:
+            missing.append(phrase)
+
+    # De-dup preserving order, cap at 30 to avoid overwhelming the model
+    seen: set[str] = set()
+    result: list[str] = []
+    for item in missing:
+        key = item.lower()
+        if key not in seen:
+            seen.add(key)
+            result.append(item)
+    return result[:30]
 
 
 def _jd_section(job_description: str) -> str:
