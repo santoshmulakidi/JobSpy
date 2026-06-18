@@ -252,6 +252,18 @@ export async function getDocumentGenerationJobs(limit = 100) {
   return request<AIGenerationJob[]>(`/documents/generation-jobs?limit=${limit}`);
 }
 
+export async function deleteGenerationJob(id: number) {
+  const controller = new AbortController();
+  const response = await fetch(`${API_BASE_URL}/documents/generation-jobs/${id}`, {
+    method: "DELETE",
+    signal: controller.signal,
+  });
+  if (!response.ok && response.status !== 204) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`Delete failed: ${response.status}${detail ? ` - ${detail}` : ""}`);
+  }
+}
+
 export async function getJobDocuments(jobId: number) {
   return request<JobDocuments>(`/jobs/${jobId}/documents`);
 }

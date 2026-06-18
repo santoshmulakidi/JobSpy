@@ -243,7 +243,6 @@ export function JobTable({
                 </TableHead>
               ) : null}
 
-              <Th col="best"    label="Best ★" />
               <Th col="title"   label="Role" />
               <Th col="company" label="Company" />
               <Th col="salary"  label="Salary" />
@@ -261,7 +260,7 @@ export function JobTable({
                 key={job.id}
                 className={cn(
                   onSelect && "cursor-pointer",
-                  selectedJobId === job.id && "bg-primary/8",
+                  selectedJobId === job.id && "bg-accent border-l-2 border-l-primary",
                 )}
                 onClick={() => onSelect?.(job)}
                 onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ job, x: e.clientX, y: e.clientY }); }}

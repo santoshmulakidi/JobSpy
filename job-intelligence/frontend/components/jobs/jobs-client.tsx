@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, CheckCircle2, Copy, FileText, Loader2, Mail, Search, Sparkles } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Copy, FileText, Loader2, Mail, Search, Sparkles, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { exportResumeDocx, generateColdEmail, getArchivedJobs, getCollectionRuns, getDirectJobs, getDocumentGenerationJobs, getJobDocuments, getJobsByRun, markJobApplied, queueDocumentGeneration, resumeModelChoices, saveJobNotes, searchJobs, triggerDirectScrape } from "@/lib/api";
+import { deleteGenerationJob, exportResumeDocx, generateColdEmail, getArchivedJobs, getCollectionRuns, getDirectJobs, getDocumentGenerationJobs, getJobDocuments, getJobsByRun, markJobApplied, queueDocumentGeneration, resumeModelChoices, saveJobNotes, searchJobs, triggerDirectScrape } from "@/lib/api";
 import { compactLocation, defaultProfiles, expandSearchTerm, loadProfiles, type JobProfile } from "@/lib/job-profiles";
 import { formatDate } from "@/lib/utils";
 import type { AIGenerationJob, ColdEmailResult, Job, JobDocuments } from "@/types/job";
@@ -55,7 +55,7 @@ function applyPresetSort(jobs: Job[], preset: SortPreset): Job[] {
 }
 
 const TAB_LABELS: Record<string, string> = {
-  active: "Active jobs",
+  active: "Active today",
   qualified: "Qualified jobs",
   remote: "Remote jobs",
   hybrid: "Hybrid jobs",
@@ -363,6 +363,19 @@ export function JobsClient() {
   }
 
   const [autoQueuing, setAutoQueuing] = useState(false);
+  const [deletingGenJobId, setDeletingGenJobId] = useState<number | null>(null);
+
+  async function handleDeleteGenerationJob(id: number) {
+    setDeletingGenJobId(id);
+    try {
+      await deleteGenerationJob(id);
+      setGenerationJobs((current) => current.filter((j) => j.id !== id));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setDeletingGenJobId(null);
+    }
+  }
 
   async function loadReady() {
     setLoading(true);
@@ -693,44 +706,85 @@ export function JobsClient() {
       <div className={selectedJob ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]" : "grid gap-4"}>
         <div className="space-y-3">
           <Card className="surface shadow-none">
-            <CardContent className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="text-sm font-medium">AI document queue</p>
-                <p className="text-xs text-muted-foreground">
-                  {selectedJobIds.size
-                    ? `${selectedJobIds.size} selected. Missing JDs will be fetched from the job URL first.`
-                    : "Select jobs, then generate resume only, cover letter only, or both."}
-                </p>
-                {generationJobs.length > 0 ? (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Latest: {generationJobs.slice(0, 4).map((job) => `${job.company_name ?? job.job_title ?? `Job ${job.job_id}`}: ${job.status}`).join(" · ")}
+            <CardContent className="flex flex-col gap-3 p-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-sm font-medium">AI document queue</p>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedJobIds.size
+                      ? `${selectedJobIds.size} selected. Missing JDs will be fetched from the job URL first.`
+                      : "Select jobs, then generate resume only, cover letter only, or both."}
                   </p>
-                ) : null}
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <Select value={generationType} onValueChange={(value: "resume" | "cover_letter" | "both") => setGenerationType(value)}>
+                    <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="resume">Resume only</SelectItem>
+                      <SelectItem value="cover_letter">Cover letter only</SelectItem>
+                      <SelectItem value="both">Resume + cover letter</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={generationModel} onValueChange={setGenerationModel}>
+                    <SelectTrigger className="w-full sm:w-72"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {modelChoices.map((choice) => (
+                        <SelectItem key={`${choice.provider}|${choice.model}`} value={`${choice.provider}|${choice.model}`}>
+                          {choice.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={generateSelectedDocuments} disabled={queueingDocuments || selectedJobIds.size === 0}>
+                    {queueingDocuments ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    Generate
+                  </Button>
+                </div>
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <Select value={generationType} onValueChange={(value: "resume" | "cover_letter" | "both") => setGenerationType(value)}>
-                  <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="resume">Resume only</SelectItem>
-                    <SelectItem value="cover_letter">Cover letter only</SelectItem>
-                    <SelectItem value="both">Resume + cover letter</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={generationModel} onValueChange={setGenerationModel}>
-                  <SelectTrigger className="w-full sm:w-72"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {modelChoices.map((choice) => (
-                      <SelectItem key={`${choice.provider}|${choice.model}`} value={`${choice.provider}|${choice.model}`}>
-                        {choice.label}
-                      </SelectItem>
+              {/* Pending / running / failed jobs */}
+              {generationJobs.filter((j) => j.status !== "completed").length > 0 && (
+                <div className="rounded-lg border bg-background/60 p-3">
+                  <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">In progress</p>
+                  <div className="space-y-1">
+                    {generationJobs.filter((j) => j.status !== "completed").map((j) => (
+                      <div key={j.id} className="flex items-center justify-between gap-2 text-xs">
+                        <span className="truncate">{j.company_name ?? j.job_title ?? `Job ${j.job_id}`}</span>
+                        <span className={`shrink-0 font-medium ${j.status === "running" ? "text-blue-500" : j.status === "failed" ? "text-red-500" : "text-muted-foreground"}`}>
+                          {j.status}
+                        </span>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
-                <Button onClick={generateSelectedDocuments} disabled={queueingDocuments || selectedJobIds.size === 0}>
-                  {queueingDocuments ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  Generate
-                </Button>
-              </div>
+                  </div>
+                </div>
+              )}
+              {/* Completed jobs (with resume built) */}
+              {generationJobs.filter((j) => j.status === "completed").length > 0 && (
+                <div className="rounded-lg border bg-background/60 p-3">
+                  <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Resumes built ({generationJobs.filter((j) => j.status === "completed").length})
+                  </p>
+                  <div className="space-y-1.5">
+                    {generationJobs.filter((j) => j.status === "completed").map((j) => (
+                      <div key={j.id} className="flex items-center justify-between gap-2 text-xs">
+                        <span className="truncate text-green-700 dark:text-green-400">
+                          ✓ {j.company_name ?? j.job_title ?? `Job ${j.job_id}`}
+                          {j.generation_type === "resume" ? " · Resume" : j.generation_type === "cover_letter" ? " · Cover letter" : " · Resume + CL"}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                          title="Delete"
+                          disabled={deletingGenJobId === j.id}
+                          onClick={() => handleDeleteGenerationJob(j.id)}
+                        >
+                          {deletingGenJobId === j.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
           <div className="flex items-center gap-2">

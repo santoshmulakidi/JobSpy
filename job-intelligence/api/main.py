@@ -1002,6 +1002,17 @@ def get_document_generation_jobs(limit: int = Query(default=100, ge=1, le=500), 
     return [_generation_job_out(job) for job in JobRepository(session).list_ai_generation_jobs(limit=limit)]
 
 
+@app.delete("/documents/generation-jobs/{job_id}", status_code=204)
+def delete_generation_job(job_id: int, session: Session = Depends(get_session)):
+    gen_job = session.get(AIGenerationJob, job_id)
+    if gen_job is None:
+        raise HTTPException(status_code=404, detail="generation job not found")
+    if gen_job.status in ("queued", "running"):
+        raise HTTPException(status_code=409, detail="cannot delete a queued or running job")
+    session.delete(gen_job)
+    session.commit()
+
+
 @app.get("/jobs/{job_id}/documents", response_model=JobDocumentsOut)
 def get_job_documents(job_id: int, session: Session = Depends(get_session)):
     repository = JobRepository(session)
