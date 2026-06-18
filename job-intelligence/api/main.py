@@ -1013,6 +1013,40 @@ def delete_generation_job(job_id: int, session: Session = Depends(get_session)):
     session.commit()
 
 
+@app.post("/documents/generation-jobs/{job_id}/requeue", response_model=AIGenerationJobOut)
+def requeue_generation_job(job_id: int, session: Session = Depends(get_session)):
+    """Reset a failed or stuck-running job back to queued so the worker retries it."""
+    gen_job = session.get(AIGenerationJob, job_id)
+    if gen_job is None:
+        raise HTTPException(status_code=404, detail="generation job not found")
+    if gen_job.status == "queued":
+        raise HTTPException(status_code=409, detail="already queued")
+    gen_job.status = AIGenerationStatus.QUEUED
+    gen_job.error = None
+    gen_job.started_at = None
+    gen_job.finished_at = None
+    session.commit()
+    session.refresh(gen_job)
+    return _generation_job_out(gen_job)
+
+
+@app.post("/admin/archive-source")
+def archive_by_source(payload: dict, session: Session = Depends(get_session)):
+    """Archive all active jobs from a given source. Used to purge unwanted sources."""
+    source = (payload.get("source") or "").strip()
+    if not source:
+        raise HTTPException(status_code=422, detail="source required")
+    from sqlalchemy import update
+    from storage.models import Job, JobStatus
+    result = session.execute(
+        update(Job)
+        .where(Job.source == source, Job.status == JobStatus.ACTIVE)
+        .values(status=JobStatus.ARCHIVED)
+    )
+    session.commit()
+    return {"archived": result.rowcount, "source": source}
+
+
 @app.get("/jobs/{job_id}/documents", response_model=JobDocumentsOut)
 def get_job_documents(job_id: int, session: Session = Depends(get_session)):
     repository = JobRepository(session)

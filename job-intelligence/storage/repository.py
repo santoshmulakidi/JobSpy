@@ -87,7 +87,7 @@ class JobRepository:
         run.status = "failed" if errors and jobs_seen == 0 else "completed"
 
     # Sources that should never appear in the senior-role active feed.
-    _BLOCKED_SOURCES: frozenset[str] = frozenset({"simplify_new_grad", "github_internships"})
+    _BLOCKED_SOURCES: frozenset[str] = frozenset({"simplify_new_grad", "github_internships", "skipthedrive"})
 
     # Career page URLs that always fail — block at storage so they never waste retries.
     _BLOCKED_CAREER_URLS: frozenset[str] = frozenset({"metacareers.com"})

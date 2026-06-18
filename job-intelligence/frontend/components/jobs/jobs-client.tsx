@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { deleteGenerationJob, exportResumeDocx, generateColdEmail, getArchivedJobs, getCollectionRuns, getDirectJobs, getDocumentGenerationJobs, getJobDocuments, getJobsByRun, markJobApplied, queueDocumentGeneration, resumeModelChoices, saveJobNotes, searchJobs, triggerDirectScrape } from "@/lib/api";
+import { deleteGenerationJob, requeueGenerationJob, exportResumeDocx, generateColdEmail, getArchivedJobs, getCollectionRuns, getDirectJobs, getDocumentGenerationJobs, getJobDocuments, getJobsByRun, markJobApplied, queueDocumentGeneration, resumeModelChoices, saveJobNotes, searchJobs, triggerDirectScrape } from "@/lib/api";
 import { compactLocation, defaultProfiles, expandSearchTerm, loadProfiles, type JobProfile } from "@/lib/job-profiles";
 import { formatDate } from "@/lib/utils";
 import type { AIGenerationJob, ColdEmailResult, Job, JobDocuments } from "@/types/job";
@@ -364,6 +364,7 @@ export function JobsClient() {
 
   const [autoQueuing, setAutoQueuing] = useState(false);
   const [deletingGenJobId, setDeletingGenJobId] = useState<number | null>(null);
+  const [requeueingGenJobId, setRequeuingGenJobId] = useState<number | null>(null);
 
   async function handleDeleteGenerationJob(id: number) {
     setDeletingGenJobId(id);
@@ -374,6 +375,28 @@ export function JobsClient() {
       toast.error(e instanceof Error ? e.message : "Delete failed");
     } finally {
       setDeletingGenJobId(null);
+    }
+  }
+
+  async function handleRequeueGenerationJob(id: number) {
+    setRequeuingGenJobId(id);
+    try {
+      const updated = await requeueGenerationJob(id);
+      setGenerationJobs((current) => current.map((j) => j.id === id ? updated : j));
+      toast.success("Job requeued");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Requeue failed");
+    } finally {
+      setRequeuingGenJobId(null);
+    }
+  }
+
+  function goToJobInTable(jobId: number) {
+    const job = rankedJobs.find((j) => j.id === jobId);
+    if (job) {
+      setSelectedJob(job);
+    } else {
+      toast.info("Job not in current view — switch to Active tab and search");
     }
   }
 
@@ -710,11 +733,11 @@ export function JobsClient() {
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="text-sm font-medium">AI document queue</p>
-                  <p className="text-xs text-muted-foreground">
-                    {selectedJobIds.size
-                      ? `${selectedJobIds.size} selected. Missing JDs will be fetched from the job URL first.`
-                      : "Select jobs, then generate resume only, cover letter only, or both."}
-                  </p>
+                  {selectedJobIds.size > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {selectedJobIds.size} selected — missing JDs fetched from job URL first.
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <Select value={generationType} onValueChange={(value: "resume" | "cover_letter" | "both") => setGenerationType(value)}>
@@ -745,13 +768,27 @@ export function JobsClient() {
               {generationJobs.filter((j) => j.status !== "completed").length > 0 && (
                 <div className="rounded-lg border bg-background/60 p-3">
                   <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">In progress</p>
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     {generationJobs.filter((j) => j.status !== "completed").map((j) => (
                       <div key={j.id} className="flex items-center justify-between gap-2 text-xs">
                         <span className="truncate">{j.company_name ?? j.job_title ?? `Job ${j.job_id}`}</span>
-                        <span className={`shrink-0 font-medium ${j.status === "running" ? "text-blue-500" : j.status === "failed" ? "text-red-500" : "text-muted-foreground"}`}>
-                          {j.status}
-                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <span className={`font-medium ${j.status === "running" ? "text-blue-500" : j.status === "failed" ? "text-red-500" : "text-muted-foreground"}`}>
+                            {j.status}
+                          </span>
+                          {(j.status === "failed" || j.status === "running") && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-1.5 text-xs text-muted-foreground hover:text-primary"
+                              title="Rerun"
+                              disabled={requeueingGenJobId === j.id}
+                              onClick={() => handleRequeueGenerationJob(j.id)}
+                            >
+                              {requeueingGenJobId === j.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "↺"}
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -770,16 +807,27 @@ export function JobsClient() {
                           ✓ {j.company_name ?? j.job_title ?? `Job ${j.job_id}`}
                           {j.generation_type === "resume" ? " · Resume" : j.generation_type === "cover_letter" ? " · Cover letter" : " · Resume + CL"}
                         </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive shrink-0"
-                          title="Delete"
-                          disabled={deletingGenJobId === j.id}
-                          onClick={() => handleDeleteGenerationJob(j.id)}
-                        >
-                          {deletingGenJobId === j.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                        </Button>
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-1.5 text-xs text-muted-foreground hover:text-primary"
+                            title="Go to job"
+                            onClick={() => goToJobInTable(j.job_id)}
+                          >
+                            ↗
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                            title="Delete"
+                            disabled={deletingGenJobId === j.id}
+                            onClick={() => handleDeleteGenerationJob(j.id)}
+                          >
+                            {deletingGenJobId === j.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>

@@ -252,6 +252,10 @@ export async function getDocumentGenerationJobs(limit = 100) {
   return request<AIGenerationJob[]>(`/documents/generation-jobs?limit=${limit}`);
 }
 
+export async function requeueGenerationJob(id: number) {
+  return request<AIGenerationJob>(`/documents/generation-jobs/${id}/requeue`, { method: "POST" });
+}
+
 export async function deleteGenerationJob(id: number) {
   const controller = new AbortController();
   const response = await fetch(`${API_BASE_URL}/documents/generation-jobs/${id}`, {
