@@ -181,7 +181,7 @@ export async function exportResumeDocx(resumeText: string, filename = "resume"):
 
 export function resumeModelChoices(): ResumeModelChoice[] {
   return [
-    { provider: "gemini", model: "gemini-2.5-flash", label: "Recommended: Gemini 2.5 Flash (500/day free)", tier: "Free / Low cost" },
+    { provider: "gemini", model: "gemini-2.5-flash", label: "Gemini 2.5 Flash Free", tier: "Free / Low cost" },
     { provider: "gemini", model: "gemini-2.0-flash", label: "Free: Gemini 2.0 Flash", tier: "Free / Low cost" },
     { provider: "groq", model: "llama-4-maverick-17b-128e-instruct", label: "Free/fast: Groq Llama 4 Maverick", tier: "Free / Low cost" },
     { provider: "groq", model: "llama-3.3-70b-versatile", label: "Free/fast: Groq Llama 3.3 70B", tier: "Free / Low cost" },

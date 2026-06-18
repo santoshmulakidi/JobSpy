@@ -2,7 +2,7 @@
 
 import { ArrowUpRight, CheckCircle2, Copy, FileText, Loader2, Mail, Search, Sparkles, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { JobTable, type SortKey, type SortDir } from "@/components/dashboard/job-table";
@@ -161,9 +161,21 @@ export function JobsClient() {
     getDocumentGenerationJobs(25).then(setGenerationJobs).catch(() => {});
   }, []);
 
-  // Poll while any job is queued or running
+  // Poll while any job is queued or running; refresh job list when newly completed
+  const prevGenJobsRef = useRef<AIGenerationJob[]>([]);
   useEffect(() => {
     const active = generationJobs.some((j) => j.status === "queued" || j.status === "running");
+    // Check if any job newly completed since last render
+    const newlyDone = generationJobs.some((j) =>
+      j.status === "completed" &&
+      !prevGenJobsRef.current.find((p) => p.id === j.id && p.status === "completed")
+    );
+    prevGenJobsRef.current = generationJobs;
+    if (newlyDone) {
+      // Refresh jobs to pick up updated best_ats_score / resume_ready badge
+      loadSearchPage(page).catch(() => {});
+      setCompletedExpanded(true);
+    }
     if (!active) return;
     const id = setInterval(() => {
       getDocumentGenerationJobs(25).then(setGenerationJobs).catch(() => {});
@@ -365,6 +377,8 @@ export function JobsClient() {
   const [autoQueuing, setAutoQueuing] = useState(false);
   const [deletingGenJobId, setDeletingGenJobId] = useState<number | null>(null);
   const [requeueingGenJobId, setRequeuingGenJobId] = useState<number | null>(null);
+  const [deletingAllCompleted, setDeletingAllCompleted] = useState(false);
+  const [completedExpanded, setCompletedExpanded] = useState(false);
 
   async function handleDeleteGenerationJob(id: number) {
     setDeletingGenJobId(id);
@@ -375,6 +389,20 @@ export function JobsClient() {
       toast.error(e instanceof Error ? e.message : "Delete failed");
     } finally {
       setDeletingGenJobId(null);
+    }
+  }
+
+  async function handleDeleteAllCompleted() {
+    const completed = generationJobs.filter((j) => j.status === "completed");
+    setDeletingAllCompleted(true);
+    try {
+      await Promise.all(completed.map((j) => deleteGenerationJob(j.id)));
+      setGenerationJobs((current) => current.filter((j) => j.status !== "completed"));
+      setCompletedExpanded(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete all failed");
+    } finally {
+      setDeletingAllCompleted(false);
     }
   }
 
@@ -800,68 +828,73 @@ export function JobsClient() {
                   </div>
                 </div>
               )}
-              {/* Completed jobs (with resume built) */}
+              {/* Completed jobs (with resume built) — collapsible, auto-hidden by default */}
               {generationJobs.filter((j) => j.status === "completed").length > 0 && (
                 <div className="rounded-lg border bg-background/60 p-3">
-                  <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Resumes built ({generationJobs.filter((j) => j.status === "completed").length})
-                  </p>
-                  <div className="space-y-1.5">
-                    {generationJobs.filter((j) => j.status === "completed").map((j) => (
-                      <div key={j.id} className="flex items-center justify-between gap-2 text-xs">
-                        <span className="truncate text-green-700 dark:text-green-400">
-                          ✓ {j.company_name ?? j.job_title ?? `Job ${j.job_id}`}
-                          {j.generation_type === "resume" ? " · Resume" : j.generation_type === "cover_letter" ? " · Cover letter" : " · Resume + CL"}
-                        </span>
-                        <div className="flex items-center gap-0.5 shrink-0">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 px-1.5 text-xs text-muted-foreground hover:text-primary"
-                            title="Go to job"
-                            onClick={() => goToJobInTable(j.job_id)}
-                          >
-                            ↗
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                            title="Delete"
-                            disabled={deletingGenJobId === j.id}
-                            onClick={() => handleDeleteGenerationJob(j.id)}
-                          >
-                            {deletingGenJobId === j.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between mb-1">
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-muted-foreground uppercase tracking-wide hover:text-foreground"
+                      onClick={() => setCompletedExpanded((v) => !v)}
+                    >
+                      {completedExpanded ? "▾" : "▸"} Resumes built ({generationJobs.filter((j) => j.status === "completed").length})
+                    </button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
+                      disabled={deletingAllCompleted}
+                      onClick={handleDeleteAllCompleted}
+                    >
+                      {deletingAllCompleted ? <Loader2 className="h-3 w-3 animate-spin" /> : "Delete all"}
+                    </Button>
                   </div>
+                  {completedExpanded && (
+                    <div className="space-y-1.5 mt-2">
+                      {generationJobs.filter((j) => j.status === "completed").map((j) => (
+                        <div key={j.id} className="flex items-center justify-between gap-2 text-xs">
+                          <span className="truncate text-green-700 dark:text-green-400">
+                            ✓ {j.company_name ?? j.job_title ?? `Job ${j.job_id}`}
+                            {j.generation_type === "resume" ? " · Resume" : j.generation_type === "cover_letter" ? " · Cover letter" : " · Resume + CL"}
+                          </span>
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs text-muted-foreground hover:text-primary" title="Go to job" onClick={() => goToJobInTable(j.job_id)}>↗</Button>
+                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" title="Delete" disabled={deletingGenJobId === j.id} onClick={() => handleDeleteGenerationJob(j.id)}>
+                              {deletingGenJobId === j.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
           </Card>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground shrink-0">Sort by</span>
-            <Select
-              value={sortPreset}
-              onValueChange={(value: SortPreset) => {
-                setSortPreset(value);
-                const resorted = applyPresetSort(
-                  rankedJobs.filter((job) => withinWindow(job, postedWithin) && matchesLocation(job, priorityTier, filterCity)),
-                  value,
-                );
-                setJobs(pageSize === 0 ? resorted : resorted.slice(0, pageSize));
-                setPage(0);
-              }}
-            >
-              <SelectTrigger className="h-8 w-56 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {SORT_PRESETS.map((p) => (
-                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground shrink-0">Sort</span>
+            {SORT_PRESETS.map((p) => (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => {
+                  setSortPreset(p.value);
+                  const resorted = applyPresetSort(
+                    rankedJobs.filter((job) => withinWindow(job, postedWithin) && matchesLocation(job, priorityTier, filterCity)),
+                    p.value,
+                  );
+                  setJobs(pageSize === 0 ? resorted : resorted.slice(0, pageSize));
+                  setPage(0);
+                }}
+                className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+                  sortPreset === p.value
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background text-muted-foreground hover:border-primary hover:text-foreground"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
           </div>
           {loading ? (
             <JobsSkeleton />

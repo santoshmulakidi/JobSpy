@@ -245,12 +245,9 @@ export function JobTable({
 
               <Th col="title"   label="Role" />
               <Th col="company" label="Company" />
-              <Th col="salary"  label="Salary" />
               <Th col="fit"     label="Fit" />
               <TableHead className="whitespace-nowrap">Resume</TableHead>
-              <Th col="visa"    label="Visa" />
-              <Th col="posted"     label="Posted" />
-              <Th col="collected" label="Collected" />
+              <Th col="posted"  label="Posted / Collected" />
               <TableHead />
             </TableRow>
           </TableHeader>
@@ -297,9 +294,6 @@ export function JobTable({
                   </div>
                   <div className="text-xs text-muted-foreground">{job.source}</div>
                 </TableCell>
-                <TableCell className="min-w-[120px] text-xs text-muted-foreground">
-                  {job.salary_display ?? "—"}
-                </TableCell>
                 <TableCell className="min-w-32">
                   <div className="flex items-center gap-2">
                     <Progress value={job.fit_score} />
@@ -317,13 +311,10 @@ export function JobTable({
                     <span className="text-muted-foreground">—</span>
                   )}
                 </TableCell>
-                <TableCell>
-                  <Badge variant={job.visa_score === "High" ? "success" : job.visa_score === "Low" ? "destructive" : "warning"}>
-                    {job.visa_score}
-                  </Badge>
+                <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                  <div>{formatDate(job.date_posted)}</div>
+                  <div className="text-[11px] opacity-70">{formatCollected(job.first_seen_at)}</div>
                 </TableCell>
-                <TableCell>{formatDate(job.date_posted)}</TableCell>
-                <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatCollected(job.first_seen_at)}</TableCell>
                 <TableCell className="text-right">
                   {onApply ? (
                     <Button className="mr-2" variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); onApply(job); }}>
