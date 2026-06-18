@@ -105,79 +105,53 @@ COMPANIES: list[tuple[str, str, str]] = [
     ("greenhouse", "blackbaud",                 "Blackbaud"),          # nonprofit software, .NET
     ("greenhouse", "maximus",                   "Maximus"),            # gov IT services, .NET
     ("greenhouse", "verint",                    "Verint"),             # workforce engagement, .NET
-    # ── Lever ─────────────────────────────────────────────────────────────
-    ("lever",      "lyft",                      "Lyft"),
-    ("lever",      "reddit",                    "Reddit"),
-    ("lever",      "etsy",                      "Etsy"),
-    ("lever",      "duolingo",                  "Duolingo"),
-    ("lever",      "klaviyo",                   "Klaviyo"),
-    ("lever",      "toast",                     "Toast"),
-    ("lever",      "housecall-pro",             "Housecall Pro"),
-    ("lever",      "samsara",                   "Samsara"),
-    ("lever",      "amplitude",                 "Amplitude"),
-    ("lever",      "mixpanel",                  "Mixpanel"),
-    ("lever",      "heap",                      "Heap"),
-    ("lever",      "segment",                   "Segment"),
-    ("lever",      "contentful",                "Contentful"),
-    ("lever",      "miro",                      "Miro"),
-    ("lever",      "lucidchart",                "Lucidchart"),
-    ("lever",      "smartsheet",                "Smartsheet"),
-    ("lever",      "procore",                   "Procore Technologies"),
-    ("lever",      "autodesk",                  "Autodesk"),
+    # Companies verified on Greenhouse (moved from assumed Lever)
+    ("greenhouse", "lyft",                      "Lyft"),
+    ("greenhouse", "reddit",                    "Reddit"),
+    ("greenhouse", "duolingo",                  "Duolingo"),
+    ("greenhouse", "klaviyo",                   "Klaviyo"),
+    ("greenhouse", "toast",                     "Toast"),
+    ("greenhouse", "samsara",                   "Samsara"),
+    ("greenhouse", "amplitude",                 "Amplitude"),
+    ("greenhouse", "mixpanel",                  "Mixpanel"),
+    ("greenhouse", "smartsheet",                "Smartsheet"),
+    ("greenhouse", "contentful",                "Contentful"),
+    ("greenhouse", "solarwinds",                "SolarWinds"),
+    ("greenhouse", "zuora",                     "Zuora"),
+    # ── Lever (verified 200 slugs only) ───────────────────────────────────
     ("lever",      "palantir",                  "Palantir Technologies"),
-    # Verified .NET-hiring Lever companies (June 2026 search)
-    ("lever",      "flynncompanies",            "Flynn Group of Companies"), # verified: .NET C# Azure
-    ("lever",      "Allata",                    "Allata"),             # verified: .NET Core Azure/AWS
-    ("lever",      "oowlish",                   "Oowlish Technology"), # verified: .NET Azure Full Stack
-    ("lever",      "keyloop",                   "Keyloop"),            # verified: .NET C# React
-    ("lever",      "patchmypc",                 "Patch My PC"),        # verified: ASP.NET Core backend
-    ("lever",      "pditechnologies",           "PDI Technologies"),   # verified: .NET C# Azure
-    ("lever",      "jobgether",                 "Jobgether"),          # verified: C# .NET Angular
-    # Enterprise / B2B SaaS on Lever
-    ("lever",      "genesys",                   "Genesys"),            # contact center, heavy .NET
-    ("lever",      "versapay",                  "Versapay"),           # payments, Principal .NET
-    ("lever",      "cyncly",                    "Cyncly"),             # design software, .NET
-    ("lever",      "bottomline",                "Bottomline Technologies"), # fintech, .NET heavy
-    ("lever",      "ncino",                     "nCino"),              # banking software
-    ("lever",      "xero",                      "Xero"),               # accounting SaaS
-    ("lever",      "zuora",                     "Zuora"),              # subscription management
-    ("lever",      "bazaarvoice",               "Bazaarvoice"),        # e-commerce tech
-    ("lever",      "apttus",                    "Conga"),              # contract management
-    ("lever",      "solarwinds",                "SolarWinds"),         # IT management, .NET
-    ("lever",      "progress",                  "Progress Software"),  # .NET tools (Telerik)
+    ("lever",      "flynncompanies",            "Flynn Group of Companies"),
+    ("lever",      "Allata",                    "Allata"),
+    ("lever",      "oowlish",                   "Oowlish Technology"),
+    ("lever",      "keyloop",                   "Keyloop"),
+    ("lever",      "patchmypc",                 "Patch My PC"),
+    ("lever",      "pditechnologies",           "PDI Technologies"),
+    ("lever",      "versapay",                  "Versapay"),
+    ("lever",      "bazaarvoice",               "Bazaarvoice"),
     # ── Ashby ─────────────────────────────────────────────────────────────
-    ("ashby",      "linear",                    "Linear"),
-    ("ashby",      "retool",                    "Retool"),
-    ("ashby",      "dbt-labs",                  "dbt Labs"),
-    ("ashby",      "vercel",                    "Vercel"),
-    ("ashby",      "supabase",                  "Supabase"),
-    ("ashby",      "planetscale",               "PlanetScale"),
-    ("ashby",      "turso",                     "Turso"),
-    ("ashby",      "clerk",                     "Clerk"),
-    ("ashby",      "modal-labs",                "Modal Labs"),
-    ("ashby",      "fly-io",                    "Fly.io"),
-    ("ashby",      "render",                    "Render"),
-    ("ashby",      "posthog",                   "PostHog"),
-    ("ashby",      "metabase",                  "Metabase"),
-    ("ashby",      "temporal",                  "Temporal"),
-    ("ashby",      "stytch",                    "Stytch"),
-    ("ashby",      "incident-io",               "incident.io"),
-    ("ashby",      "airplane",                  "Airplane"),
-    ("ashby",      "courier",                   "Courier"),
-    ("ashby",      "draftbit",                  "Draftbit"),
-    # Verified .NET-hiring Ashby companies (June 2026 search)
-    ("ashby",      "leantechniques",            "Lean TECHniques"),    # verified: .NET Angular React
-    ("ashby",      "deel",                      "Deel"),               # verified: .NET Core C# Remote
-    ("ashby",      "truelogic",                 "Truelogic"),          # verified: Principal .NET Angular
-    ("ashby",      "nord-security",             "Nord Security"),      # verified: C#/.NET Windows
-    ("ashby",      "opengov",                   "OpenGov"),            # verified: C# .NET GovTech
-    # More Ashby companies known to hire .NET
-    ("ashby",      "workos",                    "WorkOS"),             # enterprise auth, .NET SDKs
-    ("ashby",      "brainware",                 "Brainware"),          # document capture
-    ("ashby",      "forma",                     "Forma"),              # benefits platform
-    ("ashby",      "replit",                    "Replit"),             # dev tools
-    ("ashby",      "codeium",                   "Codeium"),            # AI coding
-    ("ashby",      "glean",                     "Glean"),              # enterprise search
-    ("ashby",      "ramp",                      "Ramp"),               # fintech / spend management
-    ("ashby",      "rippling",                  "Rippling"),           # HR / IT platform
+    # Companies verified on Ashby (moved from assumed Lever)
+    ("ashby",      "etsy",                      "Etsy"),
+    ("ashby",      "lucidchart",                "Lucidchart"),
+    ("ashby",      "miro",                      "Miro"),
+    ("ashby",      "genesys",                   "Genesys"),
+    ("ashby",      "procore",                   "Procore Technologies"),
+    ("ashby",      "autodesk",                  "Autodesk"),
+    ("ashby",      "heap",                      "Heap"),
+    ("ashby",      "segment",                   "Segment"),
+    ("ashby",      "progress",                  "Progress Software"),
+    ("ashby",      "ncino",                     "nCino"),
+    ("ashby",      "xero",                      "Xero"),
+    ("ashby",      "apttus",                    "Conga"),
+    ("ashby",      "cyncly",                    "Cyncly"),
+    ("ashby",      "bottomline",                "Bottomline Technologies"),
+    # Verified .NET-hiring Ashby companies
+    ("ashby",      "leantechniques",            "Lean TECHniques"),
+    ("ashby",      "deel",                      "Deel"),
+    ("ashby",      "truelogic",                 "Truelogic"),
+    ("ashby",      "nord-security",             "Nord Security"),
+    ("ashby",      "opengov",                   "OpenGov"),
+    ("ashby",      "workos",                    "WorkOS"),
+    ("ashby",      "glean",                     "Glean"),
+    ("ashby",      "ramp",                      "Ramp"),
+    ("ashby",      "rippling",                  "Rippling"),
 ]
