@@ -100,7 +100,7 @@ function JobContextMenu({
   }, [onClose]);
 
   function openResumeLab() {
-    window.sessionStorage.setItem("resumeLabJob", JSON.stringify({
+    window.localStorage.setItem("resumeLabJob", JSON.stringify({
       id: job.id,
       title: job.title,
       company: job.company_name,

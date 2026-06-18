@@ -544,7 +544,7 @@ export default function ResumeLabPage() {
     async function loadJobContext() {
       const params = new URLSearchParams(window.location.search);
       const jobId = Number(params.get("jobId"));
-      const stored = window.sessionStorage.getItem("resumeLabJob");
+      const stored = window.localStorage.getItem("resumeLabJob");
       if (stored) {
         try {
           const parsed = JSON.parse(stored) as {
@@ -589,7 +589,7 @@ export default function ResumeLabPage() {
                 setJobDescription(matchedJob.description ?? "");
                 setJobContext(`${matchedJob.title}${matchedJob.company_name ? ` at ${matchedJob.company_name}` : ""}${matchedJob.location ? ` | ${matchedJob.location}` : ""}`);
                 if (matchedJob.company_name) setJobCompany(matchedJob.company_name);
-                window.sessionStorage.setItem("resumeLabJob", JSON.stringify({
+                window.localStorage.setItem("resumeLabJob", JSON.stringify({
                   id: matchedJob.id,
                   title: matchedJob.title,
                   company: matchedJob.company_name,
@@ -605,7 +605,7 @@ export default function ResumeLabPage() {
             return;
           }
         } catch {
-          window.sessionStorage.removeItem("resumeLabJob");
+          window.localStorage.removeItem("resumeLabJob");
         }
       }
 

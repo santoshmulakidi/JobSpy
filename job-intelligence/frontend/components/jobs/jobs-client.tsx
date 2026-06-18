@@ -573,7 +573,7 @@ export function JobsClient() {
 
   function openResumeLab(job: Job) {
     const description = job.description?.trim() || "";
-    window.sessionStorage.setItem("resumeLabJob", JSON.stringify({
+    window.localStorage.setItem("resumeLabJob", JSON.stringify({
       id: job.id,
       title: job.title,
       company: job.company_name,
@@ -1225,7 +1225,7 @@ function JobDetailsPanel({
                       }).catch((e) => toast.error(String(e)));
                     }}>Download</Button>
                     <Button size="sm" variant="ghost" onClick={() => {
-                      window.sessionStorage.setItem("resumeLabJob", JSON.stringify({
+                      window.localStorage.setItem("resumeLabJob", JSON.stringify({
                         id: job.id, title: job.title, company: job.company_name,
                         location: job.location, jobUrl: job.job_url,
                         description: job.description ?? "", returnTo: "/jobs",
