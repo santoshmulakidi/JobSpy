@@ -5,6 +5,31 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+
+def compute_ats_score(resume_text: str, job_description: str) -> int:
+    """Simple keyword-match ATS score (0–100). Counts JD tokens found in resume."""
+    if not resume_text or not job_description:
+        return 0
+    _stop = {
+        "a", "an", "the", "and", "or", "of", "in", "to", "for", "with", "on",
+        "at", "by", "as", "is", "are", "was", "were", "be", "been", "will",
+        "we", "you", "our", "your", "us", "this", "that", "it", "its", "from",
+        "have", "has", "had", "do", "does", "not", "but", "if", "any", "all",
+        "can", "may", "must", "shall", "should", "would", "could", "more",
+        "other", "also", "than", "into", "they", "their", "them", "both",
+        "new", "use", "using", "used", "well", "make", "work", "team",
+    }
+    def _tokens(text: str) -> set[str]:
+        words = re.findall(r"[a-zA-Z][a-zA-Z0-9+#.\-]{1,}", text.lower())
+        return {w for w in words if w not in _stop and len(w) > 2}
+
+    jd_tokens = _tokens(job_description)
+    if not jd_tokens:
+        return 0
+    resume_lower = resume_text.lower()
+    matched = sum(1 for t in jd_tokens if t in resume_lower)
+    return min(100, round(matched / len(jd_tokens) * 100))
+
 import httpx
 
 from storage.config import Settings

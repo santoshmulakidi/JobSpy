@@ -282,6 +282,9 @@ def process_ai_generation_job(session: Session, generation_job_id: int) -> None:
                 )
                 if result.provider == "prompt_only":
                     raise RuntimeError("; ".join(result.warnings) or "All AI providers unavailable")
+                from ai.resume_rebuilder import compute_ats_score
+                ats_before = compute_ats_score(generation_job.base_resume or "", job_description)
+                ats_after = compute_ats_score(result.rebuilt_resume, job_description)
                 resume_version = repository.save_resume_version(
                     job=job,
                     profile_name=generation_job.profile_name,
@@ -289,8 +292,8 @@ def process_ai_generation_job(session: Session, generation_job_id: int) -> None:
                     model=result.model,
                     content_text=result.rebuilt_resume,
                     job_description_snapshot=job_description,
-                    ats_before_score=None,
-                    ats_after_score=None,
+                    ats_before_score=ats_before,
+                    ats_after_score=ats_after,
                     warnings=result.warnings,
                     prompt=result.prompt,
                 )

@@ -102,7 +102,7 @@ export function JobsClient() {
   const [location, setLocation] = useState("");
   const [source, setSource] = useState("all");
   const [visaStatus, setVisaStatus] = useState("all");
-  const [postedWithin, setPostedWithin] = useState("all"); // all | 24h | 3d | 7d | 14d
+  const [postedWithin, setPostedWithin] = useState("24h"); // all | 24h | 3d | 7d | 14d
   const [priorityTier, setPriorityTier] = useState("all"); // all | remote | texas | nc | usa
   const [filterCity, setFilterCity] = useState("all");
   const [filterRun, setFilterRun] = useState("all"); // "all" | ISO bucket string (15-min window)
@@ -113,7 +113,7 @@ export function JobsClient() {
   const [availableSources, setAvailableSources] = useState<{ source: string; job_count: number }[]>([]);
   const [lastSearchMode, setLastSearchMode] = useState<"feed" | "search">("feed");
   const [selectedJobIds, setSelectedJobIds] = useState<Set<number>>(new Set());
-  const [generationType, setGenerationType] = useState<"resume" | "cover_letter" | "both">("both");
+  const [generationType, setGenerationType] = useState<"resume" | "cover_letter" | "both">("resume");
   const [generationModel, setGenerationModel] = useState("gemini|gemini-2.5-flash");
   const [queueingDocuments, setQueueingDocuments] = useState(false);
   const [generationJobs, setGenerationJobs] = useState<AIGenerationJob[]>([]);
@@ -391,12 +391,18 @@ export function JobsClient() {
     }
   }
 
-  function goToJobInTable(jobId: number) {
-    const job = rankedJobs.find((j) => j.id === jobId);
-    if (job) {
+  async function goToJobInTable(jobId: number) {
+    const existing = rankedJobs.find((j) => j.id === jobId);
+    if (existing) {
+      setSelectedJob(existing);
+      return;
+    }
+    try {
+      const { getJob } = await import("@/lib/api");
+      const job = await getJob(jobId);
       setSelectedJob(job);
-    } else {
-      toast.info("Job not in current view — switch to Active tab and search");
+    } catch {
+      toast.error("Could not load job");
     }
   }
 

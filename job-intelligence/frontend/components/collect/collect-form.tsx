@@ -37,6 +37,7 @@ const sources = [
   { id: "dice",             label: "Dice",                           group: "Tech"         },
   { id: "governmentjobs",   label: "GovernmentJobs",                 group: "Public"       },
   { id: "usajobs_api",      label: "USAJOBS (API key required)",     group: "Public",      setupRequired: true },
+  { id: "zip_recruiter",    label: "ZipRecruiter",                   group: "Core"         },
   { id: "jobspresso",       label: "Jobspresso",                     group: "Remote"       },
   { id: "dynamitejobs",     label: "Dynamite Jobs",                  group: "Remote"       },
 { id: "remotive",         label: "Remotive",                       group: "Remote"       },
