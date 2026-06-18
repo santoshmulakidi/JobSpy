@@ -118,7 +118,11 @@ COMPANIES: list[tuple[str, str, str]] = [
     ("greenhouse", "contentful",                "Contentful"),
     ("greenhouse", "solarwinds",                "SolarWinds"),
     ("greenhouse", "zuora",                     "Zuora"),
+    # E-commerce / Streaming / Consumer Tech
+    ("greenhouse", "roku",                      "Roku"),
     # ── Lever (verified 200 slugs only) ───────────────────────────────────
+    ("lever",      "netflix",                   "Netflix"),
+    ("lever",      "metasite",                  "Metasite"),
     ("lever",      "palantir",                  "Palantir Technologies"),
     ("lever",      "flynncompanies",            "Flynn Group of Companies"),
     ("lever",      "Allata",                    "Allata"),
