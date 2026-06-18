@@ -25,26 +25,28 @@ logger = logging.getLogger(__name__)
 # Match if the JOB TITLE contains any of these patterns.
 TITLE_PATTERNS: list[re.Pattern] = [
     re.compile(p, re.I) for p in [
-        r"\.net",
-        r"\bdotnet\b",
-        r"\bc#\b",
+        # Explicit technology in title — high precision, no description check needed
+        r"\.net",                          # .NET Developer, Senior .NET Engineer
+        r"\bdotnet\b",                     # DotNet Developer
+        r"\bc#\b",                         # C# Developer, C# Engineer
         r"\bcsharp\b",
-        r"\basp\.net\b",
+        r"\basp\.net\b",                   # ASP.NET Core Developer
         r"\baspnet\b",
-        r"azure.*developer",
-        r"azure.*engineer",
-        r"developer.*azure",
-        r"engineer.*azure",
-        r"principal.*engineer",   # broad — combine with description check
-        r"staff.*engineer",       # broad — combine with description check
-        r"backend.*developer",    # broad — combine with description check
+        r"azure.*\.net",                   # Azure .NET Developer
+        r"\bblazor\b",                     # Blazor Developer
+        r"\bwpf\b",                        # WPF Developer
+        r"\bxamarin\b",                    # Xamarin Developer
+        r"\bwinforms\b",                   # WinForms Developer
     ]
 ]
 
-# For "broad" patterns above, also require description to mention .NET/C#/Azure
-BROAD_PATTERNS = {r"principal.*engineer", r"staff.*engineer", r"backend.*developer"}
+# No more broad patterns — title must contain the technology explicitly.
+# This eliminates false positives like "Staff Offensive Security Engineer"
+# and "Principal Presales Engineer".
+BROAD_PATTERNS: set[str] = set()
 DESCRIPTION_CONFIRM = re.compile(
-    r"\.net|dotnet|c#|csharp|asp\.net|aspnet|azure|blazor|xamarin|entity framework|wpf|winforms",
+    r"\.net\b|dotnet|c#|csharp|asp\.net|aspnet|blazor|xamarin|entity framework|wpf|winforms"
+    r"|\.net core|\.net framework|\.net 6|\.net 7|\.net 8|\.net 9",
     re.I
 )
 
@@ -81,7 +83,7 @@ def _parse_date(raw: Any) -> date | None:
 
 def _salary_from_greenhouse(job: dict) -> tuple[float | None, float | None, str | None]:
     """Extract min/max/currency from Greenhouse job metadata."""
-    keyed = {m.get("name", "").lower(): m.get("value") for m in job.get("metadata", [])}
+    keyed = {m.get("name", "").lower(): m.get("value") for m in (job.get("metadata") or [])}
     # common field names companies use
     for key in ("salary", "compensation", "pay range", "salary range"):
         val = keyed.get(key)
