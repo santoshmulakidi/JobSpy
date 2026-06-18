@@ -12,8 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn, formatDate } from "@/lib/utils";
 import type { Job } from "@/types/job";
 
-type SortKey = "title" | "company" | "salary" | "fit" | "visa" | "posted" | "collected" | "best";
-type SortDir = "asc" | "desc";
+export type SortKey = "title" | "company" | "salary" | "fit" | "visa" | "posted" | "collected" | "best";
+export type SortDir = "asc" | "desc";
 
 function SortIcon({ col, active, dir }: { col: string; active: boolean; dir: SortDir }) {
   if (!active) return <ChevronsUpDown className="ml-1 inline h-3 w-3 opacity-40" />;
@@ -160,6 +160,9 @@ export function JobTable({
   onToggleVisibleSelection,
   selectedJobId,
   title = "Active jobs",
+  sortKey: externalSortKey,
+  sortDir: externalSortDir,
+  onSort,
 }: {
   jobs: Job[];
   onApply?: (job: Job) => void;
@@ -169,21 +172,30 @@ export function JobTable({
   onToggleVisibleSelection?: (jobs: Job[]) => void;
   selectedJobId?: number | null;
   title?: string;
+  sortKey?: SortKey;
+  sortDir?: SortDir;
+  onSort?: (key: SortKey, dir: SortDir) => void;
 }) {
-  const [sortKey, setSortKey] = useState<SortKey>("best");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [localSortKey, setLocalSortKey] = useState<SortKey>("best");
+  const [localSortDir, setLocalSortDir] = useState<SortDir>("desc");
   const [ctxMenu, setCtxMenu] = useState<{ job: Job; x: number; y: number } | null>(null);
 
+  // Use external sort if provided (parent controls full-dataset sort), else local
+  const sortKey = externalSortKey ?? localSortKey;
+  const sortDir = externalSortDir ?? localSortDir;
+
   function handleSort(key: SortKey) {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    const newDir = sortKey === key ? (sortDir === "asc" ? "desc" : "asc") : "desc";
+    if (onSort) {
+      onSort(key, newDir);
     } else {
-      setSortKey(key);
-      setSortDir("desc");
+      setLocalSortKey(key);
+      setLocalSortDir(newDir);
     }
   }
 
-  const sorted = sortJobs(jobs, sortKey, sortDir);
+  // Only re-sort locally when no external sort (external = already sorted by parent)
+  const sorted = externalSortKey ? jobs : sortJobs(jobs, sortKey, sortDir);
   const allVisibleSelected = sorted.length > 0 && sorted.every((job) => selectedJobIds?.has(job.id));
 
   function Th({ col, label }: { col: SortKey; label: string }) {
@@ -236,6 +248,7 @@ export function JobTable({
               <Th col="company" label="Company" />
               <Th col="salary"  label="Salary" />
               <Th col="fit"     label="Fit" />
+              <TableHead className="whitespace-nowrap">Resume</TableHead>
               <Th col="visa"    label="Visa" />
               <Th col="posted"     label="Posted" />
               <Th col="collected" label="Collected" />
@@ -293,6 +306,17 @@ export function JobTable({
                     <Progress value={job.fit_score} />
                     <span className="text-xs text-muted-foreground">{job.fit_score}</span>
                   </div>
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-xs">
+                  {job.resume_ready ? (
+                    <span className="font-semibold text-green-600">ATS {job.best_ats_score}%</span>
+                  ) : job.best_ats_score != null ? (
+                    <span className={`font-semibold ${job.best_ats_score >= 70 ? "text-yellow-600" : "text-red-500"}`}>
+                      ATS {job.best_ats_score}%
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge variant={job.visa_score === "High" ? "success" : job.visa_score === "Low" ? "destructive" : "warning"}>

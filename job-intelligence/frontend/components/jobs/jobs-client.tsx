@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { JobTable } from "@/components/dashboard/job-table";
+import { JobTable, type SortKey, type SortDir } from "@/components/dashboard/job-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +22,48 @@ import type { AIGenerationJob, ColdEmailResult, Job, JobDocuments } from "@/type
 
 const PAGE_SIZE = 30;
 const CANDIDATE_LIMIT = 500;
+
+type SortPreset = "best" | "fit_remote" | "fit_latest_remote" | "latest" | "fit" | "salary";
+
+const SORT_PRESETS: { value: SortPreset; label: string }[] = [
+  { value: "best",              label: "Fit + Latest collection" },
+  { value: "fit_remote",        label: "Fit + Remote first" },
+  { value: "fit_latest_remote", label: "Fit + Latest + Remote" },
+  { value: "fit",               label: "Fit score only" },
+  { value: "latest",            label: "Most recently collected" },
+  { value: "salary",            label: "Salary (high to low)" },
+];
+
+function applyPresetSort(jobs: Job[], preset: SortPreset): Job[] {
+  return [...jobs].sort((a, b) => {
+    const fitDelta = (b.fit_score ?? 0) - (a.fit_score ?? 0);
+    const dateDelta = Date.parse(b.first_seen_at ?? "") - Date.parse(a.first_seen_at ?? "");
+    const remoteA = a.is_remote || a.work_mode === "Remote" ? 1 : 0;
+    const remoteB = b.is_remote || b.work_mode === "Remote" ? 1 : 0;
+    const remoteDelta = remoteB - remoteA;
+    const salaryA = Math.max(a.min_amount ?? 0, a.max_amount ?? 0);
+    const salaryB = Math.max(b.min_amount ?? 0, b.max_amount ?? 0);
+    switch (preset) {
+      case "best":              return fitDelta !== 0 ? fitDelta : dateDelta;
+      case "fit_remote":        return fitDelta !== 0 ? fitDelta : remoteDelta;
+      case "fit_latest_remote": return fitDelta !== 0 ? fitDelta : remoteDelta !== 0 ? remoteDelta : dateDelta;
+      case "fit":               return fitDelta;
+      case "latest":            return dateDelta;
+      case "salary":            return (salaryB as number) - (salaryA as number);
+    }
+  });
+}
+
+const TAB_LABELS: Record<string, string> = {
+  active: "Active jobs",
+  qualified: "Qualified jobs",
+  remote: "Remote jobs",
+  hybrid: "Hybrid jobs",
+  onsite: "On-site jobs",
+  archived: "Archived jobs",
+  direct: "Direct portal jobs",
+  ready: "Resume-ready jobs",
+};
 
 function JobsSkeleton() {
   return (
@@ -75,6 +117,9 @@ export function JobsClient() {
   const [generationModel, setGenerationModel] = useState("gemini|gemini-2.5-flash");
   const [queueingDocuments, setQueueingDocuments] = useState(false);
   const [generationJobs, setGenerationJobs] = useState<AIGenerationJob[]>([]);
+  const [sortPreset, setSortPreset] = useState<SortPreset>("best");
+  const [tableSortKey, setTableSortKey] = useState<SortKey>("best");
+  const [tableSortDir, setTableSortDir] = useState<SortDir>("desc");
   const modelChoices = useMemo(() => resumeModelChoices(), []);
 
   // Derive state counts from loaded jobs — used to populate the state dropdown.
@@ -176,8 +221,8 @@ export function JobsClient() {
     return normalize(jobCity).includes(normalize(city));
   }
 
-  function setRankedJobFeed(items: Job[], nextPage: number, state = priorityTier, city = filterCity) {
-    const sorted = prioritizeJobs(items);
+  function setRankedJobFeed(items: Job[], nextPage: number, state = priorityTier, city = filterCity, preset = sortPreset) {
+    const sorted = applyPresetSort(prioritizeJobs(items), preset);
     const filtered = sorted.filter((job) => withinWindow(job, postedWithin) && matchesLocation(job, state, city));
     const visibleJobs = pageJobs(filtered, nextPage);
     setRankedJobs(sorted);
@@ -688,6 +733,28 @@ export function JobsClient() {
               </div>
             </CardContent>
           </Card>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground shrink-0">Sort by</span>
+            <Select
+              value={sortPreset}
+              onValueChange={(value: SortPreset) => {
+                setSortPreset(value);
+                const resorted = applyPresetSort(
+                  rankedJobs.filter((job) => withinWindow(job, postedWithin) && matchesLocation(job, priorityTier, filterCity)),
+                  value,
+                );
+                setJobs(pageSize === 0 ? resorted : resorted.slice(0, pageSize));
+                setPage(0);
+              }}
+            >
+              <SelectTrigger className="h-8 w-56 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {SORT_PRESETS.map((p) => (
+                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           {loading ? (
             <JobsSkeleton />
           ) : (
@@ -699,6 +766,32 @@ export function JobsClient() {
               onToggleJobSelection={toggleJobSelection}
               onToggleVisibleSelection={toggleVisibleSelection}
               selectedJobId={selectedJob?.id ?? null}
+              title={TAB_LABELS[tab] ?? "Jobs"}
+              sortKey={tableSortKey}
+              sortDir={tableSortDir}
+              onSort={(key, dir) => {
+                setTableSortKey(key);
+                setTableSortDir(dir);
+                // Re-sort full rankedJobs by the column, then re-page
+                const filtered = rankedJobs.filter((job) => withinWindow(job, postedWithin) && matchesLocation(job, priorityTier, filterCity));
+                // Import sortJobs logic inline for the key sorts
+                const sorted = key === "best"
+                  ? applyPresetSort(filtered, "best")
+                  : [...filtered].sort((a, b) => {
+                      const sign = dir === "asc" ? 1 : -1;
+                      switch (key) {
+                        case "title":    return (a.title ?? "").localeCompare(b.title ?? "") * sign;
+                        case "company":  return (a.company_name ?? "").localeCompare(b.company_name ?? "") * sign;
+                        case "fit":      return ((a.fit_score ?? 0) - (b.fit_score ?? 0)) * sign;
+                        case "visa":     return (({ High: 3, Medium: 2, Low: 1, Unknown: 0 }[a.visa_score ?? ""] ?? 0) - ({ High: 3, Medium: 2, Low: 1, Unknown: 0 }[b.visa_score ?? ""] ?? 0)) * sign;
+                        case "posted":   return (Date.parse(a.date_posted ?? "") - Date.parse(b.date_posted ?? "")) * sign;
+                        case "collected":return (Date.parse(a.first_seen_at ?? "") - Date.parse(b.first_seen_at ?? "")) * sign;
+                        default:         return 0;
+                      }
+                    });
+                setRankedJobs(sorted);
+                setJobs(pageSize === 0 ? sorted : sorted.slice(page * pageSize, (page + 1) * pageSize));
+              }}
             />
           )}
           <div className="flex flex-col gap-3 rounded-xl border bg-card/70 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">

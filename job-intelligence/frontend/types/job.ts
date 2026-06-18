@@ -25,6 +25,8 @@ export type Job = {
   applied_at: string | null;
   easy_apply: boolean;
   salary_display: string | null;
+  min_amount: number | null;
+  max_amount: number | null;
   best_ats_score: number | null;
   resume_ready: boolean;
 };

@@ -585,6 +585,21 @@ def _prepare_resume_lines(resume_text: str) -> list[str]:
             lines.append(f"- {line}")
             i += 1; continue
 
+        # Auto-bullet experience lines that aren't structural (role/date/project/env/heading)
+        if (
+            in_experience
+            and not in_responsibilities
+            and not _is_bullet(line)
+            and not _looks_like_role_line(line)
+            and not _looks_like_date_line(line)
+            and not _looks_like_role_title(line)
+            and not line.lower().startswith("project:")
+            and not line.lower().startswith("environment:")
+            and _normalized_heading(line) not in _SECTION_WORDS
+        ):
+            lines.append(f"- {line}")
+            i += 1; continue
+
         lines.append(line)
         i += 1
 
