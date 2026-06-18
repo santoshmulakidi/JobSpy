@@ -23,7 +23,7 @@ import type { AIGenerationJob, ColdEmailResult, Job, JobDocuments } from "@/type
 const PAGE_SIZE = 30;
 const CANDIDATE_LIMIT = 500;
 
-type SortPreset = "best" | "fit_remote" | "fit_latest_remote" | "latest" | "fit" | "salary";
+type SortPreset = "best" | "fit_remote" | "fit_latest_remote" | "latest" | "fit" | "salary" | "resume_ready";
 
 const SORT_PRESETS: { value: SortPreset; label: string }[] = [
   { value: "best",              label: "Fit + Latest collection" },
@@ -32,6 +32,7 @@ const SORT_PRESETS: { value: SortPreset; label: string }[] = [
   { value: "fit",               label: "Fit score only" },
   { value: "latest",            label: "Most recently collected" },
   { value: "salary",            label: "Salary (high to low)" },
+  { value: "resume_ready",     label: "Resume Ready first" },
 ];
 
 function applyPresetSort(jobs: Job[], preset: SortPreset): Job[] {
@@ -50,6 +51,12 @@ function applyPresetSort(jobs: Job[], preset: SortPreset): Job[] {
       case "fit":               return fitDelta;
       case "latest":            return dateDelta;
       case "salary":            return (salaryB as number) - (salaryA as number);
+      case "resume_ready": {
+        const readyA = a.resume_ready ? 1 : 0;
+        const readyB = b.resume_ready ? 1 : 0;
+        if (readyB !== readyA) return readyB - readyA;
+        return (b.best_ats_score ?? 0) - (a.best_ats_score ?? 0);
+      }
     }
   });
 }

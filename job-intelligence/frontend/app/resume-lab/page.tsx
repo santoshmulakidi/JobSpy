@@ -484,6 +484,16 @@ export default function ResumeLabPage() {
   const [atsBefore, setAtsBefore] = useState<AtsResult | null>(null);
   const [atsAfter, setAtsAfter] = useState<AtsResult | null>(null);
   const atsDropped = Boolean(atsBefore && atsAfter && atsAfter.score < atsBefore.score);
+
+  // Auto-compute ATS when preloaded resume + job description arrive
+  useEffect(() => {
+    if (rebuildResult && jobDescription.trim().length > 50 && !atsAfter) {
+      const after = computeAts(rebuildResult.rebuilt_resume, jobDescription);
+      setAtsAfter(after);
+      setAtsBefore(after); // ponytail: no "before" for preloaded — set equal so no drop warning
+    }
+  }, [rebuildResult, jobDescription, atsAfter]);
+
   const [showPreview, setShowPreview] = useState(true);
   const [docxLoading, setDocxLoading] = useState(false);
   const [refinePulse, setRefinePulse] = useState(false);
@@ -968,10 +978,6 @@ export default function ResumeLabPage() {
                 <label className="space-y-2 text-sm font-medium">
                   Location preferences
                   <Input value={activeProfile.locations} onChange={(event) => updateActiveProfile({ locations: event.target.value })} placeholder="United States, Remote, Dallas, TX" />
-                </label>
-                <label className="space-y-2 text-sm font-medium md:col-span-2">
-                  Preferred titles
-                  <Textarea value={activeProfile.preferredTitles.join("\n")} onChange={(event) => updateActiveProfile({ preferredTitles: event.target.value.split("\n").map((item) => item.trim()).filter(Boolean) })} className="min-h-36" />
                 </label>
               </div>
             ) : null}
