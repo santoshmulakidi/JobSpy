@@ -61,6 +61,30 @@ def _title_matches(title: str, description: str = "") -> bool:
     return False
 
 
+# ponytail: simple regex USA filter — covers 95% of cases, add geocoding if false negatives matter
+_US_STATES = {
+    "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
+    "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+    "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
+    "VA","WA","WV","WI","WY","DC",
+}
+_USA_RE = re.compile(
+    r"\b("
+    r"United States|USA|U\.S\.A|U\.S\.|Remote"
+    r"|" + "|".join(_US_STATES) +
+    r")\b",
+    re.I,
+)
+
+def _is_usa_location(location: str | None) -> bool:
+    if not location:
+        return False
+    loc = location.strip()
+    if not loc:
+        return False
+    return bool(_USA_RE.search(loc))
+
+
 def _parse_date(raw: Any) -> date | None:
     if not raw:
         return None
@@ -295,9 +319,11 @@ def scrape_direct_jobs(
 
             try:
                 jobs = fetcher(slug, display_name, client)
-                if jobs:
-                    logger.info("direct %s/%s: %d .NET jobs", platform, slug, len(jobs))
-                all_jobs.extend(jobs)
+                # Filter to USA/Remote only
+                usa_jobs = [j for j in jobs if _is_usa_location(j.get("location")) or j.get("is_remote")]
+                if usa_jobs:
+                    logger.info("direct %s/%s: %d USA .NET jobs (of %d total)", platform, slug, len(usa_jobs), len(jobs))
+                all_jobs.extend(usa_jobs)
             except Exception as e:
                 logger.exception("direct %s/%s: unexpected error: %s", platform, slug, e)
 

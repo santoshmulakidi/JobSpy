@@ -63,7 +63,7 @@ from search import SearchEngine
 from storage.backups import backup_sqlite_database
 from storage.config import get_settings
 from storage.database import SessionLocal, get_session, init_database
-from storage.models import AIGenerationJob, AIGenerationStatus, Application, ChangeType, DocumentKind, Job, ResumeVersion, SearchRun, UserProfile
+from storage.models import AIGenerationJob, AIGenerationStatus, Application, ChangeType, CoverLetterVersion, DocumentKind, Job, ResumeVersion, SearchRun, UserProfile
 from storage.repository import JobRepository
 from search.scoring import score_job
 from search.trust import score_trust
@@ -1016,7 +1016,19 @@ def delete_generation_job(job_id: int, session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="generation job not found")
     if gen_job.status in ("queued", "running"):
         raise HTTPException(status_code=409, detail="cannot delete a queued or running job")
+    # Delete linked resume/cover letter versions so ATS score clears from job table
+    rv_id = gen_job.resume_version_id
+    cl_id = gen_job.cover_letter_version_id
     session.delete(gen_job)
+    session.flush()
+    if rv_id:
+        rv = session.get(ResumeVersion, rv_id)
+        if rv:
+            session.delete(rv)
+    if cl_id:
+        cl = session.get(CoverLetterVersion, cl_id)
+        if cl:
+            session.delete(cl)
     session.commit()
 
 

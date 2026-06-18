@@ -386,6 +386,8 @@ export function JobsClient() {
   const [requeueingGenJobId, setRequeuingGenJobId] = useState<number | null>(null);
   const [deletingAllCompleted, setDeletingAllCompleted] = useState(false);
   const [completedExpanded, setCompletedExpanded] = useState(false);
+  const [completedPage, setCompletedPage] = useState(0);
+  const COMPLETED_PER_PAGE = 10;
 
   async function handleDeleteGenerationJob(id: number) {
     setDeletingGenJobId(id);
@@ -762,7 +764,10 @@ export function JobsClient() {
               {autoQueuing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               Queue Top 10
             </Button>
-            <Button onClick={runSearch} disabled={tab === "archived" || tab === "direct" || tab === "ready"}>Search</Button>
+            <Button onClick={runSearch} disabled={loading || tab === "archived" || tab === "direct" || tab === "ready"}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              Search
+            </Button>
           </div>
         </div>
       </div>
@@ -856,24 +861,38 @@ export function JobsClient() {
                       {deletingAllCompleted ? <Loader2 className="h-3 w-3 animate-spin" /> : "Delete all"}
                     </Button>
                   </div>
-                  {completedExpanded && (
-                    <div className="space-y-1.5 mt-2">
-                      {generationJobs.filter((j) => j.status === "completed").map((j) => (
-                        <div key={j.id} className="flex items-center justify-between gap-2 text-xs">
-                          <span className="truncate text-green-700 dark:text-green-400">
-                            ✓ {j.company_name ?? j.job_title ?? `Job ${j.job_id}`}
-                            {j.generation_type === "resume" ? " · Resume" : j.generation_type === "cover_letter" ? " · Cover letter" : " · Resume + CL"}
-                          </span>
-                          <div className="flex items-center gap-0.5 shrink-0">
-                            <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs text-muted-foreground hover:text-primary" title="Go to job" onClick={() => goToJobInTable(j.job_id)}>↗</Button>
-                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" title="Delete" disabled={deletingGenJobId === j.id} onClick={() => handleDeleteGenerationJob(j.id)}>
-                              {deletingGenJobId === j.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                            </Button>
+                  {completedExpanded && (() => {
+                    const allCompleted = generationJobs.filter((j) => j.status === "completed");
+                    const totalPages = Math.ceil(allCompleted.length / COMPLETED_PER_PAGE);
+                    const paged = allCompleted.slice(completedPage * COMPLETED_PER_PAGE, (completedPage + 1) * COMPLETED_PER_PAGE);
+                    return (
+                      <div className="space-y-1.5 mt-2">
+                        {paged.map((j) => (
+                          <div key={j.id} className="flex items-center justify-between gap-2 text-xs">
+                            <span className="truncate text-green-700 dark:text-green-400">
+                              ✓ {j.company_name ?? j.job_title ?? `Job ${j.job_id}`}
+                              {j.generation_type === "resume" ? " · Resume" : j.generation_type === "cover_letter" ? " · Cover letter" : " · Resume + CL"}
+                            </span>
+                            <div className="flex items-center gap-0.5 shrink-0">
+                              <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs text-muted-foreground hover:text-primary" title="Go to job" onClick={() => goToJobInTable(j.job_id)}>↗</Button>
+                              <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" title="Delete" disabled={deletingGenJobId === j.id} onClick={() => handleDeleteGenerationJob(j.id)}>
+                                {deletingGenJobId === j.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        ))}
+                        {totalPages > 1 && (
+                          <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
+                            <span>{completedPage + 1} / {totalPages}</span>
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" disabled={completedPage === 0} onClick={() => setCompletedPage((p) => p - 1)}>Prev</Button>
+                              <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" disabled={completedPage >= totalPages - 1} onClick={() => setCompletedPage((p) => p + 1)}>Next</Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </CardContent>
