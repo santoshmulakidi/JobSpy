@@ -271,6 +271,11 @@ export function JobTable({
                     {job.easy_apply && (
                       <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5 py-0">Easy Apply</Badge>
                     )}
+                    {job.resume_ready && (
+                      <Badge className="shrink-0 text-[10px] px-1.5 py-0 bg-green-600 text-white">
+                        Resume Ready · ATS {job.best_ats_score}%
+                      </Badge>
+                    )}
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">{job.location ?? "Location not listed"} · {job.work_mode}</div>
                 </TableCell>

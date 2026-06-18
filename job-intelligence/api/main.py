@@ -59,7 +59,7 @@ from search import SearchEngine
 from storage.backups import backup_sqlite_database
 from storage.config import get_settings
 from storage.database import SessionLocal, get_session, init_database
-from storage.models import AIGenerationJob, AIGenerationStatus, Application, ChangeType, DocumentKind, UserProfile
+from storage.models import AIGenerationJob, AIGenerationStatus, Application, ChangeType, DocumentKind, ResumeVersion, UserProfile
 from storage.repository import JobRepository
 from search.scoring import score_job
 from search.trust import score_trust
@@ -351,6 +351,7 @@ def _job_out(
     *,
     profile: UserProfile | None = None,
     application: Application | None = None,
+    best_ats_score: int | None = None,
 ) -> JobOut:
     profile = profile or repository.get_profile()
     score = score_job(job, profile)
@@ -392,6 +393,8 @@ def _job_out(
         applied_at=application.applied_at if application else None,
         easy_apply=_is_easy_apply(job),
         salary_display=_salary_display(job),
+        best_ats_score=best_ats_score,
+        resume_ready=best_ats_score is not None and best_ats_score >= 90,
     )
 
 
@@ -399,8 +402,15 @@ def _jobs_out(repository: JobRepository, jobs) -> list[JobOut]:
     job_list = list(jobs)
     profile = repository.get_profile()
     applications = repository.applications_for_jobs(job.id for job in job_list)
+    ats_scores = repository.best_ats_scores_for_jobs(job.id for job in job_list)
     return [
-        _job_out(repository, job, profile=profile, application=applications.get(job.id))
+        _job_out(
+            repository,
+            job,
+            profile=profile,
+            application=applications.get(job.id),
+            best_ats_score=ats_scores.get(job.id),
+        )
         for job in job_list
     ]
 
@@ -1352,3 +1362,62 @@ def direct_jobs_trigger():
     t = threading.Thread(target=run_direct_scrape, daemon=True, name="manual-direct-scrape")
     t.start()
     return {"status": "triggered", "message": "Direct portal scrape started — check Jobs > Direct tab in ~3 min."}
+
+
+@app.post("/documents/auto-queue-top")
+def auto_queue_top_jobs(
+    n: int = Query(default=10, ge=1, le=50),
+    min_fit: int = Query(default=60, ge=0, le=100),
+    session: Session = Depends(get_session),
+):
+    """Queue resume generation for top-N unprocessed high-fit jobs using the stored profile resume."""
+    from storage.models import Job as JobModel, JobStatus
+    from sqlalchemy import select as sa_select
+
+    repository = JobRepository(session)
+    profile = repository.get_profile()
+    if not profile or not profile.resume_text:
+        raise HTTPException(status_code=400, detail="No resume in profile. Upload resume first.")
+
+    existing_job_ids = {
+        row[0]
+        for row in session.execute(
+            sa_select(ResumeVersion.job_id).distinct()
+        ).all()
+    }
+
+    active_jobs = session.scalars(
+        sa_select(JobModel)
+        .where(JobModel.status == JobStatus.ACTIVE)
+        .order_by(JobModel.last_seen_at.desc())
+        .limit(500)
+    ).all()
+
+    # score and filter
+    top_jobs = []
+    for job in active_jobs:
+        if job.id in existing_job_ids:
+            continue
+        score = score_job(job, profile)
+        if score.fit_score >= min_fit:
+            top_jobs.append((score.fit_score, job))
+
+    top_jobs.sort(key=lambda x: x[0], reverse=True)
+    top_jobs = top_jobs[:n]
+
+    if not top_jobs:
+        return {"queued": 0, "message": "No qualifying jobs without existing resumes found."}
+
+    job_ids = [job.id for _, job in top_jobs if job.description]
+    if not job_ids:
+        return {"queued": 0, "message": "No qualifying jobs with descriptions found."}
+
+    profile_name = profile.target_roles[0] if profile.target_roles else None
+    enqueued = repository.enqueue_ai_generation_jobs(
+        job_ids=job_ids,
+        generation_type="resume",
+        base_resume=profile.resume_text,
+        profile_name=profile_name,
+    )
+    session.commit()
+    return {"queued": len(enqueued), "message": f"Queued resume generation for {len(enqueued)} top-fit jobs."}

@@ -99,6 +99,8 @@ class JobOut(BaseModel):
     applied_at: datetime | None = None
     easy_apply: bool = False
     salary_display: str | None = None
+    best_ats_score: int | None = None
+    resume_ready: bool = False
 
     model_config = {"from_attributes": True}
 

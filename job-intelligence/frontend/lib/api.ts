@@ -62,6 +62,13 @@ export async function triggerDirectScrape() {
   return request<{ status: string; message: string }>("/direct-jobs/trigger", { method: "POST" });
 }
 
+export async function autoQueueTopJobs(n = 10, minFit = 60) {
+  return request<{ queued: number; message: string }>(
+    `/documents/auto-queue-top?n=${n}&min_fit=${minFit}`,
+    { method: "POST" }
+  );
+}
+
 export async function getJob(jobId: number) {
   return request<Job>(`/jobs/${jobId}`);
 }

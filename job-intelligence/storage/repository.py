@@ -522,6 +522,18 @@ class JobRepository:
             .limit(1)
         )
 
+    def best_ats_scores_for_jobs(self, job_ids: Iterable[int]) -> dict[int, int]:
+        """Return {job_id: max(ats_after_score)} for jobs that have resume versions."""
+        ids = list(job_ids)
+        if not ids:
+            return {}
+        rows = self.session.execute(
+            select(ResumeVersion.job_id, func.max(ResumeVersion.ats_after_score))
+            .where(ResumeVersion.job_id.in_(ids), ResumeVersion.ats_after_score.is_not(None))
+            .group_by(ResumeVersion.job_id)
+        ).all()
+        return {row[0]: row[1] for row in rows}
+
     def get_job_documents(self, job_id: int) -> dict[str, list[ResumeVersion] | list[CoverLetterVersion]]:
         resume_versions = list(
             self.session.scalars(

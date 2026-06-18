@@ -317,6 +317,43 @@ export function JobsClient() {
     }
   }
 
+  const [autoQueuing, setAutoQueuing] = useState(false);
+
+  async function loadReady() {
+    setLoading(true);
+    setError(null);
+    try {
+      const { getJobs } = await import("@/lib/api");
+      const items = await getJobs(500);
+      const ready = items.filter((j) => j.resume_ready);
+      ready.sort((a, b) => (b.best_ats_score ?? 0) - (a.best_ats_score ?? 0));
+      setRankedJobs(ready);
+      setJobs(pageSize === 0 ? ready : ready.slice(0, pageSize));
+      setPage(0);
+      setSelectedJob(null);
+      setLastSearchMode("search");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not load ready jobs");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleAutoQueueTop() {
+    setAutoQueuing(true);
+    try {
+      const { autoQueueTopJobs } = await import("@/lib/api");
+      const res = await autoQueueTopJobs(10, 60);
+      const latest = await getDocumentGenerationJobs(25);
+      setGenerationJobs(latest);
+      toast.success(res.message);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Auto-queue failed");
+    } finally {
+      setAutoQueuing(false);
+    }
+  }
+
   async function goToPage(nextPage: number) {
     if (nextPage < 0) return;
     if (lastSearchMode === "search") {
@@ -567,6 +604,7 @@ export function JobsClient() {
             setTab(value);
             if (value === "archived") loadArchived();
             if (value === "direct") loadDirect();
+            if (value === "ready") loadReady();
           }}>
             <TabsList>
               <TabsTrigger value="active">Active today</TabsTrigger>
@@ -576,6 +614,9 @@ export function JobsClient() {
               <TabsTrigger value="onsite">On-site</TabsTrigger>
               <TabsTrigger value="archived">Archived</TabsTrigger>
               <TabsTrigger value="direct">Direct portals</TabsTrigger>
+              <TabsTrigger value="ready" className="text-green-600 font-semibold">
+                Resume Ready ✓
+              </TabsTrigger>
             </TabsList>
           </Tabs>
           <div className="flex gap-2">
@@ -584,7 +625,22 @@ export function JobsClient() {
                 Refresh now
               </Button>
             )}
-            <Button onClick={runSearch} disabled={tab === "archived" || tab === "direct"}>Search</Button>
+            {tab === "ready" && (
+              <Button variant="outline" size="sm" onClick={loadReady}>
+                Refresh
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAutoQueueTop}
+              disabled={autoQueuing}
+              title="Queue resume generation for top 10 high-fit jobs that don't have a resume yet"
+            >
+              {autoQueuing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              Queue Top 10
+            </Button>
+            <Button onClick={runSearch} disabled={tab === "archived" || tab === "direct" || tab === "ready"}>Search</Button>
           </div>
         </div>
       </div>
