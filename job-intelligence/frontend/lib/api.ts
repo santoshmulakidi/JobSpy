@@ -12,6 +12,7 @@ import type {
   ResumeRebuildResult,
   SavedSearch,
   SchedulerStatus,
+  SourceHealth,
   SourceCount,
   Stats,
   ResumeModelChoice,
@@ -127,6 +128,10 @@ export async function markJobApplied(jobId: number, payload: Record<string, unkn
 
 export async function getSourceCounts() {
   return request<SourceCount[]>("/source-counts");
+}
+
+export async function getSourceHealth() {
+  return request<SourceHealth[]>("/source-health");
 }
 
 export async function getCompanyTargets(limit = 500) {

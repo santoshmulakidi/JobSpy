@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from collectors import (
+    AdzunaCollector,
     AtsCareerPageCollector,
     CareerBuilderCollector,
     CollectionRequest,
@@ -10,9 +11,9 @@ from collectors import (
     GovernmentJobsCollector,
     JobSpyCollector,
     MarkdownJobCollector,
+    RemoteOKCollector,
     RemotelyJobsCollector,
     SimpleWebJobCollector,
-    USAJobsCollector,
     WeWorkRemotelyCollector,
 )
 from collectors.base import now_utc
@@ -26,7 +27,8 @@ class CollectionService:
     jobspy_sites = {"linkedin", "indeed", "zip_recruiter", "glassdoor", "google"}
     careerbuilder_sites = {"careerbuilder"}
     governmentjobs_sites = {"governmentjobs"}
-    usajobs_sites = {"usajobs_api"}
+    adzuna_sites = {"adzuna"}
+    remoteok_sites = {"remoteok"}
     remotely_sites = {"remotely"}
     weworkremotely_sites = {"weworkremotely"}
     career_page_sites = {"career_page"}
@@ -54,10 +56,8 @@ class CollectionService:
         self.careerbuilder_collector = CareerBuilderCollector()
         self.governmentjobs_collector = GovernmentJobsCollector()
         settings = get_settings()
-        self.usajobs_collector = USAJobsCollector(
-            api_key=settings.usajobs_api_key,
-            user_agent=settings.usajobs_user_agent,
-        )
+        self.adzuna_collector = AdzunaCollector(app_id=settings.adzuna_app_id, app_key=settings.adzuna_app_key)
+        self.remoteok_collector = RemoteOKCollector()
         self.remotely_collector = RemotelyJobsCollector()
         self.weworkremotely_collector = WeWorkRemotelyCollector()
         self.career_page_collector = AtsCareerPageCollector()
@@ -224,7 +224,8 @@ class CollectionService:
         jobspy_sites = [site for site in request.sites if site in self.jobspy_sites]
         careerbuilder_sites = [site for site in request.sites if site in self.careerbuilder_sites]
         governmentjobs_sites = [site for site in request.sites if site in self.governmentjobs_sites]
-        usajobs_sites = [site for site in request.sites if site in self.usajobs_sites]
+        adzuna_sites = [site for site in request.sites if site in self.adzuna_sites]
+        remoteok_sites = [site for site in request.sites if site in self.remoteok_sites]
         remotely_sites = [site for site in request.sites if site in self.remotely_sites]
         weworkremotely_sites = [site for site in request.sites if site in self.weworkremotely_sites]
         career_page_sites = [site for site in request.sites if site in self.career_page_sites]
@@ -234,7 +235,8 @@ class CollectionService:
             self.jobspy_sites
             | self.careerbuilder_sites
             | self.governmentjobs_sites
-            | self.usajobs_sites
+            | self.adzuna_sites
+            | self.remoteok_sites
             | self.remotely_sites
             | self.weworkremotely_sites
             | self.career_page_sites
@@ -292,14 +294,17 @@ class CollectionService:
             errors.extend(result.errors)
 
         if governmentjobs_sites:
-            result = self.governmentjobs_collector.collect(
-                request.model_copy(update={"sites": governmentjobs_sites})
-            )
+            result = self._collect_governmentjobs_with_fallbacks(request, governmentjobs_sites)
             jobs.extend(result.jobs)
             errors.extend(result.errors)
 
-        if usajobs_sites:
-            result = self.usajobs_collector.collect(request.model_copy(update={"sites": usajobs_sites}))
+        if adzuna_sites:
+            result = self.adzuna_collector.collect(request.model_copy(update={"sites": adzuna_sites}))
+            jobs.extend(result.jobs)
+            errors.extend(result.errors)
+
+        if remoteok_sites:
+            result = self.remoteok_collector.collect(request.model_copy(update={"sites": remoteok_sites}))
             jobs.extend(result.jobs)
             errors.extend(result.errors)
 
@@ -342,6 +347,38 @@ class CollectionService:
             jobs=jobs,
             errors=errors,
         )
+
+    def _collect_governmentjobs_with_fallbacks(self, request: CollectionRequest, sites: list[str]) -> CollectionResult:
+        errors: list[str] = []
+        jobs: list[dict] = []
+        locations = self._governmentjobs_locations(request.location)
+        started_at = now_utc()
+        for location in locations:
+            result = self.governmentjobs_collector.collect(
+                request.model_copy(update={"sites": sites, "location": location})
+            )
+            if result.jobs:
+                jobs.extend(result.jobs)
+                errors.extend(result.errors)
+                break
+            errors = result.errors
+        if jobs:
+            errors = []
+        return CollectionResult(
+            request=request,
+            run_started_at=started_at,
+            run_finished_at=now_utc(),
+            jobs=jobs,
+            errors=errors,
+        )
+
+    @staticmethod
+    def _governmentjobs_locations(location: str | None) -> list[str]:
+        value = (location or "").strip()
+        fallbacks = ["Dallas, TX", "Fort Worth, TX", "Austin, TX", "Houston, TX", "San Antonio, TX", "Texas", "United States"]
+        locations = [value] if value else []
+        locations.extend(item for item in fallbacks if item.lower() != value.lower())
+        return locations
 
     @staticmethod
     def _is_visa_friendly_target(target: dict) -> bool:

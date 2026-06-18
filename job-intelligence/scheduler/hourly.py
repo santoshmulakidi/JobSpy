@@ -26,7 +26,12 @@ class HourlyRefreshScheduler:
         self._last_errors: list[str] = []
 
     def start(self, request: CollectionRequest) -> dict:
-        scheduled_request = request.model_copy(update={"hours_old": request.hours_old or 1})
+        scheduled_request = request.model_copy(
+            update={
+                "hours_old": request.hours_old or 1,
+                "metadata": {**request.metadata, "scheduler": "hourly"},
+            }
+        )
         with self._lock:
             self._request = scheduled_request
             if self._scheduler and self._scheduler.running:

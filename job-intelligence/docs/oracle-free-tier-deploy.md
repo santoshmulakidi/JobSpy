@@ -123,7 +123,7 @@ JOB_INTELLIGENCE_DATABASE_URL=sqlite:////data/job_intelligence.db
 JOB_INTELLIGENCE_LOG_LEVEL=INFO
 JOB_INTELLIGENCE_SCHEDULER_HOURS=1
 JOB_INTELLIGENCE_CORS_ORIGINS=http://<ORACLE_PUBLIC_IP>,http://localhost:3000,http://127.0.0.1:3000
-JOB_INTELLIGENCE_DEFAULT_SITES=linkedin,indeed,google,career_page,jobright_h1b,dice,governmentjobs,jobspresso,dynamitejobs,skipthedrive,remotive,remotely,yc_jobs
+JOB_INTELLIGENCE_DEFAULT_SITES=linkedin,indeed,google,career_page,jobright_h1b,dice,governmentjobs,adzuna,remoteok,jobspresso,dynamitejobs,skipthedrive,remotive,remotely,yc_jobs
 ```
 
 Add AI keys only on the VM, never commit them:
@@ -139,8 +139,8 @@ JOB_INTELLIGENCE_NVIDIA_API_KEY=
 USAJobs is optional:
 
 ```env
-JOB_INTELLIGENCE_USAJOBS_API_KEY=
-JOB_INTELLIGENCE_USAJOBS_USER_AGENT=
+JOB_INTELLIGENCE_ADZUNA_APP_ID=
+JOB_INTELLIGENCE_ADZUNA_APP_KEY=
 ```
 
 ## 5. Build And Start
@@ -258,4 +258,3 @@ Then open on your PC:
 ```text
 http://localhost:3000
 ```
-

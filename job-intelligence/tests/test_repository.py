@@ -843,6 +843,37 @@ def test_no_sponsorship_job_has_low_visa_score():
     assert job.apply_priority == "Low"
 
 
+def test_known_sponsor_company_raises_visa_score_to_medium():
+    session = make_session()
+    repository = JobRepository(session)
+    run = repository.create_search_run(
+        search_term="Engineer",
+        location="Remote",
+        sites=["linkedin"],
+        results_wanted=10,
+        started_at=__import__("datetime").datetime.now(__import__("datetime").UTC),
+    )
+
+    repository.upsert_jobs(
+        [
+            {
+                "site": "linkedin",
+                "id": "microsoft-1",
+                "title": "Senior Software Engineer",
+                "company": "Microsoft",
+                "location": "Remote",
+                "job_url": "https://example.com/microsoft-1",
+                "description": "Cloud platform engineering role.",
+            }
+        ],
+        run,
+    )
+    session.commit()
+
+    job = repository.list_jobs()[0]
+    assert job.visa_score == "Medium"
+
+
 def test_job_computes_remote_hybrid_and_onsite_work_modes():
     session = make_session()
     repository = JobRepository(session)

@@ -228,11 +228,12 @@ The **Visa-Friendly Sources** preset uses:
 - Career Pages
 - Jobright H1B
 - Dice
+- Remote OK
+- Adzuna when API keys are configured
 
 It also prioritizes companies from `data/company_targets.json` that show strong
-or active sponsorship signals. The target list includes product companies with
-visa-friendly signals such as Roku, Pinterest, Snap, Instacart, Reddit, MongoDB,
-Nutanix, Roblox, Toast, The Trade Desk, Twilio, Box, and SoFi.
+or active sponsorship signals, plus a conservative sponsor-history hint for large
+companies that frequently appear in H1B sponsorship datasets.
 
 ## Hourly Refresh
 
@@ -263,12 +264,16 @@ The scheduler defaults to every 1 hour. You can override it:
 
 ```bash
 export JOB_INTELLIGENCE_SCHEDULER_HOURS=1
-export JOB_INTELLIGENCE_DEFAULT_SITES="linkedin,indeed,google,career_page,jobright_h1b,dice"
+export JOB_INTELLIGENCE_DEFAULT_SITES="linkedin,indeed,google,career_page,jobright_h1b,dice,remoteok"
+export JOB_INTELLIGENCE_ADZUNA_APP_ID=""
+export JOB_INTELLIGENCE_ADZUNA_APP_KEY=""
 ```
 
 ```powershell
 $env:JOB_INTELLIGENCE_SCHEDULER_HOURS="1"
-$env:JOB_INTELLIGENCE_DEFAULT_SITES="linkedin,indeed,google,career_page,jobright_h1b,dice"
+$env:JOB_INTELLIGENCE_DEFAULT_SITES="linkedin,indeed,google,career_page,jobright_h1b,dice,remoteok"
+$env:JOB_INTELLIGENCE_ADZUNA_APP_ID=""
+$env:JOB_INTELLIGENCE_ADZUNA_APP_KEY=""
 ```
 
 ## Oracle Free Tier Deployment

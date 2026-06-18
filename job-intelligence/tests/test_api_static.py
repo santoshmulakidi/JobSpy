@@ -78,7 +78,9 @@ def test_local_dashboard_is_served():
     assert "GitHub Internships" in response.text
     assert "Dice" in response.text
     assert "GovernmentJobs" in response.text
-    assert "USAJOBS" in response.text
+    assert "USAJOBS" not in response.text
+    assert "Adzuna" in response.text
+    assert "Remote OK" in response.text
     assert "API key needed" in response.text
     assert "verified" in response.text
     assert "Jobspresso" in response.text
@@ -109,7 +111,7 @@ def test_collection_messages_split_expected_warnings_from_errors():
     warnings, errors = _split_collection_messages(
         [
             "governmentjobs returned no matching jobs",
-            "usajobs_api requires JOB_INTELLIGENCE_USAJOBS_API_KEY and JOB_INTELLIGENCE_USAJOBS_USER_AGENT in .env",
+            "adzuna requires JOB_INTELLIGENCE_ADZUNA_APP_ID and JOB_INTELLIGENCE_ADZUNA_APP_KEY in .env",
             "Meta Platforms: career page request failed: 400 Client Error: Bad Request",
             "linkedin: attempt 1 failed: timeout",
         ]
@@ -117,7 +119,7 @@ def test_collection_messages_split_expected_warnings_from_errors():
 
     assert warnings == [
         "governmentjobs returned no matching jobs",
-        "usajobs_api requires JOB_INTELLIGENCE_USAJOBS_API_KEY and JOB_INTELLIGENCE_USAJOBS_USER_AGENT in .env",
+        "adzuna requires JOB_INTELLIGENCE_ADZUNA_APP_ID and JOB_INTELLIGENCE_ADZUNA_APP_KEY in .env",
         "Meta Platforms: career page request failed: 400 Client Error: Bad Request",
     ]
     assert errors == ["linkedin: attempt 1 failed: timeout"]
@@ -138,7 +140,9 @@ def test_static_assets_are_served():
     assert "dynamitejobs" in response.text
     assert "skipthedrive" in response.text
     assert "remotive" in response.text
-    assert "usajobs_api" in response.text
+    assert "usajobs_api" not in response.text
+    assert "adzuna" in response.text
+    assert "remoteok" in response.text
     assert "sourceHealthGrid" in response.text
     assert "companyTargetsGrid" in response.text
     assert "visa_score" in response.text
@@ -162,6 +166,7 @@ def test_static_assets_are_served():
     assert "inline-job-details" in response.text
     assert "/stats" in response.text
     assert "/source-counts" in response.text
+    assert "/source-health" in response.text
     assert "New jobs added" in response.text
     assert "parseApiDateTime" in response.text
     assert "centralDateTime" in response.text

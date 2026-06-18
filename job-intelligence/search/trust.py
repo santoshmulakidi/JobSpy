@@ -10,7 +10,7 @@ HIGH_TRUST_SOURCES = {
     "career_page",
     "governmentjobs",
     "hiringcafe",
-    "usajobs_api",
+    "adzuna",
     "yc_jobs",
 }
 
@@ -19,6 +19,7 @@ MEDIUM_TRUST_SOURCES = {
     "indeed",
     "jobright_h1b",
     "linkedin",
+    "remoteok",
     "remotely",
 }
 

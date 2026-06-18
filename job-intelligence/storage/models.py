@@ -184,6 +184,29 @@ class Job(Base):
         status = self.visa_status
         text = self._visa_text()
         high_signal_sources = {"jobright_h1b", "visafriendly", "jobsh1b"}
+        sponsor_history_companies = {
+            "adobe",
+            "amazon",
+            "apple",
+            "atlassian",
+            "capital one",
+            "cisco",
+            "databricks",
+            "google",
+            "ibm",
+            "intuit",
+            "meta",
+            "microsoft",
+            "nvidia",
+            "oracle",
+            "paypal",
+            "salesforce",
+            "servicenow",
+            "snowflake",
+            "uber",
+            "walmart",
+            "workday",
+        }
 
         if self.source in high_signal_sources:
             return "High"
@@ -199,6 +222,9 @@ class Job(Base):
             return "High"
         if status in {"No C2C", "No sponsorship", "USC/GC required", "W2 only"}:
             return "Low"
+        company = (self.company_name or "").lower()
+        if any(name in company for name in sponsor_history_companies):
+            return "Medium"
         if status == "Work authorization required" or re.search(r"\b(h-?1b|tn visa|sponsor|visa)\b", text):
             return "Medium"
         return "Unknown"

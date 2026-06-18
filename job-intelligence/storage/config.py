@@ -15,8 +15,8 @@ class Settings(BaseSettings):
     discord_webhook_url: str | None = None
     telegram_bot_token: str | None = None
     telegram_chat_id: str | None = None
-    usajobs_api_key: str | None = None
-    usajobs_user_agent: str | None = None
+    adzuna_app_id: str | None = None
+    adzuna_app_key: str | None = None
     cors_origins: str = "http://127.0.0.1:3000,http://localhost:3000"
     ai_provider_order: str = "groq,gemini,openrouter,nvidia"
     openrouter_api_key: str | None = Field(

@@ -6,16 +6,16 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getSourceCounts } from "@/lib/api";
-import type { SourceCount } from "@/types/job";
+import { getSourceHealth } from "@/lib/api";
+import type { SourceHealth } from "@/types/job";
 
 export default function SourcesPage() {
-  const [sources, setSources] = useState<SourceCount[]>([]);
+  const [sources, setSources] = useState<SourceHealth[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getSourceCounts()
+    getSourceHealth()
       .then(setSources)
       .catch((caught: unknown) => setError(caught instanceof Error ? caught.message : "Could not load source counts"))
       .finally(() => setLoading(false));
@@ -35,9 +35,15 @@ export default function SourcesPage() {
               <Card key={source.source} className="surface shadow-none">
                 <CardHeader className="flex-row items-center justify-between space-y-0">
                   <CardTitle>{source.source}</CardTitle>
-                  <Badge variant="success">active</Badge>
+                  <Badge variant={source.status === "ok" ? "success" : source.status === "error" ? "destructive" : "secondary"}>{source.status}</Badge>
                 </CardHeader>
-                <CardContent className="text-2xl font-medium">{source.job_count.toLocaleString()} jobs</CardContent>
+                <CardContent className="space-y-2">
+                  <div className="text-2xl font-medium">{source.stored_jobs.toLocaleString()} jobs</div>
+                  <p className="text-sm text-muted-foreground">Last run saw {source.jobs_seen.toLocaleString()} jobs</p>
+                  {source.warnings[0] || source.errors[0] ? (
+                    <p className="line-clamp-2 text-xs text-muted-foreground">{source.errors[0] ?? source.warnings[0]}</p>
+                  ) : null}
+                </CardContent>
               </Card>
             ))}
           </div>

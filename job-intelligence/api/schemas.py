@@ -388,6 +388,16 @@ class SourceCountOut(BaseModel):
     job_count: int
 
 
+class SourceHealthOut(BaseModel):
+    source: str
+    status: str
+    last_run_at: datetime | None = None
+    jobs_seen: int = 0
+    stored_jobs: int = 0
+    warnings: list[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
+
+
 class SchedulerStatusOut(BaseModel):
     running: bool
     interval_hours: int = 1

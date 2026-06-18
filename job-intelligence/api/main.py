@@ -6,6 +6,7 @@ import io
 import logging
 import re
 import time
+from datetime import timedelta
 from pathlib import Path
 import zipfile
 from xml.etree import ElementTree
@@ -14,6 +15,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from analytics import AnalyticsEngine
@@ -48,18 +50,20 @@ from api.schemas import (
     SavedSearchOut,
     SchedulerStatusOut,
     SearchRequest,
+    SourceHealthOut,
     SourceCountOut,
     StatsOut,
 )
 from api.services import CollectionService
 from collectors import CollectionRequest
+from collectors.base import now_utc
 from collectors.company_targets import load_company_targets
 from scheduler.hourly import hourly_refresh_scheduler
 from search import SearchEngine
 from storage.backups import backup_sqlite_database
 from storage.config import get_settings
 from storage.database import SessionLocal, get_session, init_database
-from storage.models import AIGenerationJob, AIGenerationStatus, Application, ChangeType, DocumentKind, ResumeVersion, UserProfile
+from storage.models import AIGenerationJob, AIGenerationStatus, Application, ChangeType, DocumentKind, Job, ResumeVersion, SearchRun, UserProfile
 from storage.repository import JobRepository
 from search.scoring import score_job
 from search.trust import score_trust
@@ -447,7 +451,7 @@ def _split_collection_messages(messages: list[str]) -> tuple[list[str], list[str
     warning_markers = (
         "returned no matching jobs",
         "returned no parseable jobs",
-        "requires JOB_INTELLIGENCE_USAJOBS_API_KEY",
+        "requires JOB_INTELLIGENCE_ADZUNA_APP_ID",
         "career page request failed: 400 Client Error",
         "too many 429 error responses",
     )
@@ -1230,6 +1234,38 @@ def get_source_counts(session: Session = Depends(get_session)):
     ]
 
 
+@app.get("/source-health", response_model=list[SourceHealthOut])
+def get_source_health(session: Session = Depends(get_session)):
+    supported = sorted(CollectionService.jobspy_sites | CollectionService.career_page_sites | CollectionService.h1b_markdown_sites | CollectionService.simple_web_sites | CollectionService.careerbuilder_sites | CollectionService.governmentjobs_sites | CollectionService.adzuna_sites | CollectionService.remoteok_sites | CollectionService.remotely_sites | CollectionService.weworkremotely_sites)
+    runs = session.scalars(select(SearchRun).order_by(SearchRun.started_at.desc()).limit(200)).all()
+    counts = dict(JobRepository(session).source_counts())
+    rows: list[SourceHealthOut] = []
+    for source in supported:
+        run = next((item for item in runs if source in (item.sites or [])), None)
+        source_errors = [err for err in (run.errors if run else []) if err.startswith(f"{source}:") or err.startswith(source)]
+        warnings, errors = _split_collection_messages(source_errors)
+        if run is None:
+            status = "never"
+        elif errors:
+            status = "error"
+        elif warnings:
+            status = "warning"
+        else:
+            status = "ok"
+        rows.append(
+            SourceHealthOut(
+                source=source,
+                status=status,
+                last_run_at=run.started_at if run else None,
+                jobs_seen=run.jobs_seen if run else 0,
+                stored_jobs=counts.get(source, 0),
+                warnings=warnings,
+                errors=errors,
+            )
+        )
+    return rows
+
+
 @app.post("/collect", response_model=CollectResponse)
 async def collect_jobs(payload: CollectRequest, session: Session = Depends(get_session)):
     request = CollectionRequest(**payload.model_dump())
@@ -1252,9 +1288,32 @@ def search_jobs(payload: SearchRequest, session: Session = Depends(get_session))
     return _jobs_out(repository, SearchEngine(session).search(**payload.model_dump()))
 
 
+def _scheduler_status_with_recent_runs(session: Session, status: dict) -> dict:
+    if status.get("running"):
+        return status
+    cutoff = now_utc() - timedelta(hours=2)
+    run = session.scalar(
+        select(SearchRun)
+        .where(SearchRun.started_at >= cutoff, SearchRun.metadata_json["scheduler"].as_string() == "hourly")
+        .order_by(SearchRun.started_at.desc())
+        .limit(1)
+    )
+    if run is None:
+        return status
+    return {
+        **status,
+        "running": True,
+        "last_run_at": run.started_at,
+        "last_search_run_id": run.id,
+        "last_jobs_seen": run.jobs_seen,
+        "last_error_count": run.error_count,
+        "last_errors": run.errors or [],
+    }
+
+
 @app.get("/scheduler/status", response_model=SchedulerStatusOut)
-def scheduler_status():
-    return hourly_refresh_scheduler.status()
+def scheduler_status(session: Session = Depends(get_session)):
+    return _scheduler_status_with_recent_runs(session, hourly_refresh_scheduler.status())
 
 
 @app.post("/scheduler/start", response_model=SchedulerStatusOut)

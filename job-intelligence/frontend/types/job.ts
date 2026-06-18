@@ -72,6 +72,16 @@ export type SourceCount = {
   job_count: number;
 };
 
+export type SourceHealth = {
+  source: string;
+  status: string;
+  last_run_at: string | null;
+  jobs_seen: number;
+  stored_jobs: number;
+  warnings: string[];
+  errors: string[];
+};
+
 export type CompanyTarget = {
   rank: number;
   company: string;

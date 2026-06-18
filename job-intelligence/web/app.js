@@ -5,6 +5,7 @@ const state = {
   analytics: null,
   stats: null,
   sourceCounts: {},
+  sourceHealth: [],
   applications: [],
   savedSearches: [],
   currentView: "overview",
@@ -79,7 +80,8 @@ const supportedSources = [
   "jobright_h1b",
   "dice",
   "governmentjobs",
-  "usajobs_api",
+  "adzuna",
+  "remoteok",
   "jobspresso",
   "dynamitejobs",
   "skipthedrive",
@@ -1197,9 +1199,10 @@ function renderCompanyTargets() {
 
 function renderSourceHealth() {
   const counts = state.sourceCounts;
+  const healthBySource = Object.fromEntries((state.sourceHealth || []).map((row) => [row.source, row]));
   const experimentalSources = new Set([
     "yc_jobs",
-    "usajobs_api",
+    "adzuna",
     "simplify_new_grad",
     "github_internships",
   ]);
@@ -1207,7 +1210,8 @@ function renderSourceHealth() {
   els.sourceHealthGrid.innerHTML = supportedSources
     .map((source) => {
       const count = counts[source] || 0;
-      const status = count > 0 ? "Data stored" : experimentalSources.has(source) ? "Experimental" : "Ready";
+      const health = healthBySource[source];
+      const status = health ? `${health.status} · seen ${health.jobs_seen}` : count > 0 ? "Data stored" : experimentalSources.has(source) ? "Experimental" : "Ready";
       const score = count > 0 ? "High" : experimentalSources.has(source) ? "Medium" : "Unknown";
       return `
         <article class="source-health-card">
@@ -1282,11 +1286,13 @@ async function loadData() {
 
 async function loadStats() {
   try {
-    const [stats, sourceCounts] = await Promise.all([
+    const [stats, sourceCounts, sourceHealth] = await Promise.all([
       api("/stats"),
       api("/source-counts"),
+      api("/source-health"),
     ]);
     state.stats = stats;
+    state.sourceHealth = sourceHealth;
     state.sourceCounts = sourceCounts.reduce((acc, row) => {
       acc[row.source] = row.job_count;
       return acc;
@@ -1338,10 +1344,11 @@ function sourceLabel(source) {
     jobright_h1b: "Jobright H1B",
     jobsh1b: "JobsH1B",
     linkedin: "LinkedIn",
+    adzuna: "Adzuna",
+    remoteok: "Remote OK",
     remotive: "Remotive",
     remotely: "Remotely.jobs",
     simplify_new_grad: "Simplify New Grad",
-    usajobs_api: "USAJOBS",
     skipthedrive: "SkipTheDrive",
     visafriendly: "VisaFriendly",
     wellfound: "Wellfound",

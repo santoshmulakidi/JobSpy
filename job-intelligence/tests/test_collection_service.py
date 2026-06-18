@@ -28,13 +28,15 @@ def test_collection_service_partitions_non_jobspy_sources_from_jobspy():
     jobspy = FakeJobSpyCollector()
     careerbuilder = FakeCareerBuilderCollector()
     governmentjobs = FakeCareerBuilderCollector()
-    usajobs = FakeCareerBuilderCollector()
+    adzuna = FakeCareerBuilderCollector()
+    remoteok = FakeCareerBuilderCollector()
     remotely = FakeCareerBuilderCollector()
     weworkremotely = FakeCareerBuilderCollector()
     service = CollectionService(session, collector=jobspy)
     service.careerbuilder_collector = careerbuilder
     service.governmentjobs_collector = governmentjobs
-    service.usajobs_collector = usajobs
+    service.adzuna_collector = adzuna
+    service.remoteok_collector = remoteok
     service.remotely_collector = remotely
     service.weworkremotely_collector = weworkremotely
 
@@ -46,7 +48,8 @@ def test_collection_service_partitions_non_jobspy_sources_from_jobspy():
                 "linkedin",
                 "careerbuilder",
                 "governmentjobs",
-                "usajobs_api",
+                "adzuna",
+                "remoteok",
                 "remotely",
                 "weworkremotely",
             ],
@@ -56,7 +59,8 @@ def test_collection_service_partitions_non_jobspy_sources_from_jobspy():
     assert jobspy.requests[0].sites == ["linkedin"]
     assert careerbuilder.requests[0].sites == ["careerbuilder"]
     assert governmentjobs.requests[0].sites == ["governmentjobs"]
-    assert usajobs.requests[0].sites == ["usajobs_api"]
+    assert adzuna.requests[0].sites == ["adzuna"]
+    assert remoteok.requests[0].sites == ["remoteok"]
     assert remotely.requests[0].sites == ["remotely"]
     assert weworkremotely.requests[0].sites == ["weworkremotely"]
 
@@ -211,3 +215,52 @@ def test_collection_service_routes_h1b_and_simple_web_sources():
     assert jobright.requests[0].sites == ["jobright_h1b"]
     assert dice.requests[0].sites == ["dice"]
     assert remotive.requests[0].sites == ["remotive"]
+
+
+def test_collection_service_retries_governmentjobs_with_fallback_locations():
+    class FakeGovernmentJobsCollector(FakeJobSpyCollector):
+        def collect(self, request):
+            self.requests.append(request)
+            if len(self.requests) == 1:
+                return CollectionResult(
+                    request=request,
+                    run_started_at=now_utc(),
+                    run_finished_at=now_utc(),
+                    jobs=[],
+                    errors=["governmentjobs returned no matching jobs"],
+                )
+            return CollectionResult(
+                request=request,
+                run_started_at=now_utc(),
+                run_finished_at=now_utc(),
+                jobs=[
+                    {
+                        "id": "governmentjobs-1",
+                        "site": "governmentjobs",
+                        "title": "Software Developer",
+                        "company": "City of Dallas",
+                        "location": request.location,
+                        "description": ".NET government role",
+                    }
+                ],
+                errors=[],
+            )
+
+    session = make_session()
+    jobspy = FakeJobSpyCollector()
+    governmentjobs = FakeGovernmentJobsCollector()
+    service = CollectionService(session, collector=jobspy)
+    service.governmentjobs_collector = governmentjobs
+
+    _, result = service.collect(
+        CollectionRequest(
+            search_term=".NET developer",
+            location="Remote",
+            sites=["governmentjobs"],
+            results_wanted=5,
+        )
+    )
+
+    assert [request.location for request in governmentjobs.requests[:2]] == ["Remote", "Dallas, TX"]
+    assert result.count == 1
+    assert result.errors == []
