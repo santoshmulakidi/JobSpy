@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, CheckCircle2, Copy, FileText, Loader2, Mail, Search, Sparkles, Trash2 } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronRight, Copy, FileText, Loader2, Mail, RotateCcw, Search, Sparkles, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -23,7 +23,9 @@ import type { AIGenerationJob, ColdEmailResult, Job, JobDocuments } from "@/type
 const PAGE_SIZE = 30;
 const CANDIDATE_LIMIT = 500;
 
-type SortPreset = "best" | "fit_remote" | "fit_latest_remote" | "latest" | "fit" | "salary" | "resume_ready";
+type SortPreset = "best" | "fit_remote" | "fit_latest_remote" | "latest" | "fit" | "salary" | "resume_ready" | "direct_first";
+
+const _DIRECT_SOURCES = new Set(["greenhouse", "lever", "ashby"]);
 
 const SORT_PRESETS: { value: SortPreset; label: string }[] = [
   { value: "best",              label: "Fit + Latest collection" },
@@ -33,6 +35,7 @@ const SORT_PRESETS: { value: SortPreset; label: string }[] = [
   { value: "latest",            label: "Most recently collected" },
   { value: "salary",            label: "Salary (high to low)" },
   { value: "resume_ready",     label: "Resume Ready first" },
+  { value: "direct_first",    label: "Direct company jobs first" },
 ];
 
 function applyPresetSort(jobs: Job[], preset: SortPreset): Job[] {
@@ -56,6 +59,12 @@ function applyPresetSort(jobs: Job[], preset: SortPreset): Job[] {
         const readyB = b.resume_ready ? 1 : 0;
         if (readyB !== readyA) return readyB - readyA;
         return (b.best_ats_score ?? 0) - (a.best_ats_score ?? 0);
+      }
+      case "direct_first": {
+        const directA = _DIRECT_SOURCES.has(a.source) ? 1 : 0;
+        const directB = _DIRECT_SOURCES.has(b.source) ? 1 : 0;
+        if (directB !== directA) return directB - directA;
+        return fitDelta !== 0 ? fitDelta : dateDelta;
       }
     }
   });
@@ -306,7 +315,7 @@ export function JobsClient() {
     return {
       keyword: keyword.trim() ? expandSearchTerm(keyword) : null,
       location: location.trim() || null,
-      source: source === "all" ? null : source,
+      source: source === "all" || source === "direct" ? null : source,
       visa_status: visaStatus === "all" ? null : visaStatus,
       work_mode: tab === "remote" ? "Remote" : tab === "hybrid" ? "Hybrid" : tab === "onsite" ? "On-site" : null,
       qualification_status: tab === "qualified" ? "Qualified" : tab === "disqualified" ? "Disqualified" : null,
@@ -322,6 +331,9 @@ export function JobsClient() {
       let nextJobs = await searchJobs(payload);
       if (nextJobs.length === 0 && payload.location) {
         nextJobs = await searchJobs({ ...payload, location: null });
+      }
+      if (source === "direct") {
+        nextJobs = nextJobs.filter((j) => _DIRECT_SOURCES.has(j.source));
       }
       setRankedJobFeed(nextJobs, nextPage);
       setPage(nextPage);
@@ -586,12 +598,15 @@ export function JobsClient() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm text-muted-foreground">Jobs</p>
-        <h1 className="mt-1 text-3xl font-medium tracking-tight">Active job feed</h1>
+    <div className="space-y-5">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-medium text-sky-700 dark:text-sky-300">Jobs</p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight">Active job feed</h1>
+        </div>
+        <Badge variant="secondary" className="w-fit">{rankedJobs.length.toLocaleString()} matching jobs</Badge>
       </div>
-      <div className="surface rounded-2xl p-4">
+      <div className="surface rounded-lg p-4 shadow-sm">
         <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
           <Select
             value={profileId}
@@ -639,6 +654,7 @@ export function JobsClient() {
             <SelectTrigger><SelectValue placeholder="Source" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All sources</SelectItem>
+              <SelectItem value="direct">Direct portals (Greenhouse/Lever/Ashby)</SelectItem>
               {availableSources.map(({ source: s, job_count }) => (
                 <SelectItem key={s} value={s}>{s} · {job_count.toLocaleString()}</SelectItem>
               ))}
@@ -723,14 +739,14 @@ export function JobsClient() {
             </Select>
           )}
         </div>
-        <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <Tabs value={tab} onValueChange={(value) => {
             setTab(value);
             if (value === "archived") loadArchived();
             if (value === "direct") loadDirect();
             if (value === "ready") loadReady();
           }}>
-            <TabsList>
+            <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-lg p-1 md:w-auto">
               <TabsTrigger value="active">Active today</TabsTrigger>
               <TabsTrigger value="qualified">Qualified</TabsTrigger>
               <TabsTrigger value="remote">Remote</TabsTrigger>
@@ -738,12 +754,13 @@ export function JobsClient() {
               <TabsTrigger value="onsite">On-site</TabsTrigger>
               <TabsTrigger value="archived">Archived</TabsTrigger>
               <TabsTrigger value="direct">Direct portals</TabsTrigger>
-              <TabsTrigger value="ready" className="text-green-600 font-semibold">
-                Resume Ready ✓
+              <TabsTrigger value="ready" className="font-semibold text-green-700 data-[state=active]:text-green-700 dark:text-green-400">
+                <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                Resume Ready
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {tab === "direct" && (
               <Button variant="outline" size="sm" onClick={handleTriggerDirectScrape}>
                 Refresh now
@@ -772,9 +789,9 @@ export function JobsClient() {
         </div>
       </div>
       {error ? <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{error}</div> : null}
-      <div className={selectedJob ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]" : "grid gap-4"}>
-        <div className="space-y-3">
-          <Card className="surface shadow-none">
+      <div className={selectedJob ? "grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_420px]" : "grid min-w-0 gap-4"}>
+        <div className="min-w-0 space-y-3">
+          <Card className="surface rounded-lg shadow-sm">
             <CardContent className="flex flex-col gap-3 p-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div>
@@ -828,10 +845,11 @@ export function JobsClient() {
                               variant="ghost"
                               className="h-6 px-1.5 text-xs text-muted-foreground hover:text-primary"
                               title="Rerun"
+                              aria-label={`Rerun document generation for ${j.company_name ?? j.job_title ?? `job ${j.job_id}`}`}
                               disabled={requeueingGenJobId === j.id}
                               onClick={() => handleRequeueGenerationJob(j.id)}
                             >
-                              {requeueingGenJobId === j.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "↺"}
+                              {requeueingGenJobId === j.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
                             </Button>
                           )}
                         </div>
@@ -843,14 +861,15 @@ export function JobsClient() {
               {/* Completed jobs (with resume built) — collapsible, auto-hidden by default */}
               {generationJobs.filter((j) => j.status === "completed").length > 0 && (
                 <div className="rounded-lg border bg-background/60 p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <button
-                      type="button"
-                      className="text-xs font-semibold text-muted-foreground uppercase tracking-wide hover:text-foreground"
-                      onClick={() => setCompletedExpanded((v) => !v)}
-                    >
-                      {completedExpanded ? "▾" : "▸"} Resumes built ({generationJobs.filter((j) => j.status === "completed").length})
-                    </button>
+                    <div className="mb-1 flex items-center justify-between">
+                      <button
+                        type="button"
+                        className="flex cursor-pointer items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        onClick={() => setCompletedExpanded((v) => !v)}
+                      >
+                        {completedExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                        Resumes built ({generationJobs.filter((j) => j.status === "completed").length})
+                      </button>
                     <Button
                       size="sm"
                       variant="ghost"
@@ -869,12 +888,15 @@ export function JobsClient() {
                       <div className="space-y-1.5 mt-2">
                         {paged.map((j) => (
                           <div key={j.id} className="flex items-center justify-between gap-2 text-xs">
-                            <span className="truncate text-green-700 dark:text-green-400">
-                              ✓ {j.company_name ?? j.job_title ?? `Job ${j.job_id}`}
+                            <span className="flex min-w-0 items-center gap-1 truncate text-green-700 dark:text-green-400">
+                              <CheckCircle2 className="h-3 w-3 shrink-0" />
+                              {j.company_name ?? j.job_title ?? `Job ${j.job_id}`}
                               {j.generation_type === "resume" ? " · Resume" : j.generation_type === "cover_letter" ? " · Cover letter" : " · Resume + CL"}
                             </span>
                             <div className="flex items-center gap-0.5 shrink-0">
-                              <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs text-muted-foreground hover:text-primary" title="Go to job" onClick={() => goToJobInTable(j.job_id)}>↗</Button>
+                              <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs text-muted-foreground hover:text-primary" title="Go to job" aria-label={`Go to job ${j.job_id}`} onClick={() => goToJobInTable(j.job_id)}>
+                                <ArrowUpRight className="h-3 w-3" />
+                              </Button>
                               <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" title="Delete" disabled={deletingGenJobId === j.id} onClick={() => handleDeleteGenerationJob(j.id)}>
                                 {deletingGenJobId === j.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
                               </Button>

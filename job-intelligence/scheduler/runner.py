@@ -196,30 +196,29 @@ def main() -> None:
         next_run_time=datetime.now(UTC),
     )
 
-    # Direct company portals — 2.5h during day (7AM-7PM CDT), 4h overnight
-    # Day runs: 07:00, 09:30, 12:00, 14:30, 17:00 CDT
-    for hh, mm in [(7, 0), (9, 30), (12, 0), (14, 30), (17, 0)]:
+    # Direct company portals — hourly during day (7AM-7PM CDT), every 4h overnight
+    for hh in range(7, 20):  # 7:00 through 19:00 CDT = hourly
         scheduler.add_job(
             run_direct_scrape,
             "cron",
-            hour=hh, minute=mm,
-            id=f"direct_scrape_{hh:02d}{mm:02d}",
+            hour=hh, minute=0,
+            id=f"direct_scrape_{hh:02d}00",
             max_instances=1,
             coalesce=True,
         )
-    # Night runs: 19:00, 23:00, 03:00 CDT (4h apart)
-    for hh, mm in [(19, 0), (23, 0), (3, 0)]:
+    # Night runs: 23:00, 03:00 CDT (4h apart)
+    for hh in [23, 3]:
         scheduler.add_job(
             run_direct_scrape,
             "cron",
-            hour=hh, minute=mm,
-            id=f"direct_scrape_night_{hh:02d}{mm:02d}",
+            hour=hh, minute=0,
+            id=f"direct_scrape_night_{hh:02d}00",
             max_instances=1,
             coalesce=True,
         )
 
     logger.info(
-        "scheduler ready — LinkedIn/Indeed every %sh | direct portals 8×/day (2.5h day / 4h night CDT)",
+        "scheduler ready — LinkedIn/Indeed every %sh | direct portals hourly 7AM-7PM + 4h overnight CDT",
         settings.scheduler_hours,
     )
     scheduler.start()

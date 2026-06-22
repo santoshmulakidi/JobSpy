@@ -221,12 +221,12 @@ export function JobTable({
         onSelect={onSelect ?? undefined}
       />
     )}
-    <Card className="surface shadow-none">
-      <CardHeader className="flex-row items-center justify-between space-y-0">
+    <Card className="surface rounded-lg shadow-sm">
+      <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle>{title}</CardTitle>
         <Badge variant="secondary">{jobs.length} shown</Badge>
       </CardHeader>
-      <CardContent>
+      <CardContent className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -238,7 +238,7 @@ export function JobTable({
                     checked={allVisibleSelected}
                     onChange={() => onToggleVisibleSelection?.(sorted)}
                     onClick={(e) => e.stopPropagation()}
-                    className="h-4 w-4 rounded border"
+                    className="h-4 w-4 cursor-pointer rounded border"
                   />
                 </TableHead>
               ) : null}
@@ -255,10 +255,11 @@ export function JobTable({
             {sorted.map((job) => (
               <TableRow
                 key={job.id}
-                className={cn(
-                  onSelect && "cursor-pointer",
-                  selectedJobId === job.id && "bg-accent border-l-2 border-l-primary",
-                )}
+	                className={cn(
+	                  onSelect && "cursor-pointer",
+	                  selectedJobId === job.id && "border-l-2 border-l-primary bg-sky-50 dark:bg-sky-950/40",
+	                  "transition-colors hover:bg-sky-50/70 dark:hover:bg-sky-950/30",
+	                )}
                 onClick={() => onSelect?.(job)}
                 onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ job, x: e.clientX, y: e.clientY }); }}
               >
@@ -270,7 +271,7 @@ export function JobTable({
                       checked={Boolean(selectedJobIds?.has(job.id))}
                       onChange={() => onToggleJobSelection(job)}
                       onClick={(e) => e.stopPropagation()}
-                      className="h-4 w-4 rounded border"
+                      className="h-4 w-4 cursor-pointer rounded border"
                     />
                   </TableCell>
                 ) : null}
@@ -279,6 +280,9 @@ export function JobTable({
                     <div className="line-clamp-2 font-medium leading-5">{cleanTitle(job.title)}</div>
                     {job.easy_apply && (
                       <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5 py-0">Easy Apply</Badge>
+                    )}
+                    {!job.easy_apply && ["greenhouse", "lever", "ashby"].includes(job.source) && (
+                      <Badge variant="outline" className="shrink-0 text-[10px] px-1.5 py-0 border-blue-500 text-blue-600">Direct Company</Badge>
                     )}
                     {job.resume_ready && (
                       <Badge className="shrink-0 text-[10px] px-1.5 py-0 bg-green-600 text-white">
@@ -295,9 +299,9 @@ export function JobTable({
                   <div className="text-xs text-muted-foreground">{job.source}</div>
                 </TableCell>
                 <TableCell className="min-w-32">
-                  <div className="flex items-center gap-2">
-                    <Progress value={job.fit_score} />
-                    <span className="text-xs text-muted-foreground">{job.fit_score}</span>
+                  <div className="flex min-w-24 items-center gap-2">
+                    <Progress value={job.fit_score} className="h-2" />
+                    <span className="w-7 text-right text-xs font-medium tabular-nums text-muted-foreground">{job.fit_score}</span>
                   </div>
                 </TableCell>
                 <TableCell className="whitespace-nowrap text-xs">
