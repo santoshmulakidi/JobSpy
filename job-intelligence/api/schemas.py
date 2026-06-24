@@ -16,7 +16,7 @@ class CollectRequest(BaseModel):
     job_type: str | None = None
     hours_old: float | None = Field(default=None, gt=0)
     use_company_targets: bool = False
-    company_target_limit: int = Field(default=25, ge=1, le=100)
+    company_target_limit: int = Field(default=25, ge=1, le=2000)
     visa_friendly_only: bool = False
     skip_expand: bool = False
 
@@ -400,7 +400,7 @@ class SourceHealthOut(BaseModel):
 
 class SchedulerStatusOut(BaseModel):
     running: bool
-    interval_hours: int = 1
+    interval_hours: float = 1
     next_run_at: datetime | None = None
     last_run_at: datetime | None = None
     last_search_run_id: int | None = None

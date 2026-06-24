@@ -59,6 +59,7 @@ from collectors import CollectionRequest
 from collectors.base import now_utc
 from collectors.company_targets import load_company_targets
 from scheduler.hourly import hourly_refresh_scheduler
+from scheduler.h1b_company import h1b_company_scheduler
 from search import SearchEngine
 from storage.backups import backup_sqlite_database
 from storage.config import get_settings
@@ -1300,13 +1301,20 @@ def search_jobs(payload: SearchRequest, session: Session = Depends(get_session))
     return _jobs_out(repository, SearchEngine(session).search(**payload.model_dump()))
 
 
-def _scheduler_status_with_recent_runs(session: Session, status: dict) -> dict:
+def _scheduler_status_with_recent_runs(
+    session: Session,
+    status: dict,
+    scheduler_name: str = "hourly",
+    infer_recent: bool = True,
+) -> dict:
     if status.get("running"):
         return status
-    cutoff = now_utc() - timedelta(hours=2)
+    if not infer_recent:
+        return status
+    cutoff = now_utc() - timedelta(hours=max(2, float(status.get("interval_hours") or 1) + 1))
     run = session.scalar(
         select(SearchRun)
-        .where(SearchRun.started_at >= cutoff, SearchRun.metadata_json["scheduler"].as_string() == "hourly")
+        .where(SearchRun.started_at >= cutoff, SearchRun.metadata_json["scheduler"].as_string() == scheduler_name)
         .order_by(SearchRun.started_at.desc())
         .limit(1)
     )
@@ -1337,6 +1345,35 @@ def scheduler_start(payload: CollectRequest):
 @app.post("/scheduler/stop", response_model=SchedulerStatusOut)
 def scheduler_stop():
     return hourly_refresh_scheduler.stop()
+
+
+@app.get("/h1b-company-scheduler/status")
+def h1b_company_scheduler_status(session: Session = Depends(get_session)):
+    return _scheduler_status_with_recent_runs(
+        session,
+        h1b_company_scheduler.status(),
+        "h1b_company_schedule",
+        False,
+    )
+
+
+@app.post("/h1b-company-scheduler/start")
+def h1b_company_scheduler_start():
+    return h1b_company_scheduler.start()
+
+
+@app.post("/h1b-company-scheduler/stop")
+def h1b_company_scheduler_stop():
+    return h1b_company_scheduler.stop()
+
+
+@app.post("/h1b-company-scheduler/trigger")
+def h1b_company_scheduler_trigger():
+    import threading
+
+    t = threading.Thread(target=h1b_company_scheduler.trigger, daemon=True, name="manual-h1b-company-schedule")
+    t.start()
+    return {"status": "triggered", "message": "H1B company schedule started."}
 
 
 def _mask(key: str | None) -> str | None:

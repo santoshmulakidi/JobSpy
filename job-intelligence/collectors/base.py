@@ -17,7 +17,7 @@ class CollectionRequest(BaseModel):
     job_type: str | None = None
     hours_old: float | None = Field(default=None, gt=0)
     use_company_targets: bool = False
-    company_target_limit: int = Field(default=25, ge=1, le=100)
+    company_target_limit: int = Field(default=25, ge=1, le=2000)
     visa_friendly_only: bool = False
     skip_expand: bool = False
     metadata: dict[str, Any] = Field(default_factory=dict)

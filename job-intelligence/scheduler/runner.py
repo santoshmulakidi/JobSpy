@@ -9,6 +9,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from api.services import CollectionService
 from collectors import CollectionRequest
 from notifications.dispatcher import NotificationDispatcher
+from scheduler.h1b_company import H1B_COMPANY_INTERVAL_HOURS, build_h1b_company_request
 from scraper.direct_jobs import scrape_direct_jobs
 from storage.config import get_settings
 from storage.database import SessionLocal, init_database
@@ -177,6 +178,25 @@ def run_direct_scrape() -> None:
         session.close()
 
 
+def run_h1b_company_schedule() -> None:
+    """Run scheduled H1B company-target searches."""
+    req = build_h1b_company_request()
+    session = SessionLocal()
+    try:
+        run, result = CollectionService(session).collect(req)
+        logger.info(
+            "h1b company schedule done run_id=%s targets=%s jobs=%s errors=%s",
+            run.id,
+            req.company_target_limit,
+            result.count,
+            len(result.errors),
+        )
+    except Exception:
+        logger.exception("h1b company schedule failed")
+    finally:
+        session.close()
+
+
 def main() -> None:
     settings = get_settings()
     logging.basicConfig(
@@ -194,6 +214,16 @@ def main() -> None:
         hours=settings.scheduler_hours,
         id="collect_jobs",
         next_run_time=datetime.now(UTC),
+    )
+
+    scheduler.add_job(
+        run_h1b_company_schedule,
+        "interval",
+        hours=H1B_COMPANY_INTERVAL_HOURS,
+        id="h1b_company_schedule",
+        next_run_time=datetime.now(UTC),
+        max_instances=1,
+        coalesce=True,
     )
 
     # Direct company portals — hourly during day (7AM-7PM CDT), every 4h overnight

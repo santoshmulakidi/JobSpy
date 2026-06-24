@@ -4,6 +4,7 @@ from api.main import _scheduler_status_with_recent_runs
 from collectors import CollectionRequest
 from collectors.base import now_utc
 from scheduler.hourly import HourlyRefreshScheduler
+from scheduler.h1b_company import H1B_COMPANY_INTERVAL_HOURS, H1BCompanyScheduler, build_h1b_company_request
 from storage.models import SearchRun
 from tests.test_repository import make_session
 
@@ -69,5 +70,53 @@ def test_hourly_scheduler_tags_collection_runs_as_hourly(monkeypatch):
     scheduler.start(CollectionRequest(search_term="developer", sites=["linkedin"], metadata={"source": "test"}))
     try:
         assert scheduler._request.metadata == {"source": "test", "scheduler": "hourly"}
+    finally:
+        scheduler.stop()
+
+
+def test_h1b_company_request_pulls_all_non_llc_targets(monkeypatch):
+    targets = [
+        {"company": "Good Corp"},
+        {"company": "Another Inc"},
+    ]
+    monkeypatch.setattr("scheduler.h1b_company.load_h1b_company_targets", lambda: targets)
+
+    request = build_h1b_company_request()
+
+    assert request.company_target_limit == 2
+    assert request.use_company_targets is True
+    assert request.skip_expand is True
+    assert request.metadata["scheduler"] == "h1b_company_schedule"
+
+
+def test_h1b_company_scheduler_runs_every_2_5_hours(monkeypatch):
+    scheduler = H1BCompanyScheduler()
+    added = {}
+
+    class FakeBackgroundScheduler:
+        running = False
+
+        def __init__(self, timezone):
+            self.timezone = timezone
+
+        def add_job(self, *args, **kwargs):
+            added.update(kwargs)
+
+        def start(self):
+            self.running = True
+
+        def get_job(self, job_id):
+            return None
+
+        def shutdown(self, wait=False):
+            self.running = False
+
+    monkeypatch.setattr("scheduler.h1b_company.BackgroundScheduler", FakeBackgroundScheduler)
+    monkeypatch.setattr("scheduler.h1b_company.build_h1b_company_request", lambda: CollectionRequest(search_term=".Net,C#", sites=["linkedin"], company_target_limit=1))
+
+    scheduler.start()
+    try:
+        assert added["hours"] == H1B_COMPANY_INTERVAL_HOURS == 2.5
+        assert added["id"] == "h1b_company_schedule"
     finally:
         scheduler.stop()

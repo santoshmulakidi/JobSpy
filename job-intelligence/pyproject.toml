@@ -8,6 +8,7 @@ dependencies = [
     "apscheduler>=3.10.4",
     "fastapi>=0.115.0",
     "httpx>=0.27.2",
+    "markitdown @ git+https://github.com/microsoft/markitdown.git#subdirectory=packages/markitdown",
     "pandas>=2.2.3",
     "psycopg[binary]>=3.2.3",
     "pydantic>=2.8.2",

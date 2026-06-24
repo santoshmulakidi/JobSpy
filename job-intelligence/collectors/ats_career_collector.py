@@ -27,7 +27,10 @@ class AtsCareerPageCollector(Collector):
         errors: list[str] = []
         jobs: list[dict] = []
 
-        targets = select_company_targets(request.company_target_limit)
+        targets = select_company_targets(
+            request.company_target_limit,
+            request.metadata.get("company_target_set", "default"),
+        )
         if request.visa_friendly_only:
             targets = [target for target in targets if self._is_visa_friendly(target)]
 

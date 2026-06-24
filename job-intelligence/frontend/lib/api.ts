@@ -204,6 +204,22 @@ export async function getSchedulerStatus() {
   return request<SchedulerStatus>("/scheduler/status");
 }
 
+export async function getH1BCompanySchedulerStatus() {
+  return request<SchedulerStatus>("/h1b-company-scheduler/status");
+}
+
+export async function startH1BCompanyScheduler() {
+  return request<SchedulerStatus>("/h1b-company-scheduler/start", { method: "POST" });
+}
+
+export async function stopH1BCompanyScheduler() {
+  return request<SchedulerStatus>("/h1b-company-scheduler/stop", { method: "POST" });
+}
+
+export async function triggerH1BCompanyScheduler() {
+  return request<{ status: string; message: string }>("/h1b-company-scheduler/trigger", { method: "POST" });
+}
+
 export async function getArchivedJobs(keyword?: string, limit = 200) {
   const params = new URLSearchParams({ limit: String(limit) });
   if (keyword) params.set("keyword", keyword);

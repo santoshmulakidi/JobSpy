@@ -197,4 +197,6 @@ export type SchedulerStatus = {
   last_jobs_seen: number | null;
   last_error_count: number | null;
   last_errors: string[];
+  target_count?: number;
+  sources?: string[];
 };

@@ -102,7 +102,7 @@ def test_collection_service_expands_dotnet_and_java_search_families():
 
     service.collect(
         CollectionRequest(
-            search_term=".NET developer",
+            search_term=".Net,C#",
             location="United States",
             sites=["linkedin"],
         )
@@ -117,6 +117,9 @@ def test_collection_service_expands_dotnet_and_java_search_families():
 
     assert "Senior C# Developer" in jobspy.requests[0].search_term
     assert "Senior ASP.NET Core Developer" in jobspy.requests[0].search_term
+    assert "Dotnet Developer" in jobspy.requests[0].search_term
+    assert "Senior Backend .NET Developer" in jobspy.requests[0].search_term
+    assert "Azure .NET Developer" in jobspy.requests[0].search_term
     assert "Spring Boot Developer" in jobspy.requests[1].search_term
     assert "Java Solutions Architect" in jobspy.requests[1].search_term
 
@@ -168,6 +171,33 @@ def test_collection_service_uses_source_specific_company_queries():
     assert company_requests[0].search_term == "developer Amazon AWS H1B sponsorship visa"
     assert company_requests[1].search_term == 'developer "Amazon AWS" H1B sponsorship visa'
     assert company_requests[2].search_term == 'developer "Amazon AWS" jobs H1B sponsorship visa'
+
+
+def test_collection_service_can_use_h1b_company_target_set(monkeypatch):
+    session = make_session()
+    jobspy = FakeJobSpyCollector()
+    service = CollectionService(session, collector=jobspy)
+    seen = {}
+
+    def fake_select(limit, target_set="default"):
+        seen["limit"] = limit
+        seen["target_set"] = target_set
+        return [{"rank": 1, "company": "Oracle America, Inc.", "sponsor_status": "Strong"}]
+
+    monkeypatch.setattr("api.services.select_company_targets", fake_select)
+
+    service.collect(
+        CollectionRequest(
+            search_term=".Net,C#",
+            sites=["linkedin"],
+            use_company_targets=True,
+            company_target_limit=1096,
+            metadata={"company_target_set": "h1b"},
+        )
+    )
+
+    assert seen == {"limit": 1096, "target_set": "h1b"}
+    assert jobspy.requests[1].search_term.endswith("Oracle America Inc.")
 
 
 def test_collection_service_routes_career_page_source():

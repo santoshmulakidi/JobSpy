@@ -184,16 +184,21 @@ class CollectionService:
             return " OR ".join(
                 [
                     value,
+                    "Dotnet Developer",
                     "Senior .NET Developer",
+                    "Senior Backend .NET Developer",
                     "Senior Full Stack .NET Developer",
                     "Senior C# Developer",
-                    "Senior Azure Developer",
+                    "C# Developer",
+                    "C#/.NET Core Developer",
+                    "Azure .NET Developer",
                     "Senior Software Engineer .NET",
+                    "Senior Software Engineer C#",
+                    ".NET Backend Engineer",
                     ".NET Cloud Developer",
                     "Senior ASP.NET Core Developer",
                     "Senior Backend Developer C#",
                     ".NET Solutions Architect",
-                    "Azure Application Architect",
                     "Principal .NET Developer",
                     "Lead .NET Developer",
                 ]
@@ -252,7 +257,10 @@ class CollectionService:
                 errors.extend([f"{site}: {error}" for error in result.errors])
 
             if request.use_company_targets:
-                targets = select_company_targets(request.company_target_limit)
+                targets = select_company_targets(
+                    request.company_target_limit,
+                    request.metadata.get("company_target_set", "default"),
+                )
                 if request.visa_friendly_only:
                     targets = [target for target in targets if self._is_visa_friendly_target(target)]
                 results_per_company = max(1, min(10, request.results_wanted // max(len(targets), 1)))
