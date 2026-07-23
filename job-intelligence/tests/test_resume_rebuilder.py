@@ -7,7 +7,7 @@ from docx import Document
 from fastapi.testclient import TestClient
 
 from ai.resume_docx import build_resume_docx
-from ai.resume_rebuilder import build_resume_prompt, rebuild_resume
+from ai.resume_rebuilder import _unsupported_numeric_claims, build_resume_prompt, rebuild_resume
 from api.main import app
 from storage.config import Settings
 
@@ -74,6 +74,20 @@ def test_resume_prompt_includes_recruiter_authentic_humanizer_rules():
     assert "Do not fabricate metrics, employers, dates, tools, or project names" in prompt
     assert "Keep ATS keywords, but make them read naturally" in prompt
     assert "Content quality recruiter self-check" in prompt
+    assert "PRIMARY EDITING PRIORITY" in prompt
+    assert "Use the Run 2 approach first" in prompt
+    assert 'canonical names such as ".NET", "C#", and "Microsoft Azure"' in prompt
+    assert "EVIDENCE GATE" in prompt
+    assert "Base Resume is the sole source of truth" in prompt
+    assert "likely background" not in prompt
+    assert "standard technologies for this role" not in prompt
+
+
+def test_numeric_guard_rejects_unsupported_claims():
+    assert _unsupported_numeric_claims(
+        base_resume=BASE_RESUME,
+        rebuilt_resume=BASE_RESUME + "\nReduced latency by 40%.",
+    ) == ["40%"]
 
 
 def test_rebuild_resume_uses_openrouter_first(monkeypatch):
@@ -145,7 +159,7 @@ def test_rebuild_resume_falls_back_to_nvidia_when_openrouter_fails(monkeypatch):
     )
 
     assert result.provider == "nvidia"
-    assert result.rebuilt_resume.startswith("NVIDIA rebuilt resume.")
+    assert result.rebuilt_resume.startswith("Santosh Mulakidi\nSenior .NET Developer")
     assert "TECHNICAL SKILLS" in result.rebuilt_resume
     assert "PROFESSIONAL EXPERIENCE" in result.rebuilt_resume
     assert calls == [
