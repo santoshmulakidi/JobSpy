@@ -10,9 +10,10 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 
-_BLUE        = RGBColor(0x00, 0x70, 0xC0)
-_BODY        = RGBColor(0x1F, 0x1F, 0x1F)
-_GRAY        = RGBColor(0x77, 0x77, 0x77)
+_BLUE        = RGBColor(0x2E, 0x5F, 0xA3)
+_NAVY        = RGBColor(0x1F, 0x38, 0x64)
+_BODY        = RGBColor(0x1A, 0x1A, 0x1A)
+_GRAY        = RGBColor(0x59, 0x59, 0x59)
 _HEADER_GRAY = RGBColor(0x59, 0x59, 0x59)
 
 _SECTION_WORDS = (
@@ -64,8 +65,8 @@ def _define_styles(doc: Document) -> None:
     """Create all named resume paragraph/character/table styles."""
 
     def _ex(s):
-        """Set line spacing to exactly 12 pt."""
-        s.paragraph_format.line_spacing      = Pt(12)
+        """Set compact resume line spacing."""
+        s.paragraph_format.line_spacing      = Pt(10.8)
         s.paragraph_format.line_spacing_rule = WD_LINE_SPACING.EXACTLY
 
     def _pf(s):
@@ -78,68 +79,78 @@ def _define_styles(doc: Document) -> None:
 
     # 1. Resume Name
     s = _get_or_add_style(doc, "Resume Name")
-    _f(s).name = "Arial"; _f(s).size = Pt(14); _f(s).bold = True
+    _f(s).name = "Calibri"; _f(s).size = Pt(24); _f(s).bold = True
+    _f(s).color.rgb = _NAVY
+    _pf(s).alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _pf(s).space_before = Pt(0); _pf(s).space_after = Pt(1.8)
+    _pf(s).line_spacing = Pt(26)
+
+    # 2. Resume Subtitle
+    s = _get_or_add_style(doc, "Resume Subtitle")
+    _f(s).name = "Calibri"; _f(s).size = Pt(11); _f(s).bold = True
     _f(s).color.rgb = _BLUE
     _pf(s).alignment = WD_ALIGN_PARAGRAPH.CENTER
-    _pf(s).space_before = Pt(0); _pf(s).space_after = Pt(2)
-    _pf(s).line_spacing = Pt(16)
+    _pf(s).space_before = Pt(0); _pf(s).space_after = Pt(1.5)
+    _ex(s)
 
     # 2. Resume Contact
     s = _get_or_add_style(doc, "Resume Contact")
-    _f(s).name = "Arial"; _f(s).size = Pt(9.5)
+    _f(s).name = "Calibri"; _f(s).size = Pt(9)
     _f(s).color.rgb = _HEADER_GRAY
     _pf(s).alignment = WD_ALIGN_PARAGRAPH.CENTER
-    _pf(s).space_before = Pt(0); _pf(s).space_after = Pt(6)
+    _pf(s).space_before = Pt(0); _pf(s).space_after = Pt(4)
     _ex(s)
 
     # 3. Resume Section Heading — blue text, full-width bottom border line
     s = _get_or_add_style(doc, "Resume Section Heading")
-    _f(s).name = "Arial"; _f(s).size = Pt(11.5); _f(s).bold = True
-    _f(s).color.rgb = _BLUE; _f(s).underline = False
-    _pf(s).space_before = Pt(4); _pf(s).space_after = Pt(1.5)
+    _f(s).name = "Calibri"; _f(s).size = Pt(10.5); _f(s).bold = True
+    _f(s).color.rgb = _NAVY; _f(s).underline = False
+    _pf(s).space_before = Pt(9); _pf(s).space_after = Pt(3)
     _ex(s)
-    _set_style_bottom_border(s, color="0070C0", sz=6)
+    _set_style_bottom_border(s, color="2E5FA3", sz=6)
 
     # 4. Resume Summary Body
     s = _get_or_add_style(doc, "Resume Summary Body")
-    _f(s).name = "Arial"; _f(s).size = Pt(10); _f(s).bold = False
+    _f(s).name = "Calibri"; _f(s).size = Pt(9.5); _f(s).bold = False
     _f(s).color.rgb = _BODY
-    _pf(s).space_before = Pt(0); _pf(s).space_after = Pt(1.5)
+    _pf(s).space_before = Pt(3); _pf(s).space_after = Pt(4.5)
     _ex(s)
 
     # 5. Resume Job Title (runs carry mixed colors; style owns spacing only)
     s = _get_or_add_style(doc, "Resume Job Title")
-    _f(s).name = "Arial"; _f(s).size = Pt(11); _f(s).bold = True
-    _f(s).color.rgb = _BODY
-    _pf(s).space_before = Pt(7.5); _pf(s).space_after = Pt(0.6)
+    _f(s).name = "Calibri"; _f(s).size = Pt(10.5); _f(s).bold = True
+    _f(s).color.rgb = _NAVY
+    _pf(s).space_before = Pt(8); _pf(s).space_after = Pt(1.2)
+    _pf(s).keep_with_next = True
     _ex(s)
 
     # 7. Resume Date
     s = _get_or_add_style(doc, "Resume Date")
-    _f(s).name = "Arial"; _f(s).size = Pt(9.5); _f(s).italic = True
+    _f(s).name = "Calibri"; _f(s).size = Pt(8.5); _f(s).italic = True
     _f(s).color.rgb = _GRAY
     _pf(s).space_before = Pt(0); _pf(s).space_after = Pt(1.6)
+    _pf(s).keep_with_next = True
     _ex(s)
 
     # 8. Resume Project
     s = _get_or_add_style(doc, "Resume Project")
-    _f(s).name = "Arial"; _f(s).size = Pt(9); _f(s).italic = True
+    _f(s).name = "Calibri"; _f(s).size = Pt(9); _f(s).italic = True
     _f(s).color.rgb = _GRAY
     _pf(s).space_before = Pt(0); _pf(s).space_after = Pt(1.2)
     _ex(s)
 
     # 9. Resume Bullet
     s = _get_or_add_style(doc, "Resume Bullet")
-    _f(s).name = "Arial"; _f(s).size = Pt(10)
+    _f(s).name = "Calibri"; _f(s).size = Pt(9.5)
     _f(s).color.rgb = _BODY
     _pf(s).left_indent       = Inches(0.19)
     _pf(s).first_line_indent = Inches(-0.14)
-    _pf(s).space_before = Pt(1.1); _pf(s).space_after = Pt(1.1)
+    _pf(s).space_before = Pt(0.8); _pf(s).space_after = Pt(0.8)
     _ex(s)
 
     # 10. Resume Environment
     s = _get_or_add_style(doc, "Resume Environment")
-    _f(s).name = "Arial"; _f(s).size = Pt(10); _f(s).italic = True
+    _f(s).name = "Calibri"; _f(s).size = Pt(9); _f(s).italic = True
     _f(s).color.rgb = _GRAY
     _pf(s).space_before = Pt(1.4); _pf(s).space_after = Pt(1.75)
     _ex(s)
@@ -148,18 +159,18 @@ def _define_styles(doc: Document) -> None:
 
     # Resume Company — applied to company-name runs inside job title lines
     cs = _get_or_add_style(doc, "Resume Company", WD_STYLE_TYPE.CHARACTER)
-    _f(cs).name = "Arial"; _f(cs).size = Pt(11); _f(cs).bold = True
+    _f(cs).name = "Calibri"; _f(cs).size = Pt(9.5); _f(cs).bold = True
     _f(cs).color.rgb = _BLUE
 
     # ── Table styles ──────────────────────────────────────────────────────────
 
     # Resume Skills Table
     ts = _get_or_add_style(doc, "Resume Skills Table", WD_STYLE_TYPE.TABLE)
-    _f(ts).name = "Arial"; _f(ts).size = Pt(10); _f(ts).color.rgb = _BODY
+    _f(ts).name = "Calibri"; _f(ts).size = Pt(8.5); _f(ts).color.rgb = _BODY
 
     # Resume Core Strengths Table
     ts = _get_or_add_style(doc, "Resume Core Strengths Table", WD_STYLE_TYPE.TABLE)
-    _f(ts).name = "Arial"; _f(ts).size = Pt(10); _f(ts).color.rgb = _BODY
+    _f(ts).name = "Calibri"; _f(ts).size = Pt(8.5); _f(ts).color.rgb = _BODY
 
 
 # ─── Real Word bullet numbering ───────────────────────────────────────────────
@@ -192,8 +203,9 @@ def _setup_bullet_numid(doc: Document) -> int:
               '<w:lvlJc w:val="left"/>'
               '<w:pPr><w:ind w:left="274" w:hanging="202"/></w:pPr>'
               '<w:rPr>'
-                '<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>'
-                '<w:sz w:val="20"/><w:szCs w:val="20"/>'
+                '<w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/>'
+                '<w:color w:val="2E5FA3"/>'
+                '<w:sz w:val="19"/><w:szCs w:val="19"/>'
               '</w:rPr>'
             '</w:lvl>'
           '</w:abstractNum>'
@@ -240,7 +252,7 @@ def _run(paragraph, text: str, *, bold: bool | None = None, italic: bool | None 
          color: RGBColor | None = None) -> None:
     """Add a formatted run; unset attrs inherit from paragraph style."""
     r = paragraph.add_run(text)
-    r.font.name = "Arial"
+    r.font.name = "Calibri"
     if size is not None:
         r.font.size = Pt(size)
     if color is not None:
@@ -342,36 +354,33 @@ def _set_table_no_borders(table):
 
 
 def _set_table_skills_style(table):
-    """No outer borders, thin gray horizontal row dividers only, 6.5 in wide."""
+    """Publix-style compact blue table spanning the 7.5-inch text area."""
     tblPr = table._tbl.tblPr
     tbl_w = tblPr.find(qn("w:tblW"))
     if tbl_w is None:
         tbl_w = OxmlElement("w:tblW")
         tblPr.insert(0, tbl_w)
-    _set_xml_attr(tbl_w, "w", "9360")
+    _set_xml_attr(tbl_w, "w", "10800")
     _set_xml_attr(tbl_w, "type", "dxa")
 
     borders = tblPr.find(qn("w:tblBorders"))
     if borders is not None:
         tblPr.remove(borders)
     borders = OxmlElement("w:tblBorders")
-    for edge in ("top", "left", "bottom", "right", "insideV"):
+    for edge in ("top", "left", "bottom", "right", "insideV", "insideH"):
         el = OxmlElement(f"w:{edge}")
-        el.set(qn("w:val"), "none")
+        el.set(qn("w:val"), "single")
+        el.set(qn("w:sz"), "4")
+        el.set(qn("w:space"), "0")
+        el.set(qn("w:color"), "B4C7E7")
         borders.append(el)
-    insideH = OxmlElement("w:insideH")
-    insideH.set(qn("w:val"), "single")
-    insideH.set(qn("w:sz"), "4")
-    insideH.set(qn("w:space"), "0")
-    insideH.set(qn("w:color"), "D9D9D9")
-    borders.append(insideH)
     tblPr.append(borders)
 
     cell_mar = tblPr.find(qn("w:tblCellMar"))
     if cell_mar is None:
         cell_mar = OxmlElement("w:tblCellMar")
         tblPr.append(cell_mar)
-    for side, val in (("top", "40"), ("bottom", "40"), ("left", "80"), ("right", "80")):
+    for side, val in (("top", "45"), ("bottom", "45"), ("left", "100"), ("right", "100")):
         margin = cell_mar.find(qn(f"w:{side}"))
         if margin is None:
             margin = OxmlElement(f"w:{side}")
@@ -411,18 +420,18 @@ def _add_technical_skills_table(doc: Document):
     for layout in tbl_pr.findall(qn("w:tblLayout")):
         tbl_pr.remove(layout)
     _set_table_skills_style(table)
-    # Col widths: 1.32 in = 1901 twips, 5.18 in = 7459 twips
-    for row, (label, value) in zip(table.rows, _TECHNICAL_SKILL_ROWS):
-        _set_cell_width(row.cells[0], 1901)
-        _set_cell_width(row.cells[1], 7459)
-        # Light gray background on label column
-        _set_cell_shading(row.cells[0], "F2F2F2")
+    # Col widths mirror the retained Publix reference: 1.806 in / 5.694 in.
+    for row_index, (row, (label, value)) in enumerate(zip(table.rows, _TECHNICAL_SKILL_ROWS)):
+        _set_cell_width(row.cells[0], 2600)
+        _set_cell_width(row.cells[1], 8200)
+        _set_cell_shading(row.cells[0], "D6E4F7" if row_index % 2 == 0 else "E8F0FB")
+        _set_cell_shading(row.cells[1], "FFFFFF" if row_index % 2 == 0 else "F9FBFF")
         for cell, text, bold in ((row.cells[0], label, True), (row.cells[1], value, False)):
             p = cell.paragraphs[0]
-            p.paragraph_format.space_before = Pt(2)
-            p.paragraph_format.space_after  = Pt(2)
-            p.paragraph_format.line_spacing = Pt(12)
-            _run(p, text, bold=bold, size=10, color=_BODY)
+            p.paragraph_format.space_before = Pt(1.2)
+            p.paragraph_format.space_after  = Pt(1.2)
+            p.paragraph_format.line_spacing = Pt(10.2)
+            _run(p, text, bold=bold, size=8.5, color=_NAVY if bold else _BODY)
 
 
 def _add_strengths_table(doc: Document, dot_lines: list[str]) -> None:
@@ -503,6 +512,35 @@ def _normalized_heading(line: str) -> str:
     return line.strip().rstrip(":").strip().lower()
 
 
+_EMAIL_RE = re.compile(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}")
+
+
+def _clean_candidate_name(text: str) -> str:
+    text = _EMAIL_RE.sub("", text)
+    text = re.sub(r"https?://\S+|www\.\S+|\b\d{3}[-.) ]+\d{3}[-. ]+\d{4}\b", "", text)
+    return re.sub(r"\s*[|•]\s*|\s{2,}", " ", text).strip(" ,|-•")
+
+
+def _format_contact_line(text: str, extra_email: str | None = None) -> str:
+    emails = _EMAIL_RE.findall(text)
+    if extra_email and extra_email.lower() not in {email.lower() for email in emails}:
+        emails.insert(0, extra_email)
+    phone_match = re.search(r"\b\d{3}[-.) ]+\d{3}[-. ]+\d{4}\b", text)
+    url_match = re.search(r"(?:https?://)?(?:www\.)?linkedin\.com/\S+", text, re.I)
+    remainder = _EMAIL_RE.sub("", text)
+    if phone_match:
+        remainder = remainder.replace(phone_match.group(0), "")
+    if url_match:
+        remainder = remainder.replace(url_match.group(0), "")
+    remainder = re.sub(r"\s*[|•]\s*|\s{2,}", " ", remainder).strip(" ,|-•")
+    pieces = [remainder, *emails]
+    if phone_match:
+        pieces.append(phone_match.group(0))
+    if url_match:
+        pieces.append(re.sub(r"^https?://(?:www\.)?", "", url_match.group(0), flags=re.I))
+    return " • ".join(piece for piece in pieces if piece)
+
+
 def _looks_like_role_title(line: str) -> bool:
     if "|" in line:
         return False
@@ -554,6 +592,10 @@ def _prepare_resume_lines(resume_text: str) -> list[str]:
             in_experience = True
             in_responsibilities = False
             i += 1; continue
+
+        if _is_section_heading(line):
+            in_experience = False
+            in_responsibilities = False
 
         if in_experience and line.lower().startswith("project overview:"):
             i += 1; continue
@@ -614,19 +656,19 @@ def build_resume_docx(resume_text: str, *, candidate_name: str | None = None) ->
 
     # Base Normal style
     normal = doc.styles["Normal"]
-    normal.font.name = "Arial"
-    normal.font.size = Pt(10)
+    normal.font.name = "Calibri"
+    normal.font.size = Pt(9.5)
     normal.font.bold = False
     normal.font.color.rgb = _BODY
     normal.paragraph_format.space_after = Pt(0)
-    normal.paragraph_format.line_spacing = Pt(12)
+    normal.paragraph_format.line_spacing = Pt(10.8)
 
     # Page margins
     for section in doc.sections:
-        section.top_margin    = Inches(0.472)
-        section.bottom_margin = Inches(0.472)
-        section.left_margin   = Inches(0.625)
-        section.right_margin  = Inches(0.625)
+        section.top_margin    = Inches(0.5)
+        section.bottom_margin = Inches(0.5)
+        section.left_margin   = Inches(0.5)
+        section.right_margin  = Inches(0.5)
 
     # Create all named styles
     _define_styles(doc)
@@ -636,12 +678,14 @@ def build_resume_docx(resume_text: str, *, candidate_name: str | None = None) ->
 
     lines = _prepare_resume_lines(resume_text)
     first_content = next((l.strip() for l in lines if l.strip()), "")
-    name_line = (candidate_name or first_content).strip()
+    name_line = _clean_candidate_name(candidate_name or first_content)
 
     consumed_name    = False
     header_zone      = True
     in_experience    = False
     in_education     = False
+    skip_core_strengths = False
+    pending_email: str | None = None
     pending_dots: list[str] = []
 
     def _flush_dots():
@@ -654,6 +698,9 @@ def build_resume_docx(resume_text: str, *, candidate_name: str | None = None) ->
         if not line.strip():
             continue
 
+        if skip_core_strengths and not _is_section_heading(line):
+            continue
+
         # Buffer ·-delimited strength lines for the table flush
         if "   ·   " in line or " · " in line:
             pending_dots.append(line.strip())
@@ -662,9 +709,11 @@ def build_resume_docx(resume_text: str, *, candidate_name: str | None = None) ->
         _flush_dots()
 
         # ── Candidate name ───────────────────────────────────────────────────
-        if not consumed_name and line.strip() == name_line.strip():
+        if not consumed_name:
+            found_email = _EMAIL_RE.search(line)
+            pending_email = found_email.group(0) if found_email else None
             p = _styled_paragraph(doc, "Resume Name")
-            _run(p, line.strip().upper())
+            _run(p, name_line.upper())
             consumed_name = True
             continue
 
@@ -672,6 +721,9 @@ def build_resume_docx(resume_text: str, *, candidate_name: str | None = None) ->
         if _is_section_heading(line):
             header_zone   = False
             heading       = line.strip().rstrip(":").strip().upper()
+            skip_core_strengths = heading == "CORE STRENGTHS"
+            if skip_core_strengths:
+                continue
             in_experience = heading == "PROFESSIONAL EXPERIENCE"
             in_education  = heading == "EDUCATION"
             p = _styled_paragraph(doc, "Resume Section Heading")
@@ -687,15 +739,18 @@ def build_resume_docx(resume_text: str, *, candidate_name: str | None = None) ->
                 or "linkedin" in line.lower()
                 or bool(re.search(r"\d{3}[-.) ]+\d{3}", line))
             )
-            if not is_contact and "|" in line and any(
+            if not is_contact and any(
                 w in line.lower() for w in (
                     "engineer", "developer", "architect", "systems",
                     "cloud", "backend", "principal", "lead", "manager",
                 )
             ):
-                continue  # skip subtitle/tagline
+                p = _styled_paragraph(doc, "Resume Subtitle")
+                _run(p, re.sub(r"\s*\|\s*", " • ", line.strip()), bold=True, color=_BLUE)
+                continue
             p = _styled_paragraph(doc, "Resume Contact")
-            _run(p, line.strip())
+            _run(p, _format_contact_line(line.strip(), pending_email))
+            pending_email = None
             continue
 
         # ── Experience lines ─────────────────────────────────────────────────

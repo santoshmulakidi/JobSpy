@@ -146,6 +146,15 @@ def rebuild_resume(
             text = _chat_completion(provider=p, messages=messages, settings=settings)
             extracted = _extract_tailored_resume(text)
             repaired = _repair_incomplete_resume(rebuilt_resume=extracted, base_resume=base_resume)
+            unsupported_numbers = _unsupported_numeric_claims(
+                base_resume=base_resume,
+                rebuilt_resume=repaired,
+            )
+            if unsupported_numbers:
+                raise ValueError(
+                    "factual integrity check failed: generated unsupported numeric claims "
+                    + ", ".join(unsupported_numbers)
+                )
             label = p["name"]
             if p.get("key_index") and len(settings.gemini_api_keys) > 1:
                 label = f"{p['name']} (key {p['key_index']})"
@@ -197,21 +206,7 @@ def build_resume_prompt(
         else "Include every employer and role from the base resume. Do not drop any."
     )
 
-    # Pre-compute missing JD keywords so the model injects them on the first pass
-    missing_keywords = _extract_jd_keywords_to_inject(base_resume, job_description)
-    if missing_keywords:
-        keyword_inject_section = (
-            "MANDATORY KEYWORD INJECTION — these JD keywords are missing from the base resume but ARE "
-            "present in the candidate's likely background (standard technologies for this role). "
-            "You MUST weave every one of these into the rebuilt resume wherever truthfully applicable "
-            "(TECHNICAL SKILLS, role bullets, or Environment lines). Do NOT add any that the candidate "
-            "has clearly never used:\n"
-            + "\n".join(f"  • {kw}" for kw in missing_keywords)
-        )
-    else:
-        keyword_inject_section = ""
-
-    return f"""Rebuild this resume to score 85%+ on ATS keyword matching for the target job. Preserve all facts exactly — no invented employers, dates, metrics, tools, or credentials.
+    return f"""Rebuild this resume for the target job using only supported evidence. Preserve all facts exactly — no invented employers, dates, metrics, tools, credentials, titles, responsibilities, or results.
 
 Profile: {profile_name or "Not specified"}
 Target title/company: {target_title or "Not specified"}
@@ -223,7 +218,19 @@ Base Resume:
 
 {_jd_section(job_description)}
 
-{keyword_inject_section}
+PRIMARY EDITING PRIORITY — when both a Base Resume and Job Description are provided:
+1. Use the Run 2 approach first: rewrite the resume around truthful, exact Job Description keywords and phrases.
+2. Strengthen weak or repetitive bullet openers with varied, specific action verbs and remove filler or passive wording.
+3. Keep matched keywords natural and recruiter-ready; use canonical names such as ".NET", "C#", and "Microsoft Azure".
+4. Preserve every supported fact and role. Never add a Job Description requirement to the resume unless the Base Resume supports it; place unsupported requirements in KEYWORD GAPS.
+
+EVIDENCE GATE — apply this before writing:
+- The Base Resume is the sole source of truth for candidate facts.
+- A Job Description keyword may enter REVISED RESUME only when the Base Resume contains the exact term or an unambiguous equivalent.
+- The target title and common experience for similar roles are intent, not evidence.
+- Never infer a tool, metric, responsibility, certification, employer, date, degree, or project because it is typical for the role.
+- Put unsupported Job Description requirements in KEYWORD GAPS instead of the resume.
+- Before returning, compare every number, employer, date, degree, certification, and named technology against the Base Resume. Remove anything unsupported.
 
 ---
 
@@ -263,16 +270,15 @@ ATS rules for this section:
 - Every skill, tool, and methodology from the JD that exists in the candidate background must appear
 - Preserve exact-match base resume keywords that already help the score. Do not replace exact JD phrases with only acronyms or synonyms.
 - Keep the Technical Skills section broad enough to preserve truthful technologies from the base resume. Do not shrink it to only a few skills.
-- Also weave in these common high-value JD nouns wherever truthful: requirements, quality, technical, engineering, delivery, tools, problem-solving, documentation, lifecycle, modern, design, architecture. Use the exact JD spelling.
 - ALWAYS carry the candidate EDUCATION section forward exactly as written in the base resume (degree, field of study, university). Never move the candidate existing degree to the KEYWORD GAPS section. If the base resume shows a Bachelor or Master, the revised resume must show it too.
 - Plain text only, no markdown, no asterisks, no bold, no bullet symbols like * or **
 - Varied action verbs: built, designed, reduced, automated, migrated, led, shipped, integrated
 - No em dashes. No AI vocabulary: leverage, utilize, spearhead, robust, seamless, pivotal, transformative
 
-ATS SCORE TARGET — reach 90%+:
+ATS ALIGNMENT:
 - Every skill, tool, methodology, and phrase from the JD that the candidate actually has must appear verbatim in the resume.
 - Mirror exact JD phrasing: if JD says "event-driven architecture", write "event-driven architecture", not just "event-driven".
-- Front-load the highest-frequency JD keywords in the TECHNICAL SKILLS section and again inside the two most recent role bullets.
+- Place supported, high-frequency JD keywords prominently without changing their factual context.
 - Do not replace multi-word JD phrases with only acronyms. Keep both: "Continuous Integration/Continuous Delivery (CI/CD)".
 
 Humanize / Recruiter Authentic Rewrite rules:
@@ -302,88 +308,6 @@ CHANGE SUMMARY
 KEYWORD GAPS
 Plain list of JD keywords and phrases NOT in the candidate background that could not be added. Only list true gaps (skills or tools the candidate has never used). Do NOT list anything already present in the base resume, and never list the candidate degree, education, or years of experience here. Flag [EXACT PHRASE] if the JD uses a specific multi-word term that must appear verbatim when the candidate adds it later.
 """
-
-
-def _extract_jd_keywords_to_inject(base_resume: str, job_description: str) -> list[str]:
-    """Return JD keywords that exist in the resume candidate pool but are absent from the base resume text.
-
-    These are handed to the model as a MUST-INCLUDE list so the first rebuild hits 85%+ ATS
-    without needing multiple refinement passes.
-    """
-    # Same tech list the frontend uses — keep in sync conceptually
-    KNOWN_SKILLS = [
-        # languages
-        "C#", "Java", "Python", "JavaScript", "TypeScript", "SQL", "T-SQL", "HTML", "CSS",
-        "HTML5", "CSS3", "VB.NET", "PowerShell", "Bash",
-        # .NET
-        "ASP.NET", "ASP.NET Core", "ASP.NET MVC", ".NET", ".NET Core", ".NET 6", ".NET 7", ".NET 8",
-        "Entity Framework", "LINQ", "ADO.NET", "WCF", "Web API", "Razor", "Blazor", "SignalR",
-        "Minimal API",
-        # frontend
-        "React", "Angular", "Vue", "Next.js", "Redux", "Webpack", "SASS", "Bootstrap",
-        "jQuery", "AJAX", "Tailwind",
-        # cloud / azure
-        "Azure", "AWS", "GCP", "Azure App Service", "Azure Functions", "Azure SQL", "Azure DevOps",
-        "Azure AD", "Azure Active Directory", "Azure Key Vault", "Azure Service Bus",
-        "Azure Event Grid", "Azure Monitor", "Azure Pipelines", "Azure Container",
-        "Azure Kubernetes", "ARM Templates", "Bicep", "APIM", "API Management",
-        "Application Insights",
-        # devops
-        "Docker", "Kubernetes", "Jenkins", "GitHub Actions", "CI/CD", "DevOps", "DevSecOps",
-        "Terraform", "Ansible", "Helm", "Git", "GitHub", "Bitbucket", "Azure Repos",
-        # security
-        "OAuth", "OAuth 2.0", "JWT", "OpenID Connect", "OWASP", "RBAC",
-        "Role-Based Access Control", "Azure AD B2C", "Zero Trust", "SSL", "TLS",
-        # databases
-        "SQL Server", "PostgreSQL", "MySQL", "Oracle", "MongoDB", "Redis", "SQLite",
-        "Cosmos DB", "Elasticsearch", "NoSQL",
-        # methodologies
-        "Agile", "Scrum", "Kanban", "SDLC", "TDD", "BDD", "Microservices", "RESTful",
-        "REST API", "SOAP", "gRPC", "Event-Driven Architecture", "Domain-Driven Design",
-        "SOLID", "Clean Architecture", "Design Patterns",
-        # tools
-        "Visual Studio", "VS Code", "JIRA", "Confluence", "Postman", "Swagger", "OpenAPI",
-        "SonarQube", "Serilog", "NUnit", "xUnit", "Moq", "Selenium", "Playwright",
-        # reporting
-        "Power BI", "SSRS", "SSIS", "Crystal Reports", "Tableau",
-        # general
-        "Software Development Life Cycle", "Continuous Integration", "Continuous Delivery",
-        "Continuous Deployment", "Infrastructure as Code", "Load Balancing",
-        "High Availability", "Disaster Recovery", "Unit Testing", "Integration Testing",
-        "Code Review", "Pair Programming", "Technical Documentation",
-        "Object-Oriented Programming", "Functional Programming",
-        "Event-Driven", "Message Queue", "RabbitMQ", "Apache Kafka",
-        "Spring Boot", "Hibernate", "Maven", "Gradle",
-        "Node.js", "Express", "FastAPI", "Flask", "Django",
-        "Microservice", "Serverless", "Cloud Native", "Multi-Tenant",
-        "On-Premises", "Hybrid Cloud", "Cross-Functional",
-    ]
-
-    jd_lower = job_description.lower()
-    resume_lower = base_resume.lower()
-
-    missing: list[str] = []
-    for skill in KNOWN_SKILLS:
-        skill_lower = skill.lower()
-        if skill_lower in jd_lower and skill_lower not in resume_lower:
-            missing.append(skill)
-
-    # Also extract quoted or capitalised multi-word phrases from JD not in resume
-    # e.g. "event-driven architecture", "distributed systems"
-    extra_phrases = re.findall(r'"([^"]{4,60})"', job_description)
-    for phrase in extra_phrases:
-        if phrase.lower() in jd_lower and phrase.lower() not in resume_lower:
-            missing.append(phrase)
-
-    # De-dup preserving order, cap at 30 to avoid overwhelming the model
-    seen: set[str] = set()
-    result: list[str] = []
-    for item in missing:
-        key = item.lower()
-        if key not in seen:
-            seen.add(key)
-            result.append(item)
-    return result[:30]
 
 
 def _jd_section(job_description: str) -> str:
@@ -664,6 +588,7 @@ def _list_base_employers(base_resume: str) -> list[str]:
 def _repair_incomplete_resume(*, rebuilt_resume: str, base_resume: str) -> str:
     """Restore required sections if a model returns a partial or collapsed resume."""
     header, sections = _split_resume_sections(rebuilt_resume)
+    base_header, _ = _split_resume_sections(base_resume)
     base_fallbacks = {
         "PROFESSIONAL SUMMARY": _extract_base_section(base_resume, "PROFESSIONAL SUMMARY"),
         "TECHNICAL SKILLS": _extract_base_section(base_resume, "TECHNICAL SKILLS"),
@@ -687,6 +612,11 @@ def _repair_incomplete_resume(*, rebuilt_resume: str, base_resume: str) -> str:
         if fallback:
             sections[heading] = fallback
 
+    # Keep the candidate's real name and contact details. Models commonly insert
+    # placeholder phone numbers when a source field is missing.
+    if base_header:
+        header = base_header
+
     # Safety net: if the model dropped employers (e.g. returned 1 of 7 jobs),
     # restore the full base experience so no work history is lost.
     base_exp = base_fallbacks.get("PROFESSIONAL EXPERIENCE", [])
@@ -708,6 +638,15 @@ def _repair_incomplete_resume(*, rebuilt_resume: str, base_resume: str) -> str:
 
     repaired = "\n".join(output).strip()
     return repaired or rebuilt_resume.strip()
+
+
+_NUMERIC_CLAIM_RE = re.compile(r"(?<![\w.])\d+(?:[.,]\d+)*(?:%|\+)?(?!\w)")
+
+
+def _unsupported_numeric_claims(*, base_resume: str, rebuilt_resume: str) -> list[str]:
+    """Return numeric claims introduced by the model but absent from the source resume."""
+    source_numbers = set(_NUMERIC_CLAIM_RE.findall(base_resume))
+    return sorted(set(_NUMERIC_CLAIM_RE.findall(rebuilt_resume)) - source_numbers)
 
 
 def _fallback_resume_prompt(prompt: str) -> str:
