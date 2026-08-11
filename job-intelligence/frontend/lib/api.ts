@@ -165,7 +165,7 @@ export async function rebuildResume(payload: {
   return request<ResumeRebuildResult>("/resume/rebuild", {
     method: "POST",
     body: JSON.stringify(payload),
-  }, 180_000); // 3 min — AI + fallback chain can be slow
+  }, 480_000); // 8 min: allows the explicit writer + reviewer + fallback workflow to finish
 }
 
 export async function exportResumeDocx(resumeText: string, filename = "resume"): Promise<{ blob: Blob; savedTo: string | null }> {
@@ -186,6 +186,7 @@ export async function exportResumeDocx(resumeText: string, filename = "resume"):
 
 export function resumeModelChoices(): ResumeModelChoice[] {
   return [
+    { provider: "omniroute", model: "resume-two-pass", label: "Best value (~$0.02): DeepSeek V4 Pro + Qwen review", tier: "Premium" },
     { provider: "gemini", model: "gemini-2.5-flash", label: "Gemini 2.5 Flash Free", tier: "Free / Low cost" },
     { provider: "gemini", model: "gemini-2.0-flash", label: "Free: Gemini 2.0 Flash", tier: "Free / Low cost" },
     { provider: "groq", model: "llama-4-maverick-17b-128e-instruct", label: "Free/fast: Groq Llama 4 Maverick", tier: "Free / Low cost" },

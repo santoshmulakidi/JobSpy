@@ -139,6 +139,15 @@ def rebuild_resume(
             ),
         })
 
+    if (provider or "").strip().lower() == "omniroute" and model == "resume-two-pass":
+        return _rebuild_resume_two_pass(
+            base_resume=base_resume,
+            job_description=job_description,
+            writer_messages=messages,
+            prompt=prompt,
+            settings=settings,
+        )
+
     providers = _provider_order(settings, selected_provider=provider, selected_model=model)
     provider_errors: list[str] = []
     for p in providers:
@@ -185,6 +194,124 @@ def rebuild_resume(
         warnings=provider_errors or ["Configure OpenRouter or NVIDIA API keys to generate a rebuilt resume."],
         prompt=prompt,
     )
+
+
+def _rebuild_resume_two_pass(
+    *,
+    base_resume: str,
+    job_description: str,
+    writer_messages: list[dict[str, str]],
+    prompt: str,
+    settings: Settings,
+) -> ResumeRebuildResult:
+    writer = _omniroute_provider(settings, settings.resume_writer_model)
+    try:
+        writer_text = _chat_completion(provider=writer, messages=writer_messages, settings=settings)
+        writer_resume = _validate_generated_resume(writer_text, base_resume=base_resume)
+    except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
+        return ResumeRebuildResult(
+            provider="prompt_only",
+            model=None,
+            rebuilt_resume=_fallback_resume_prompt(prompt),
+            change_summary=["The DeepSeek writer did not complete, so no AI resume was accepted."],
+            warnings=[f"omniroute writer ({settings.resume_writer_model}): {exc}"],
+            prompt=prompt,
+        )
+
+    reviewer_messages = _build_review_messages(
+        base_resume=base_resume,
+        job_description=job_description,
+        writer_output=writer_text,
+    )
+    errors: list[str] = []
+    reviewer_models = list(dict.fromkeys([
+        settings.resume_reviewer_model,
+        settings.resume_reviewer_fallback_model,
+    ]))
+    for reviewer_model in reviewer_models:
+        reviewer = _omniroute_provider(settings, reviewer_model)
+        try:
+            reviewed_text = _chat_completion(
+                provider=reviewer,
+                messages=reviewer_messages,
+                settings=settings,
+            )
+            reviewed_resume = _validate_generated_resume(reviewed_text, base_resume=base_resume)
+            return ResumeRebuildResult(
+                provider="omniroute two-pass",
+                model=f"{settings.resume_writer_model} -> {reviewer_model}",
+                rebuilt_resume=reviewed_resume,
+                change_summary=_extract_section(reviewed_text, "Change Summary"),
+                warnings=_extract_section(reviewed_text, "Warnings") + errors,
+                prompt=prompt,
+            )
+        except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
+            errors.append(f"omniroute reviewer ({reviewer_model}): {exc}")
+
+    return ResumeRebuildResult(
+        provider="omniroute writer only",
+        model=settings.resume_writer_model,
+        rebuilt_resume=writer_resume,
+        change_summary=_extract_section(writer_text, "Change Summary"),
+        warnings=errors + ["Both review models failed; returning the validated DeepSeek draft."],
+        prompt=prompt,
+    )
+
+
+def _omniroute_provider(settings: Settings, model: str) -> dict[str, str]:
+    return {
+        "name": "omniroute",
+        "base_url": settings.omniroute_base_url.rstrip("/"),
+        "api_key": settings.omniroute_api_key or "",
+        "model": model,
+    }
+
+
+def _build_review_messages(
+    *,
+    base_resume: str,
+    job_description: str,
+    writer_output: str,
+) -> list[dict[str, str]]:
+    return [
+        {
+            "role": "system",
+            "content": (
+                "You are the final resume quality reviewer. Treat the base resume as the only source of truth. "
+                "Audit truthfulness, exact job-description keywords, repetition, grammar, ATS formatting, and completeness. "
+                "Remove or correct every unsupported claim, number, technology, employer, date, degree, certification, "
+                "or responsibility. Do not invent missing information. Return the complete corrected result under "
+                "REVISED RESUME, followed by CHANGE SUMMARY and KEYWORD GAPS. Output plain text only."
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                "BASE RESUME (sole source of truth):\n"
+                f"{base_resume.strip()}\n\n"
+                "JOB DESCRIPTION:\n"
+                f"{job_description.strip()}\n\n"
+                "WRITER DRAFT TO AUDIT AND CORRECT:\n"
+                f"{writer_output.strip()}\n\n"
+                "Return the entire corrected resume, not comments alone. Preserve every truthful role and section."
+            ),
+        },
+    ]
+
+
+def _validate_generated_resume(text: str, *, base_resume: str) -> str:
+    extracted = _extract_tailored_resume(text)
+    repaired = _repair_incomplete_resume(rebuilt_resume=extracted, base_resume=base_resume)
+    unsupported_numbers = _unsupported_numeric_claims(
+        base_resume=base_resume,
+        rebuilt_resume=repaired,
+    )
+    if unsupported_numbers:
+        raise ValueError(
+            "factual integrity check failed: generated unsupported numeric claims "
+            + ", ".join(unsupported_numbers)
+        )
+    return repaired
 
 
 def build_resume_prompt(
@@ -337,13 +464,14 @@ def _provider_order(
     else:
         preferred = default_order
     for name in preferred:
+        model_override = selected_model if selected_provider and name == selected_provider.strip().lower() else None
         if name == "openrouter" and settings.openrouter_api_key:
             providers.append(
                 {
                     "name": "openrouter",
                     "base_url": settings.openrouter_base_url.rstrip("/"),
                     "api_key": settings.openrouter_api_key,
-                    "model": selected_model or settings.openrouter_model,
+                    "model": model_override or settings.openrouter_model,
                 }
             )
         elif name == "nvidia" and settings.nvidia_api_key:
@@ -352,7 +480,7 @@ def _provider_order(
                     "name": "nvidia",
                     "base_url": settings.nvidia_base_url.rstrip("/"),
                     "api_key": settings.nvidia_api_key,
-                    "model": selected_model or settings.nvidia_model,
+                    "model": model_override or settings.nvidia_model,
                 }
             )
         elif name == "groq" and settings.groq_api_key:
@@ -361,7 +489,7 @@ def _provider_order(
                     "name": "groq",
                     "base_url": settings.groq_base_url.rstrip("/"),
                     "api_key": settings.groq_api_key,
-                    "model": selected_model or settings.groq_model,
+                    "model": model_override or settings.groq_model,
                 }
             )
         elif name == "gemini":
@@ -371,7 +499,7 @@ def _provider_order(
                         "name": "gemini",
                         "base_url": settings.gemini_base_url.rstrip("/"),
                         "api_key": key,
-                        "model": selected_model or settings.gemini_model,
+                        "model": model_override or settings.gemini_model,
                         "key_index": str(idx + 1),
                     }
                 )

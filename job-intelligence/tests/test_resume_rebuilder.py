@@ -40,6 +40,8 @@ CI/CD, and React experience. The role requires modernizing enterprise systems.
 """
 
 AI_ENV_KEYS = [
+    "JOB_INTELLIGENCE_OMNIROUTE_API_KEY",
+    "OMNIROUTE_API_KEY",
     "JOB_INTELLIGENCE_OPENROUTER_API_KEY",
     "OPENROUTER_API_KEY",
     "JOB_INTELLIGENCE_NVIDIA_API_KEY",
@@ -58,6 +60,96 @@ def clear_ai_env(monkeypatch):
 
 def make_test_settings(**kwargs):
     return Settings(_env_file=None, **kwargs)
+
+
+def _ai_response(content: str) -> dict:
+    return {"choices": [{"message": {"content": content}}]}
+
+
+def test_two_pass_resume_uses_deepseek_writer_then_qwen_reviewer(monkeypatch):
+    clear_ai_env(monkeypatch)
+    calls = []
+    request = httpx.Request("POST", "http://omniroute.test/v1/chat/completions")
+    writer_draft = "REVISED RESUME\nWriter draft with ASP.NET Core and Azure.\n\nCHANGE SUMMARY\n- Tailored keywords.\n\nKEYWORD GAPS\nCI/CD"
+    reviewed_resume = "REVISED RESUME\nReviewed final resume with ASP.NET Core, Azure, and React.\n\nCHANGE SUMMARY\n- Verified facts and improved keywords.\n\nKEYWORD GAPS\nCI/CD"
+
+    def fake_post(url, **kwargs):
+        calls.append((url, kwargs))
+        content = writer_draft if len(calls) == 1 else reviewed_resume
+        return httpx.Response(200, request=request, json=_ai_response(content))
+
+    monkeypatch.setattr("ai.resume_rebuilder.httpx.post", fake_post)
+
+    result = rebuild_resume(
+        base_resume=BASE_RESUME,
+        job_description=JOB_DESCRIPTION,
+        profile_name=".NET Developer",
+        target_title="Senior .NET Developer",
+        provider="omniroute",
+        model="resume-two-pass",
+        settings=make_test_settings(
+            omniroute_api_key="omni-key",
+            omniroute_base_url="http://omniroute.test/v1",
+            resume_writer_model="deepseek/deepseek-v4-pro",
+            resume_reviewer_model="alibaba/qwen3.7-plus",
+            resume_reviewer_fallback_model="kimi/kimi-k2.5",
+        ),
+    )
+
+    assert [call[1]["json"]["model"] for call in calls] == [
+        "deepseek/deepseek-v4-pro",
+        "alibaba/qwen3.7-plus",
+    ]
+    reviewer_prompt = calls[1][1]["json"]["messages"][-1]["content"]
+    assert writer_draft in reviewer_prompt
+    assert BASE_RESUME.strip() in reviewer_prompt
+    assert JOB_DESCRIPTION.strip() in reviewer_prompt
+    assert "truthfulness" in reviewer_prompt.lower()
+    assert result.provider == "omniroute two-pass"
+    assert result.model == "deepseek/deepseek-v4-pro -> alibaba/qwen3.7-plus"
+    assert result.change_summary == ["Verified facts and improved keywords"]
+
+
+def test_two_pass_resume_falls_back_from_qwen_to_kimi(monkeypatch):
+    clear_ai_env(monkeypatch)
+    calls = []
+    request = httpx.Request("POST", "http://omniroute.test/v1/chat/completions")
+    writer_draft = "REVISED RESUME\nWriter draft with ASP.NET Core and Azure."
+    kimi_review = "REVISED RESUME\nKimi reviewed final resume with ASP.NET Core and Azure.\n\nCHANGE SUMMARY\n- Verified facts."
+
+    def fake_post(url, **kwargs):
+        calls.append(kwargs["json"]["model"])
+        if len(calls) == 1:
+            return httpx.Response(200, request=request, json=_ai_response(writer_draft))
+        if len(calls) == 2:
+            return httpx.Response(503, request=request, text="Qwen unavailable")
+        return httpx.Response(200, request=request, json=_ai_response(kimi_review))
+
+    monkeypatch.setattr("ai.resume_rebuilder.httpx.post", fake_post)
+
+    result = rebuild_resume(
+        base_resume=BASE_RESUME,
+        job_description=JOB_DESCRIPTION,
+        profile_name=".NET Developer",
+        target_title="Senior .NET Developer",
+        provider="omniroute",
+        model="resume-two-pass",
+        settings=make_test_settings(
+            omniroute_api_key="omni-key",
+            omniroute_base_url="http://omniroute.test/v1",
+            resume_writer_model="deepseek/deepseek-v4-pro",
+            resume_reviewer_model="alibaba/qwen3.7-plus",
+            resume_reviewer_fallback_model="kimi/kimi-k2.5",
+        ),
+    )
+
+    assert calls == [
+        "deepseek/deepseek-v4-pro",
+        "alibaba/qwen3.7-plus",
+        "kimi/kimi-k2.5",
+    ]
+    assert result.model == "deepseek/deepseek-v4-pro -> kimi/kimi-k2.5"
+    assert result.change_summary == ["Verified facts"]
 
 
 def test_resume_prompt_includes_recruiter_authentic_humanizer_rules():

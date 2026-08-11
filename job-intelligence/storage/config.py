@@ -61,6 +61,14 @@ class Settings(BaseSettings):
     )
     gemini_model: str = "gemini-2.5-flash"
     gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta"
+    omniroute_api_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("JOB_INTELLIGENCE_OMNIROUTE_API_KEY", "OMNIROUTE_API_KEY"),
+    )
+    omniroute_base_url: str = "http://100.68.181.75:20128/v1"
+    resume_writer_model: str = "deepseek/deepseek-v4-pro"
+    resume_reviewer_model: str = "alibaba/qwen3.7-plus"
+    resume_reviewer_fallback_model: str = "kimi/kimi-k2.5"
     resume_rebuild_max_tokens: int = 16384
     ai_request_timeout_seconds: int = 120
 
