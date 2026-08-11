@@ -149,6 +149,10 @@ def orchestrate_resume(
         ))
 
     nvidia = _provider("nvidia", settings.nvidia_base_url, settings.nvidia_api_key, settings.nvidia_resume_writer_model)
+    nvidia_fallback = _provider(
+        "nvidia", settings.nvidia_base_url, settings.nvidia_api_key,
+        settings.nvidia_resume_writer_fallback_model,
+    )
     paid_writer = _provider("openrouter", settings.openrouter_base_url, settings.openrouter_api_key, settings.openrouter_resume_writer_model)
     qwen = _provider("openrouter", settings.openrouter_base_url, settings.openrouter_api_key, settings.openrouter_resume_reviewer_model)
     kimi = _provider("openrouter", settings.openrouter_base_url, settings.openrouter_api_key, settings.openrouter_resume_reviewer_fallback_model)
@@ -156,21 +160,24 @@ def orchestrate_resume(
     emit("WRITER_STARTED", "info", "writer", writer, "Resume writer started")
     try:
         draft = call(writer, _messages(request))
-    except TemporaryProviderError:
+    except Exception:
         if request.mode is not GenerationMode.HYBRID:
             emit("FINAL_FAILURE", "error", "writer", writer, "Paid resume writer failed")
             return OrchestrationResult(status="FAILED", resume_text=None, events=events)
-        emit("NVIDIA_FAILURE", "warning", "writer", nvidia, "NVIDIA writer failed")
-        emit("PAID_FALLBACK_ACTIVATED", "warning", "writer", paid_writer, "Restarting on paid OpenRouter")
+        emit("NVIDIA_PRIMARY_FAILURE", "warning", "writer", nvidia, "Nemotron Ultra writer failed")
+        emit("NVIDIA_FALLBACK_ACTIVATED", "warning", "writer", nvidia_fallback, "Trying free NVIDIA GLM-5.2")
         try:
-            draft = call(paid_writer, _messages(request))
+            draft = call(nvidia_fallback, _messages(request))
+            writer = nvidia_fallback
         except Exception:
-            emit("FINAL_FAILURE", "error", "writer", paid_writer, "Paid fallback writer failed")
-            return OrchestrationResult(status="FAILED", resume_text=None, events=events)
-        writer = paid_writer
-    except Exception:
-        emit("FINAL_FAILURE", "error", "writer", writer, "Resume writer failed")
-        return OrchestrationResult(status="FAILED", resume_text=None, events=events)
+            emit("NVIDIA_FALLBACK_FAILURE", "warning", "writer", nvidia_fallback, "GLM-5.2 writer failed")
+            emit("PAID_FALLBACK_ACTIVATED", "warning", "writer", paid_writer, "Restarting on paid OpenRouter")
+            try:
+                draft = call(paid_writer, _messages(request))
+            except Exception:
+                emit("FINAL_FAILURE", "error", "writer", paid_writer, "Paid fallback writer failed")
+                return OrchestrationResult(status="FAILED", resume_text=None, events=events)
+            writer = paid_writer
     emit("WRITER_SUCCEEDED", "info", "writer", writer, "Resume writer completed")
 
     emit("REVIEWER_STARTED", "info", "reviewer", qwen, "Qwen review started")

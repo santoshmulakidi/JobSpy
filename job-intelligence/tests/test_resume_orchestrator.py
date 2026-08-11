@@ -43,7 +43,8 @@ def settings(*, repairs=0):
         _env_file=None,
         nvidia_api_key="nv",
         openrouter_api_key="or",
-        nvidia_resume_writer_model="nvidia/deepseek-v4-pro",
+        nvidia_resume_writer_model="nvidia/nemotron-3-ultra-550b-a55b",
+        nvidia_resume_writer_fallback_model="z-ai/glm-5.2",
         openrouter_resume_writer_model="deepseek/deepseek-v4-pro",
         openrouter_resume_reviewer_model="qwen/qwen3.7-plus",
         openrouter_resume_reviewer_fallback_model="moonshotai/kimi-k2.5",
@@ -80,22 +81,40 @@ class FakeCompletion:
 def test_hybrid_uses_direct_nvidia_then_openrouter_qwen():
     fake = FakeCompletion()
     result = orchestrate_resume(request(), settings(), completion=fake)
-    assert fake.models == ["nvidia/deepseek-v4-pro", "qwen/qwen3.7-plus"]
+    assert fake.models == ["nvidia/nemotron-3-ultra-550b-a55b", "qwen/qwen3.7-plus"]
     assert result.status == "REVIEWED"
     assert "omniroute" not in " ".join(fake.prompts).lower()
     assert "LangChain" in fake.prompts[0]  # explicitly marked unsupported
 
 
-def test_nvidia_failure_restarts_from_original_on_openrouter():
-    fake = FakeCompletion(failures=("nvidia/deepseek-v4-pro",))
+def test_nvidia_primary_failure_uses_glm_before_paid_openrouter():
+    fake = FakeCompletion(failures=("nvidia/nemotron-3-ultra-550b-a55b",))
     result = orchestrate_resume(request(), settings(), completion=fake)
     assert fake.models == [
-        "nvidia/deepseek-v4-pro",
+        "nvidia/nemotron-3-ultra-550b-a55b",
+        "z-ai/glm-5.2",
+        "qwen/qwen3.7-plus",
+    ]
+    assert result.status == "REVIEWED"
+    assert "NVIDIA_PRIMARY_FAILURE" in result.event_codes
+    assert "NVIDIA_FALLBACK_ACTIVATED" in result.event_codes
+    assert "PAID_FALLBACK_ACTIVATED" not in result.event_codes
+
+
+def test_both_nvidia_writers_failing_restarts_from_original_on_openrouter():
+    fake = FakeCompletion(failures=(
+        "nvidia/nemotron-3-ultra-550b-a55b",
+        "z-ai/glm-5.2",
+    ))
+    result = orchestrate_resume(request(), settings(), completion=fake)
+    assert fake.models == [
+        "nvidia/nemotron-3-ultra-550b-a55b",
+        "z-ai/glm-5.2",
         "deepseek/deepseek-v4-pro",
         "qwen/qwen3.7-plus",
     ]
-    assert BASE_RESUME in fake.prompts[1]
-    assert "NVIDIA_FAILURE" in result.event_codes
+    assert BASE_RESUME in fake.prompts[2]
+    assert "NVIDIA_FALLBACK_FAILURE" in result.event_codes
     assert "PAID_FALLBACK_ACTIVATED" in result.event_codes
 
 

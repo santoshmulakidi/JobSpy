@@ -765,7 +765,8 @@ def generate_resume_lab_resume(
     )
     cache_key = normalized_hash(
         input_hash, settings.resume_orchestration_version,
-        settings.nvidia_resume_writer_model, settings.openrouter_resume_writer_model,
+        settings.nvidia_resume_writer_model, settings.nvidia_resume_writer_fallback_model,
+        settings.openrouter_resume_writer_model,
         settings.openrouter_resume_reviewer_model,
         settings.openrouter_resume_reviewer_fallback_model,
     )

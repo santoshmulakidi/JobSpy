@@ -500,7 +500,7 @@ export default function ResumeLabPage() {
   const [coverLetterLoading, setCoverLetterLoading] = useState(false);
   const [coverLetterDocxLoading, setCoverLetterDocxLoading] = useState(false);
   const selectedModel = generationMode === "HYBRID"
-    ? "nvidia|deepseek-ai/deepseek-v4-pro"
+    ? "nvidia|nvidia/nemotron-3-ultra-550b-a55b"
     : "openrouter|deepseek/deepseek-v4-pro";
 
   async function downloadWord() {
@@ -1078,7 +1078,7 @@ export default function ResumeLabPage() {
               <div className="grid w-full gap-2 md:grid-cols-2">
                 <button type="button" onClick={() => setGenerationMode("HYBRID")} className={`rounded-lg border p-3 text-left ${generationMode === "HYBRID" ? "border-primary bg-primary/5" : ""}`}>
                   <span className="font-medium">NVIDIA-First Hybrid</span> <span className="text-xs text-primary">Default</span>
-                  <p className="mt-1 text-xs text-muted-foreground">NVIDIA writes first. OpenRouter reviews and takes over if NVIDIA fails.</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Nemotron Ultra writes first, then free GLM-5.2. Paid OpenRouter starts only if both fail.</p>
                 </button>
                 <button type="button" onClick={() => setGenerationMode("IMPORTANT")} className={`rounded-lg border p-3 text-left ${generationMode === "IMPORTANT" ? "border-primary bg-primary/5" : ""}`}>
                   <span className="font-medium">Final Resume - Important Application</span> <span className="text-xs text-muted-foreground">Paid</span>
