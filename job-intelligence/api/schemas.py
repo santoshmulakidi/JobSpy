@@ -131,6 +131,29 @@ class ProfileOut(ProfileIn):
     model_config = {"from_attributes": True}
 
 
+class ResumeLabProfileCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=160)
+
+
+class ResumeLabResumeUpdate(BaseModel):
+    resume_text: str = Field(min_length=50)
+    resume_filename: str | None = Field(default=None, max_length=255)
+    expected_source_version: int = Field(ge=0)
+    only_if_empty: bool = False
+
+
+class ResumeLabProfileOut(BaseModel):
+    id: int
+    name: str
+    resume_text: str | None
+    resume_filename: str | None
+    resume_sha256: str | None
+    source_version: int
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 APPLICATION_STAGES = [
     "Saved",
     "Applied",

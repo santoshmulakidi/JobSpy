@@ -44,6 +44,9 @@ from api.schemas import (
     ProfileOut,
     ResumeParseRequest,
     ResumeParseResponse,
+    ResumeLabProfileCreate,
+    ResumeLabProfileOut,
+    ResumeLabResumeUpdate,
     ResumeRebuildRequest,
     ResumeRebuildResponse,
     SavedSearchIn,
@@ -65,7 +68,7 @@ from storage.backups import backup_sqlite_database
 from storage.config import get_settings
 from storage.database import SessionLocal, get_session, init_database
 from storage.models import AIGenerationJob, AIGenerationStatus, Application, ChangeType, CoverLetterVersion, DocumentKind, Job, ResumeVersion, SearchRun, UserProfile
-from storage.repository import JobRepository
+from storage.repository import JobRepository, ResumeProfileConflict
 from search.scoring import score_job
 from search.trust import score_trust
 
@@ -636,6 +639,79 @@ def get_job(job_id: int, session: Session = Depends(get_session)):
     if job is None:
         raise HTTPException(status_code=404, detail="job not found")
     return _job_out(repository, job)
+
+
+@app.get("/resume-lab/profiles", response_model=list[ResumeLabProfileOut])
+def list_resume_lab_profiles(session: Session = Depends(get_session)):
+    repository = JobRepository(session)
+    profiles = repository.list_resume_lab_profiles()
+    session.commit()
+    return profiles
+
+
+@app.post("/resume-lab/profiles", response_model=ResumeLabProfileOut)
+def create_resume_lab_profile(
+    payload: ResumeLabProfileCreate, session: Session = Depends(get_session)
+):
+    repository = JobRepository(session)
+    try:
+        profile = repository.create_resume_lab_profile(payload.name)
+        session.commit()
+        session.refresh(profile)
+        return profile
+    except Exception as exc:
+        session.rollback()
+        if "UNIQUE" in str(exc).upper():
+            raise HTTPException(status_code=409, detail="A profile with this name already exists") from exc
+        raise
+
+
+@app.put("/resume-lab/profiles/{profile_id}/resume", response_model=ResumeLabProfileOut)
+def save_resume_lab_profile_resume(
+    profile_id: int,
+    payload: ResumeLabResumeUpdate,
+    session: Session = Depends(get_session),
+):
+    repository = JobRepository(session)
+    try:
+        profile = repository.save_resume_lab_resume(
+            profile_id,
+            resume_text=payload.resume_text,
+            resume_filename=payload.resume_filename,
+            expected_source_version=payload.expected_source_version,
+            only_if_empty=payload.only_if_empty,
+        )
+        session.commit()
+        session.refresh(profile)
+        return profile
+    except KeyError as exc:
+        session.rollback()
+        raise HTTPException(status_code=404, detail="Resume Lab profile not found") from exc
+    except ResumeProfileConflict as exc:
+        session.rollback()
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.delete("/resume-lab/profiles/{profile_id}/resume", response_model=ResumeLabProfileOut)
+def remove_resume_lab_profile_resume(
+    profile_id: int,
+    expected_source_version: int = Query(ge=0),
+    session: Session = Depends(get_session),
+):
+    repository = JobRepository(session)
+    try:
+        profile = repository.clear_resume_lab_resume(
+            profile_id, expected_source_version=expected_source_version
+        )
+        session.commit()
+        session.refresh(profile)
+        return profile
+    except KeyError as exc:
+        session.rollback()
+        raise HTTPException(status_code=404, detail="Resume Lab profile not found") from exc
+    except ResumeProfileConflict as exc:
+        session.rollback()
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @app.get("/profile", response_model=ProfileOut)

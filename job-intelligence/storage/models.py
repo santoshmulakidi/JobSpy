@@ -313,6 +313,55 @@ class UserProfile(Base):
     )
 
 
+class ResumeLabProfile(Base):
+    __tablename__ = "resume_lab_profiles"
+    __table_args__ = (UniqueConstraint("name", name="uq_resume_lab_profiles_name"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    resume_text: Mapped[str | None] = mapped_column(Text)
+    resume_filename: Mapped[str | None] = mapped_column(String(255))
+    resume_sha256: Mapped[str | None] = mapped_column(String(64), index=True)
+    fact_inventory: Mapped[dict | None] = mapped_column(JSON)
+    source_version: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+
+class ResumeLabRun(Base):
+    __tablename__ = "resume_lab_runs"
+    __table_args__ = (
+        UniqueConstraint("idempotency_key", name="uq_resume_lab_runs_idempotency_key"),
+        Index("ix_resume_lab_runs_cache", "cache_key", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    cache_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    profile_id: Mapped[int] = mapped_column(
+        ForeignKey("resume_lab_profiles.id"), index=True
+    )
+    mode: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="QUEUED")
+    source_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    input_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    job_description_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    target_title: Mapped[str] = mapped_column(String(500), nullable=False)
+    company_name: Mapped[str | None] = mapped_column(String(255))
+    content_text: Mapped[str | None] = mapped_column(Text)
+    ats_score: Mapped[int | None] = mapped_column(Integer)
+    events: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    usage: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    original_titles: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+
 class Application(Base):
     __tablename__ = "applications"
     __table_args__ = (UniqueConstraint("job_id", name="uq_applications_job_id"),)
