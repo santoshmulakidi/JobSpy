@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_serializer, field_validator, model_validator
 
@@ -129,6 +129,69 @@ class ProfileOut(ProfileIn):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class ResumeLabProfileCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=160)
+
+
+class ResumeLabResumeUpdate(BaseModel):
+    resume_text: str = Field(min_length=50)
+    resume_filename: str | None = Field(default=None, max_length=255)
+    expected_source_version: int = Field(ge=0)
+    only_if_empty: bool = False
+
+
+class ResumeLabProfileOut(BaseModel):
+    id: int
+    name: str
+    resume_text: str | None
+    resume_filename: str | None
+    resume_sha256: str | None
+    source_version: int
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class GenerationEventOut(BaseModel):
+    code: str
+    severity: str
+    stage: str
+    provider: str | None
+    model: str | None
+    attempt: int
+    timestamp: str
+    message: str
+
+
+class ResumeLabGenerateRequest(BaseModel):
+    profile_id: int
+    source_version: int = Field(ge=0)
+    mode: Literal["HYBRID", "IMPORTANT"]
+    job_description: str = Field(min_length=50)
+    target_title: str | None = Field(default=None, max_length=500)
+    company_name: str | None = Field(default=None, max_length=255)
+    idempotency_key: str = Field(min_length=16, max_length=128)
+
+
+class ResumeLabGenerateResponse(BaseModel):
+    run_id: str
+    status: Literal["REVIEWED", "WRITER_ONLY", "FAILED"]
+    resume_text: str | None
+    ats_score: int | None
+    attempts: int
+    events: list[GenerationEventOut]
+    usage: dict[str, int]
+    input_hash: str
+    cache_hit: bool = False
+
+
+class ResumeLabCoverLetterRequest(BaseModel):
+    run_id: str
+    job_description: str = Field(min_length=50)
+    target_title: str = Field(min_length=1, max_length=500)
+    company_name: str | None = Field(default=None, max_length=255)
 
 
 APPLICATION_STAGES = [

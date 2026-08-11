@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from datetime import date, datetime, timedelta
+import hashlib
 import math
 import re
 from typing import Any
@@ -22,11 +23,17 @@ from storage.models import (
     JobChange,
     JobStatus,
     ResumeVersion,
+    ResumeLabProfile,
+    ResumeLabRun,
     SavedSearch,
     SearchRun,
     UserProfile,
     utc_now,
 )
+
+
+class ResumeProfileConflict(ValueError):
+    pass
 
 
 TRACKED_JOB_FIELDS = (
@@ -49,6 +56,89 @@ TRACKED_JOB_FIELDS = (
 class JobRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
+
+    def list_resume_lab_profiles(self) -> list[ResumeLabProfile]:
+        for name in (".NET Developer", "Java Developer", "AI Engineer"):
+            existing = self.session.scalar(
+                select(ResumeLabProfile).where(ResumeLabProfile.name == name)
+            )
+            if existing is None:
+                self.session.add(ResumeLabProfile(name=name))
+        self.session.flush()
+        return list(
+            self.session.scalars(select(ResumeLabProfile).order_by(ResumeLabProfile.id))
+        )
+
+    def get_resume_lab_profile(self, profile_id: int) -> ResumeLabProfile | None:
+        return self.session.get(ResumeLabProfile, profile_id)
+
+    def create_resume_lab_profile(self, name: str) -> ResumeLabProfile:
+        profile = ResumeLabProfile(name=name.strip())
+        self.session.add(profile)
+        self.session.flush()
+        return profile
+
+    def save_resume_lab_resume(
+        self,
+        profile_id: int,
+        *,
+        resume_text: str,
+        resume_filename: str | None,
+        expected_source_version: int,
+        only_if_empty: bool,
+    ) -> ResumeLabProfile:
+        profile = self.get_resume_lab_profile(profile_id)
+        if profile is None:
+            raise KeyError(profile_id)
+        if profile.source_version != expected_source_version or (
+            only_if_empty and profile.resume_text
+        ):
+            raise ResumeProfileConflict(
+                "The saved resume changed; reload the profile before saving."
+            )
+        normalized = resume_text.strip()
+        profile.resume_text = normalized
+        profile.resume_filename = resume_filename
+        profile.resume_sha256 = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+        profile.fact_inventory = None
+        profile.source_version += 1
+        profile.updated_at = utc_now()
+        self.session.flush()
+        return profile
+
+    def clear_resume_lab_resume(
+        self, profile_id: int, *, expected_source_version: int
+    ) -> ResumeLabProfile:
+        profile = self.get_resume_lab_profile(profile_id)
+        if profile is None:
+            raise KeyError(profile_id)
+        if profile.source_version != expected_source_version:
+            raise ResumeProfileConflict(
+                "The saved resume changed; reload the profile before removing it."
+            )
+        profile.resume_text = None
+        profile.resume_filename = None
+        profile.resume_sha256 = None
+        profile.fact_inventory = None
+        profile.source_version += 1
+        profile.updated_at = utc_now()
+        self.session.flush()
+        return profile
+
+    def get_resume_lab_run(self, run_id: str) -> ResumeLabRun | None:
+        return self.session.get(ResumeLabRun, run_id)
+
+    def find_reviewed_resume_lab_run(self, cache_key: str) -> ResumeLabRun | None:
+        return self.session.scalar(
+            select(ResumeLabRun)
+            .where(ResumeLabRun.cache_key == cache_key, ResumeLabRun.status == "REVIEWED")
+            .order_by(ResumeLabRun.created_at.desc())
+        )
+
+    def find_resume_lab_run_by_idempotency(self, key: str) -> ResumeLabRun | None:
+        return self.session.scalar(
+            select(ResumeLabRun).where(ResumeLabRun.idempotency_key == key)
+        )
 
     def create_search_run(
         self,
@@ -162,12 +252,17 @@ class JobRepository:
 
     def delete_expired_jobs(self, *, retention_days: int = 7) -> int:
         cutoff = utc_now() - timedelta(days=retention_days)
-        applied_job_exists = exists().where(Application.job_id == Job.id)
+        retained_job_exists = or_(
+            exists().where(Application.job_id == Job.id),
+            exists().where(ResumeVersion.job_id == Job.id),
+            exists().where(CoverLetterVersion.job_id == Job.id),
+            exists().where(AIGenerationJob.job_id == Job.id),
+        )
         jobs = self.session.scalars(
             select(Job).where(
                 and_(
                     Job.first_seen_at < cutoff,
-                    not_(applied_job_exists),
+                    not_(retained_job_exists),
                 )
             )
         ).all()

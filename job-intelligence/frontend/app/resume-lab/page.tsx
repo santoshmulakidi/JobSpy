@@ -11,9 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { exportCoverLetterDocx, exportResumeDocx, generateCoverLetter, getJob, getJobs, parseResume, rebuildResume, resumeModelChoices } from "@/lib/api";
-import { defaultProfiles, loadProfiles, saveProfiles, type JobProfile } from "@/lib/job-profiles";
-import type { ResumeRebuildResult } from "@/types/job";
+import { createResumeLabProfile, exportCoverLetterDocx, exportResumeDocx, generateResumeLabCoverLetter, generateResumeLabResume, getJob, getJobs, getResumeLabProfiles, parseResume, rebuildResume, removeResumeLabResume, saveResumeLabResume } from "@/lib/api";
+import { loadProfiles } from "@/lib/job-profiles";
+import type { ResumeGenerationMode, ResumeLabProfile, ResumeLabRunResult, ResumeRebuildResult } from "@/types/job";
 
 interface AtsResult {
   score: number;
@@ -457,18 +457,10 @@ function bufferToBase64(buffer: ArrayBuffer) {
   return btoa(binary);
 }
 
-const modelChoices = resumeModelChoices();
-const defaultModelChoice = modelChoices[0] ?? {
-  provider: "openrouter",
-  model: "meta-llama/llama-3.3-70b-instruct:free",
-  label: "Free: OpenRouter Llama 3.3 70B",
-  tier: "Free / Low cost" as const,
-};
-
 export default function ResumeLabPage() {
   const router = useRouter();
-  const [profiles, setProfiles] = useState<JobProfile[]>(defaultProfiles);
-  const [profileId, setProfileId] = useState("dotnet");
+  const [profiles, setProfiles] = useState<ResumeLabProfile[]>([]);
+  const [profileId, setProfileId] = useState<number | null>(null);
   const [resumeText, setResumeText] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [jobContext, setJobContext] = useState("No job selected");
@@ -478,7 +470,9 @@ export default function ResumeLabPage() {
   const [returnTo, setReturnTo] = useState<string | null>(null);
   const [rebuildLoading, setRebuildLoading] = useState(false);
   const [rebuildResult, setRebuildResult] = useState<ResumeRebuildResult | null>(null);
-  const [selectedModel, setSelectedModel] = useState(`${defaultModelChoice.provider}|${defaultModelChoice.model}`);
+  const [generationMode, setGenerationMode] = useState<ResumeGenerationMode>("HYBRID");
+  const [generationRun, setGenerationRun] = useState<ResumeLabRunResult | null>(null);
+  const [generatedSnapshot, setGeneratedSnapshot] = useState<string | null>(null);
   const [refineInstruction, setRefineInstruction] = useState("");
   const [refineLoading, setRefineLoading] = useState(false);
   const [atsBefore, setAtsBefore] = useState<AtsResult | null>(null);
@@ -505,6 +499,9 @@ export default function ResumeLabPage() {
   const [coverLetterProvider, setCoverLetterProvider] = useState("");
   const [coverLetterLoading, setCoverLetterLoading] = useState(false);
   const [coverLetterDocxLoading, setCoverLetterDocxLoading] = useState(false);
+  const selectedModel = generationMode === "HYBRID"
+    ? "nvidia|deepseek-ai/deepseek-v4-pro"
+    : "openrouter|deepseek/deepseek-v4-pro";
 
   async function downloadWord() {
     if (!rebuildResult) return;
@@ -534,12 +531,45 @@ export default function ResumeLabPage() {
   }
 
   const activeProfile = profiles.find((profile) => profile.id === profileId) ?? profiles[0];
+  const currentSnapshot = JSON.stringify([
+    activeProfile?.id ?? null, activeProfile?.source_version ?? null,
+    jobDescription, jobTitle, jobCompany, generationMode,
+  ]);
+  const coverLetterEnabled = Boolean(
+    generationRun?.status === "REVIEWED" && generationRun.resume_text
+    && generatedSnapshot === currentSnapshot
+  );
 
   useEffect(() => {
-    const storedProfiles = loadProfiles();
-    setProfiles(storedProfiles);
-    setProfileId(storedProfiles[0]?.id ?? "dotnet");
-    setResumeText(storedProfiles[0]?.baseResume ?? "");
+    if (generatedSnapshot && generatedSnapshot !== currentSnapshot) {
+      setCoverLetter("");
+      setCoverLetterProvider("");
+    }
+  }, [currentSnapshot, generatedSnapshot]);
+
+  useEffect(() => {
+    async function loadCentralProfiles() {
+      let serverProfiles = await getResumeLabProfiles();
+      const localProfiles = loadProfiles();
+      for (const local of localProfiles) {
+        const server = serverProfiles.find((item) => item.name === local.name);
+        if (server && !server.resume_text && local.baseResume.trim().length >= 50) {
+          await saveResumeLabResume(server.id, {
+            resume_text: local.baseResume,
+            resume_filename: "Migrated browser resume",
+            expected_source_version: server.source_version,
+            only_if_empty: true,
+          }).catch(() => undefined);
+        }
+      }
+      serverProfiles = await getResumeLabProfiles();
+      setProfiles(serverProfiles);
+      setProfileId(serverProfiles[0]?.id ?? null);
+      setResumeText(serverProfiles[0]?.resume_text ?? "");
+    }
+    void loadCentralProfiles().catch((error) => {
+      toast.error(error instanceof Error ? error.message : "Could not load Resume Lab profiles");
+    });
 
     async function loadJobContext() {
       const params = new URLSearchParams(window.location.search);
@@ -626,46 +656,47 @@ export default function ResumeLabPage() {
     void loadJobContext();
   }, []);
 
-  function updateActiveProfile(values: Partial<JobProfile>) {
-    setProfiles((current) => current.map((profile) => (
-      profile.id === profileId ? { ...profile, ...values } : profile
-    )));
-  }
-
   function selectProfile(nextProfileId: string) {
-    const nextProfile = profiles.find((profile) => profile.id === nextProfileId);
-    setProfileId(nextProfileId);
-    setResumeText(nextProfile?.baseResume ?? "");
+    const numericId = Number(nextProfileId);
+    const nextProfile = profiles.find((profile) => profile.id === numericId);
+    setProfileId(numericId);
+    setResumeText(nextProfile?.resume_text ?? "");
+    setGenerationRun(null);
+    setCoverLetter("");
   }
 
-  function createProfile() {
+  async function createProfile() {
     const name = window.prompt("Profile name");
     if (!name?.trim()) return;
-    const id = `${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`;
-    const nextProfile: JobProfile = {
-      id,
-      name: name.trim(),
-      searchTerm: "",
-      locations: "United States, Remote",
-      preferredTitles: [],
-      skills: [],
-      baseResume: "",
-    };
-    const nextProfiles = [...profiles, nextProfile];
-    setProfiles(nextProfiles);
-    setProfileId(id);
-    setResumeText("");
-    saveProfiles(nextProfiles);
-    toast.success("Profile created");
+    try {
+      const created = await createResumeLabProfile(name.trim());
+      setProfiles((current) => [...current, created]);
+      setProfileId(created.id);
+      setResumeText("");
+      setGenerationRun(null);
+      setCoverLetter("");
+      toast.success("Profile created");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Profile creation failed");
+    }
   }
 
-  function saveActiveProfile() {
-    const nextProfiles = profiles.map((profile) => (
-      profile.id === profileId ? { ...profile, baseResume: resumeText } : profile
-    ));
-    setProfiles(nextProfiles);
-    saveProfiles(nextProfiles);
-    toast.success("Profile saved");
+  async function saveActiveProfile(filename?: string | null, onlyIfEmpty = false) {
+    if (!activeProfile || resumeText.trim().length < 50) return;
+    try {
+      const saved = await saveResumeLabResume(activeProfile.id, {
+        resume_text: resumeText,
+        resume_filename: filename ?? activeProfile.resume_filename,
+        expected_source_version: activeProfile.source_version,
+        only_if_empty: onlyIfEmpty,
+      });
+      setProfiles((current) => current.map((item) => item.id === saved.id ? saved : item));
+      setGenerationRun(null);
+      setCoverLetter("");
+      toast.success("Profile saved on the VM");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Profile save failed");
+    }
   }
 
   async function importResume(file: File | undefined) {
@@ -674,10 +705,33 @@ export default function ResumeLabPage() {
       const text = bufferToBase64(await file.arrayBuffer());
       const result = await parseResume(file.name, text);
       setResumeText(result.text);
-      updateActiveProfile({ baseResume: result.text });
-      toast.success("Resume imported");
+      if (!activeProfile) return;
+      const saved = await saveResumeLabResume(activeProfile.id, {
+        resume_text: result.text,
+        resume_filename: file.name,
+        expected_source_version: activeProfile.source_version,
+      });
+      setProfiles((current) => current.map((item) => item.id === saved.id ? saved : item));
+      setGenerationRun(null);
+      setCoverLetter("");
+      toast.success("Resume imported and saved on the VM");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Resume import failed");
+    }
+  }
+
+  async function removeSavedResume() {
+    if (!activeProfile || !window.confirm("Remove the saved resume from this profile? The profile will remain.")) return;
+    try {
+      const updated = await removeResumeLabResume(activeProfile.id, activeProfile.source_version);
+      setProfiles((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setResumeText("");
+      setGenerationRun(null);
+      setRebuildResult(null);
+      setCoverLetter("");
+      toast.success("Saved resume removed; profile kept");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not remove saved resume");
     }
   }
 
@@ -690,30 +744,50 @@ export default function ResumeLabPage() {
       toast.error("Add a job description first");
       return;
     }
+    if (activeProfile && resumeText.trim() !== (activeProfile.resume_text ?? "").trim()) {
+      toast.error("Save the edited resume before generating");
+      return;
+    }
 
     setRebuildLoading(true);
     setRebuildResult(null);
     setAtsBefore(null);
     setAtsAfter(null);
     setCompletedSuggestionIds([]);
+    setCoverLetter("");
     try {
+      if (!activeProfile) throw new Error("Select a profile first");
       const before = computeAts(resumeText, jobDescription);
-      const result = await rebuildResume({
-        base_resume: resumeText,
+      const run = await generateResumeLabResume({
+        profile_id: activeProfile.id,
+        source_version: activeProfile.source_version,
+        mode: generationMode,
         job_description: jobDescription,
-        profile_name: activeProfile?.name ?? null,
-        target_title: jobContext,
-        provider: selectedModel.slice(0, selectedModel.indexOf("|")),
-        model: selectedModel.slice(selectedModel.indexOf("|") + 1),
+        target_title: jobTitle || null,
+        company_name: jobCompany || null,
+        idempotency_key: crypto.randomUUID(),
       });
+      setGenerationRun(run);
+      if (run.status !== "REVIEWED" || !run.resume_text) {
+        throw new Error("Resume generation did not complete review. See the model events below.");
+      }
+      const result: ResumeRebuildResult = {
+        provider: generationMode === "HYBRID" ? "NVIDIA-First Hybrid" : "OpenRouter Important",
+        model: run.events.filter((event) => event.model).at(-1)?.model ?? null,
+        rebuilt_resume: run.resume_text,
+        change_summary: [`ATS ${run.ats_score ?? "not available"}% after ${run.attempts} attempt(s)`],
+        warnings: run.events.filter((event) => event.severity !== "info").map((event) => event.message),
+        prompt: "",
+      };
       setRebuildResult(result);
+      setGeneratedSnapshot(JSON.stringify([activeProfile.id, activeProfile.source_version, jobDescription, jobTitle, jobCompany, generationMode]));
       setAtsBefore(before);
       const after = computeAts(result.rebuilt_resume, jobDescription);
       setAtsAfter(after);
-      if (after.score < before.score) {
-        toast.warning("Rebuild completed, but ATS score dropped. Use Refine to restore missing exact keywords.");
+      if ((run.ats_score ?? after.score) < 85) {
+        toast.warning(`Best truthful resume scored ${run.ats_score ?? after.score}%. Review remaining gaps.`);
       } else {
-        toast.success(result.provider === "prompt_only" ? "Prompt ready for manual AI rebuild" : `Resume rebuilt with ${result.provider}`);
+        toast.success(run.cache_hit ? "Reviewed resume loaded from cache" : "Reviewed resume generated");
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Resume rebuild failed");
@@ -725,6 +799,9 @@ export default function ResumeLabPage() {
   async function refineRebuiltResume(instructionOverride?: string, chipLabel?: string, markIds?: string[]) {
     const instruction = (instructionOverride ?? refineInstruction).trim();
     if (!rebuildResult || !instruction) return;
+    setGenerationRun(null);
+    setGeneratedSnapshot(null);
+    setCoverLetter("");
     setRefineLoading(true);
     if (chipLabel) setActiveChipLabel(chipLabel);
     try {
@@ -868,9 +945,8 @@ export default function ResumeLabPage() {
   }
 
   async function generateCoverLetterText() {
-    const resumeSource = rebuildResult?.rebuilt_resume ?? resumeText;
-    if (resumeSource.trim().length < 50) {
-      toast.error("Generate or paste a resume first");
+    if (!generationRun || !coverLetterEnabled) {
+      toast.error("Generate a reviewed resume with the current inputs first");
       return;
     }
     if (jobDescription.trim().length < 50) {
@@ -880,13 +956,11 @@ export default function ResumeLabPage() {
     setCoverLetterLoading(true);
     setCoverLetter("");
     try {
-      const result = await generateCoverLetter({
-        base_resume: resumeSource,
+      const result = await generateResumeLabCoverLetter({
+        run_id: generationRun.run_id,
         job_description: jobDescription,
-        job_title: jobTitle || null,
-        company_name: jobContext.includes(" at ") ? jobContext.split(" at ")[1]?.split(" | ")[0] ?? null : null,
-        provider: selectedModel.slice(0, selectedModel.indexOf("|")),
-        model: selectedModel.slice(selectedModel.indexOf("|") + 1),
+        target_title: jobTitle || "Target Role",
+        company_name: jobCompany || null,
       });
       setCoverLetter(result.cover_letter);
       setCoverLetterProvider(result.provider);
@@ -951,15 +1025,15 @@ export default function ResumeLabPage() {
         <Card className="surface shadow-none">
           <CardHeader>
             <CardTitle>Profile and base resume</CardTitle>
-            <CardDescription>Store separate resume and job preferences for each person/profile.</CardDescription>
+            <CardDescription>Saved centrally on the VM and available from Windows or Mac.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-[220px_1fr_auto]">
-              <Select value={profileId} onValueChange={selectProfile}>
+              <Select value={profileId ? String(profileId) : ""} onValueChange={selectProfile}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {profiles.map((profile) => (
-                    <SelectItem key={profile.id} value={profile.id}>{profile.name}</SelectItem>
+                    <SelectItem key={profile.id} value={String(profile.id)}>{profile.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -967,24 +1041,17 @@ export default function ResumeLabPage() {
                 <Upload className="h-4 w-4" /> Attach resume
                 <input className="sr-only" type="file" accept=".docx,.txt" onChange={(event) => importResume(event.target.files?.[0])} />
               </label>
-              <Button variant="outline" onClick={createProfile}>New profile</Button>
+              <Button variant="outline" onClick={() => void createProfile()}>New profile</Button>
             </div>
-            {activeProfile ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="space-y-2 text-sm font-medium">
-                  Target search
-                  <Input value={activeProfile.searchTerm} onChange={(event) => updateActiveProfile({ searchTerm: event.target.value })} placeholder=".NET developer or Java developer" />
-                </label>
-                <label className="space-y-2 text-sm font-medium">
-                  Location preferences
-                  <Input value={activeProfile.locations} onChange={(event) => updateActiveProfile({ locations: event.target.value })} placeholder="United States, Remote, Dallas, TX" />
-                </label>
-              </div>
-            ) : null}
-            <Textarea value={resumeText} onChange={(event) => setResumeText(event.target.value)} placeholder="Upload or paste your base resume..." className="min-h-96" />
+            <details className="rounded-lg border p-3">
+              <summary className="cursor-pointer text-sm font-medium">Resume editor</summary>
+              <Textarea value={resumeText} onChange={(event) => setResumeText(event.target.value)} placeholder="Upload or paste your base resume..." className="mt-3 min-h-40 max-h-72" />
+              {activeProfile?.resume_filename ? <p className="mt-2 text-xs text-muted-foreground">Saved file: {activeProfile.resume_filename}</p> : null}
+            </details>
             <div className="flex flex-wrap gap-2">
-              <Button onClick={saveActiveProfile}><Save className="h-4 w-4" /> Save profile</Button>
+              <Button onClick={() => void saveActiveProfile()}><Save className="h-4 w-4" /> Save profile</Button>
               <Button variant="outline" onClick={() => copyText(resumeText, "Resume copied")}>Copy resume text</Button>
+              {activeProfile?.resume_text ? <Button variant="outline" onClick={() => void removeSavedResume()}>Remove saved resume</Button> : null}
             </div>
           </CardContent>
         </Card>
@@ -1008,25 +1075,19 @@ export default function ResumeLabPage() {
               className="min-h-80"
             />
             <div className="flex flex-wrap gap-2">
-              <select
-                aria-label="Choose AI model"
-                className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring sm:w-[360px]"
-                value={selectedModel}
-                onChange={(event) => setSelectedModel(event.target.value)}
-              >
-                {(["Free / Low cost", "Premium"] as const).map((tier) => (
-                  <optgroup key={tier} label={tier}>
-                    {modelChoices.filter((choice) => choice.tier === tier).map((choice) => (
-                      <option key={`${choice.provider}|${choice.model}`} value={`${choice.provider}|${choice.model}`}>
-                        {choice.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
+              <div className="grid w-full gap-2 md:grid-cols-2">
+                <button type="button" onClick={() => setGenerationMode("HYBRID")} className={`rounded-lg border p-3 text-left ${generationMode === "HYBRID" ? "border-primary bg-primary/5" : ""}`}>
+                  <span className="font-medium">NVIDIA-First Hybrid</span> <span className="text-xs text-primary">Default</span>
+                  <p className="mt-1 text-xs text-muted-foreground">NVIDIA writes first. OpenRouter reviews and takes over if NVIDIA fails.</p>
+                </button>
+                <button type="button" onClick={() => setGenerationMode("IMPORTANT")} className={`rounded-lg border p-3 text-left ${generationMode === "IMPORTANT" ? "border-primary bg-primary/5" : ""}`}>
+                  <span className="font-medium">Final Resume - Important Application</span> <span className="text-xs text-muted-foreground">Paid</span>
+                  <p className="mt-1 text-xs text-muted-foreground">OpenRouter writes and reviews immediately.</p>
+                </button>
+              </div>
               <Button onClick={rebuildTailoredResume} disabled={rebuildLoading}>
                 {rebuildLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                Rebuild Resume
+                Generate Resume
               </Button>
               <Button variant="outline" onClick={() => copyText(jobDescription, "Job description copied")}>
                 <Copy className="h-4 w-4" /> Copy job description
@@ -1038,7 +1099,7 @@ export default function ResumeLabPage() {
           <CardHeader>
             <CardTitle>AI rebuilt resume</CardTitle>
             <CardDescription>
-              Choose a free/low-cost model first, or switch to premium Claude models for final polishing. Falls back to a copy-ready prompt when no API key is configured.
+              Reviewed, truth-checked, and repaired toward an internal 85% ATS target.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1048,6 +1109,16 @@ export default function ResumeLabPage() {
                   <span className="rounded-full border px-3 py-1">Provider: {rebuildResult.provider}</span>
                   {rebuildResult.model ? <span className="rounded-full border px-3 py-1">Model: {rebuildResult.model}</span> : null}
                 </div>
+                {generationRun ? (
+                  <div className="rounded-lg border p-3 text-xs space-y-1">
+                    <p className="font-medium">Model activity · {generationRun.attempts} attempt(s) · ATS {generationRun.ats_score ?? "n/a"}%</p>
+                    {generationRun.events.map((event, index) => (
+                      <p key={`${event.code}-${index}`} className={event.severity === "error" ? "text-destructive" : event.severity === "warning" ? "text-amber-700" : "text-muted-foreground"}>
+                        {event.code.replaceAll("_", " ")}{event.model ? ` · ${event.model}` : ""} · {event.message}
+                      </p>
+                    ))}
+                  </div>
+                ) : null}
                 {atsBefore && atsAfter && (
                   <div
                     ref={atsResultRef}
@@ -1363,13 +1434,13 @@ export default function ResumeLabPage() {
           <CardHeader>
             <CardTitle>Cover letter</CardTitle>
             <CardDescription>
-              Generated from your {rebuildResult ? "rebuilt resume" : "base resume"} and the job description above.
+              Gemini generates this only from the newly reviewed resume and the current job inputs.
               {jobContext !== "No job selected" ? ` Targeting: ${jobContext}` : ""}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
-              <Button onClick={generateCoverLetterText} disabled={coverLetterLoading}>
+              <Button onClick={generateCoverLetterText} disabled={coverLetterLoading || !coverLetterEnabled}>
                 {coverLetterLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                 Generate Cover Letter
               </Button>

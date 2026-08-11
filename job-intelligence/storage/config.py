@@ -18,7 +18,13 @@ class Settings(BaseSettings):
     adzuna_app_id: str | None = None
     adzuna_app_key: str | None = None
     cors_origins: str = "http://127.0.0.1:3000,http://localhost:3000"
-    ai_provider_order: str = "groq,gemini,openrouter,nvidia"
+    ai_provider_order: str = "omniroute,groq,gemini,nvidia"
+    omniroute_api_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("JOB_INTELLIGENCE_OMNIROUTE_API_KEY", "OMNIROUTE_API_KEY"),
+    )
+    omniroute_model: str = "auto/best-free"
+    omniroute_base_url: str = "http://100.68.181.75:20128/v1"
     openrouter_api_key: str | None = Field(
         default=None,
         validation_alias=AliasChoices("JOB_INTELLIGENCE_OPENROUTER_API_KEY", "OPENROUTER_API_KEY"),
@@ -33,6 +39,13 @@ class Settings(BaseSettings):
     )
     nvidia_model: str = "meta/llama-3.1-8b-instruct"
     nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
+    resume_orchestration_version: str = "2026-08-11-v1"
+    nvidia_resume_writer_model: str = "deepseek-ai/deepseek-v4-pro"
+    openrouter_resume_writer_model: str = "deepseek/deepseek-v4-pro"
+    openrouter_resume_reviewer_model: str = "qwen/qwen3.7-plus"
+    openrouter_resume_reviewer_fallback_model: str = "moonshotai/kimi-k2.5"
+    resume_ats_target: int = 85
+    resume_max_repairs: int = 2
     groq_api_key: str | None = Field(
         default=None,
         validation_alias=AliasChoices("JOB_INTELLIGENCE_GROQ_API_KEY", "GROQ_API_KEY"),
