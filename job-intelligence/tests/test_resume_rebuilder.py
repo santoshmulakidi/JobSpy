@@ -40,6 +40,8 @@ CI/CD, and React experience. The role requires modernizing enterprise systems.
 """
 
 AI_ENV_KEYS = [
+    "JOB_INTELLIGENCE_OMNIROUTE_API_KEY",
+    "OMNIROUTE_API_KEY",
     "JOB_INTELLIGENCE_OPENROUTER_API_KEY",
     "OPENROUTER_API_KEY",
     "JOB_INTELLIGENCE_NVIDIA_API_KEY",
@@ -90,7 +92,7 @@ def test_numeric_guard_rejects_unsupported_claims():
     ) == ["40%"]
 
 
-def test_rebuild_resume_uses_openrouter_first(monkeypatch):
+def test_rebuild_resume_uses_free_omniroute_first(monkeypatch):
     clear_ai_env(monkeypatch)
     calls = []
     request = httpx.Request("POST", "https://example.test/chat/completions")
@@ -125,23 +127,23 @@ def test_rebuild_resume_uses_openrouter_first(monkeypatch):
         settings=make_test_settings(openrouter_api_key="or-key", nvidia_api_key="nv-key"),
     )
 
-    assert result.provider == "openrouter"
-    assert result.model == "openrouter/auto"
+    assert result.provider == "omniroute"
+    assert result.model == "auto/best-free"
     assert "ASP.NET Core" in result.rebuilt_resume
-    assert calls[0][0] == "https://openrouter.ai/api/v1/chat/completions"
-    assert calls[0][1]["headers"]["Authorization"] == "Bearer or-key"
-    assert calls[0][1]["headers"]["X-Title"] == "Job Intelligence Platform"
+    assert calls[0][0] == "http://100.68.181.75:20128/v1/chat/completions"
+    assert "Authorization" not in calls[0][1]["headers"]
+    assert all("openrouter.ai" not in call[0] for call in calls)
 
 
-def test_rebuild_resume_falls_back_to_nvidia_when_openrouter_fails(monkeypatch):
+def test_rebuild_resume_falls_back_to_nvidia_when_omniroute_fails(monkeypatch):
     clear_ai_env(monkeypatch)
     calls = []
     request = httpx.Request("POST", "https://example.test/chat/completions")
 
     def fake_post(url, **kwargs):
         calls.append(url)
-        if "openrouter" in url:
-            raise httpx.ConnectError("openrouter unavailable")
+        if "100.68.181.75" in url:
+            raise httpx.ConnectError("omniroute unavailable")
         return httpx.Response(
             200,
             request=request,
@@ -163,7 +165,7 @@ def test_rebuild_resume_falls_back_to_nvidia_when_openrouter_fails(monkeypatch):
     assert "TECHNICAL SKILLS" in result.rebuilt_resume
     assert "PROFESSIONAL EXPERIENCE" in result.rebuilt_resume
     assert calls == [
-        "https://openrouter.ai/api/v1/chat/completions",
+        "http://100.68.181.75:20128/v1/chat/completions",
         "https://integrate.api.nvidia.com/v1/chat/completions",
     ]
 
@@ -326,7 +328,7 @@ def test_rebuild_resume_returns_prompt_only_without_keys(monkeypatch):
         job_description=JOB_DESCRIPTION,
         profile_name=".NET Developer",
         target_title="Senior .NET Developer",
-        settings=make_test_settings(),
+        settings=make_test_settings(omniroute_model=""),
     )
 
     assert result.provider == "prompt_only"
@@ -335,7 +337,8 @@ def test_rebuild_resume_returns_prompt_only_without_keys(monkeypatch):
     assert "Job Description:" in result.prompt
 
 
-def test_resume_rebuild_endpoint_validates_and_returns_fallback():
+def test_resume_rebuild_endpoint_validates_and_returns_fallback(monkeypatch):
+    monkeypatch.setattr("api.main.settings.omniroute_model", "")
     client = TestClient(app)
 
     response = client.post(
@@ -352,6 +355,6 @@ def test_resume_rebuild_endpoint_validates_and_returns_fallback():
 
     assert response.status_code == 200
     body = response.json()
-    assert body["provider"] in {"prompt_only", "openrouter", "nvidia", "groq", "gemini"}
+    assert body["provider"] in {"prompt_only", "omniroute", "openrouter", "nvidia", "groq", "gemini"}
     assert body["rebuilt_resume"]
     assert body["prompt"]
