@@ -188,6 +188,41 @@ export type ResumeModelChoice = {
   tier: "Free / Low cost" | "Premium";
 };
 
+export type ResumeGenerationMode = "HYBRID" | "IMPORTANT";
+
+export type ResumeLabProfile = {
+  id: number;
+  name: string;
+  resume_text: string | null;
+  resume_filename: string | null;
+  resume_sha256: string | null;
+  source_version: number;
+  updated_at: string;
+};
+
+export type ResumeGenerationEvent = {
+  code: string;
+  severity: "info" | "warning" | "error";
+  stage: string;
+  provider: string | null;
+  model: string | null;
+  attempt: number;
+  timestamp: string;
+  message: string;
+};
+
+export type ResumeLabRunResult = {
+  run_id: string;
+  status: "REVIEWED" | "WRITER_ONLY" | "FAILED";
+  resume_text: string | null;
+  ats_score: number | null;
+  attempts: number;
+  events: ResumeGenerationEvent[];
+  usage: Record<string, number>;
+  input_hash: string;
+  cache_hit: boolean;
+};
+
 export type SchedulerStatus = {
   running: boolean;
   interval_hours: number;

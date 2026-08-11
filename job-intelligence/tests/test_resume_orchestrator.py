@@ -116,6 +116,15 @@ def test_both_reviewers_failing_is_not_success():
     result = orchestrate_resume(request(GenerationMode.IMPORTANT), settings(), completion=fake)
     assert result.status == "WRITER_ONLY"
     assert result.resume_text is None
+    assert "FINAL_FAILURE" in result.event_codes
+
+
+def test_paid_writer_failure_returns_a_visible_final_failure():
+    fake = FakeCompletion(failures=("deepseek/deepseek-v4-pro",))
+    result = orchestrate_resume(request(GenerationMode.IMPORTANT), settings(), completion=fake)
+    assert result.status == "FAILED"
+    assert result.resume_text is None
+    assert "FINAL_FAILURE" in result.event_codes
 
 
 def test_below_85_uses_targeted_repair_and_stops_when_target_reached():

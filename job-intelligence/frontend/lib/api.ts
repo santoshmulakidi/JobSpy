@@ -16,6 +16,9 @@ import type {
   SourceCount,
   Stats,
   ResumeModelChoice,
+  ResumeGenerationMode,
+  ResumeLabProfile,
+  ResumeLabRunResult,
 } from "@/types/job";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_JOB_API_URL ?? "http://127.0.0.1:8000";
@@ -151,6 +154,51 @@ export async function parseResume(filename: string, contentBase64: string) {
     method: "POST",
     body: JSON.stringify({ filename, content_base64: contentBase64 }),
   });
+}
+
+export function getResumeLabProfiles() {
+  return request<ResumeLabProfile[]>("/resume-lab/profiles");
+}
+
+export function createResumeLabProfile(name: string) {
+  return request<ResumeLabProfile>("/resume-lab/profiles", {
+    method: "POST", body: JSON.stringify({ name }),
+  });
+}
+
+export function saveResumeLabResume(profileId: number, payload: {
+  resume_text: string; resume_filename?: string | null;
+  expected_source_version: number; only_if_empty?: boolean;
+}) {
+  return request<ResumeLabProfile>(`/resume-lab/profiles/${profileId}/resume`, {
+    method: "PUT", body: JSON.stringify(payload),
+  });
+}
+
+export function removeResumeLabResume(profileId: number, sourceVersion: number) {
+  return request<ResumeLabProfile>(
+    `/resume-lab/profiles/${profileId}/resume?expected_source_version=${sourceVersion}`,
+    { method: "DELETE" },
+  );
+}
+
+export function generateResumeLabResume(payload: {
+  profile_id: number; source_version: number; mode: ResumeGenerationMode;
+  job_description: string; target_title?: string | null;
+  company_name?: string | null; idempotency_key: string;
+}) {
+  return request<ResumeLabRunResult>("/resume-lab/generate", {
+    method: "POST", body: JSON.stringify(payload),
+  }, 480_000);
+}
+
+export function generateResumeLabCoverLetter(payload: {
+  run_id: string; job_description: string; target_title: string;
+  company_name?: string | null;
+}) {
+  return request<{ provider: string; model: string | null; cover_letter: string }>(
+    "/resume-lab/cover-letter", { method: "POST", body: JSON.stringify(payload) }, 180_000,
+  );
 }
 
 export async function rebuildResume(payload: {

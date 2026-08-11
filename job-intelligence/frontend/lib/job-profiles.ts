@@ -52,6 +52,15 @@ export const defaultProfiles: JobProfile[] = [
     skills: ["Java", "Spring Boot", "Microservices", "Kafka", "AWS", "Azure", "SQL", "REST API"],
     baseResume: "",
   },
+  {
+    id: "ai-engineer",
+    name: "AI Engineer",
+    searchTerm: "",
+    locations: "",
+    preferredTitles: ["AI Engineer"],
+    skills: ["Python", "Machine Learning", "PyTorch", "Azure", "LLM", "RAG"],
+    baseResume: "",
+  },
 ];
 
 export function loadProfiles(): JobProfile[] {

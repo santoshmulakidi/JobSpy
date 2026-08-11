@@ -102,24 +102,28 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory=WEB_ROOT), name="static")
 
 
-async def _lifecycle_loop() -> None:
-    """Run job lifecycle once per hour in the background."""
+def _run_lifecycle_once() -> None:
     log = logging.getLogger(__name__)
+    session = SessionLocal()
+    try:
+        backup_path = backup_sqlite_database(settings.database_url, cwd=PROJECT_ROOT)
+        if backup_path:
+            log.info("lifecycle: SQLite backup created at %s", backup_path)
+        lifecycle = JobRepository(session).apply_job_lifecycle(active_hours=168, retention_days=7)
+        if lifecycle["archived"] or lifecycle["deleted"]:
+            session.commit()
+            log.info("lifecycle: archived=%d deleted=%d", lifecycle["archived"], lifecycle["deleted"])
+    except Exception:
+        session.rollback()
+        log.exception("lifecycle run failed")
+    finally:
+        session.close()
+
+
+async def _lifecycle_loop() -> None:
+    """Run job lifecycle once per hour without blocking API startup."""
     while True:
-        session = SessionLocal()
-        try:
-            backup_path = backup_sqlite_database(settings.database_url, cwd=PROJECT_ROOT)
-            if backup_path:
-                log.info("lifecycle: SQLite backup created at %s", backup_path)
-            lifecycle = JobRepository(session).apply_job_lifecycle(active_hours=168, retention_days=7)
-            if lifecycle["archived"] or lifecycle["deleted"]:
-                session.commit()
-                log.info("lifecycle: archived=%d deleted=%d", lifecycle["archived"], lifecycle["deleted"])
-        except Exception:
-            session.rollback()
-            log.exception("lifecycle run failed")
-        finally:
-            session.close()
+        await asyncio.to_thread(_run_lifecycle_once)
         await asyncio.sleep(3600)
 
 

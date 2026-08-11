@@ -83,8 +83,14 @@ def _provider(name: str, base_url: str, api_key: str | None, model: str) -> dict
 
 
 def _default_completion(provider: dict[str, str], messages: list[dict[str, str]]) -> str:
+    return _completion_with_settings(provider, messages, Settings())
+
+
+def _completion_with_settings(
+    provider: dict[str, str], messages: list[dict[str, str]], settings: Settings
+) -> str:
     try:
-        return _chat_completion(provider=provider, messages=messages, settings=Settings())
+        return _chat_completion(provider=provider, messages=messages, settings=settings)
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code in (408, 429) or exc.response.status_code >= 500:
             raise TemporaryProviderError("provider temporarily unavailable") from exc
@@ -129,6 +135,11 @@ def orchestrate_resume(
     score_fn: Callable[[str, str], int] = compute_ats_score,
 ) -> OrchestrationResult:
     events: list[GenerationEvent] = []
+    call = completion
+    if completion is _default_completion:
+        call = lambda provider, messages: _completion_with_settings(
+            provider, messages, settings
+        )
 
     def emit(code: str, severity: str, stage: str, provider: dict[str, str], message: str) -> None:
         events.append(GenerationEvent(
@@ -144,26 +155,35 @@ def orchestrate_resume(
     writer = nvidia if request.mode is GenerationMode.HYBRID else paid_writer
     emit("WRITER_STARTED", "info", "writer", writer, "Resume writer started")
     try:
-        draft = completion(writer, _messages(request))
+        draft = call(writer, _messages(request))
     except TemporaryProviderError:
         if request.mode is not GenerationMode.HYBRID:
+            emit("FINAL_FAILURE", "error", "writer", writer, "Paid resume writer failed")
             return OrchestrationResult(status="FAILED", resume_text=None, events=events)
         emit("NVIDIA_FAILURE", "warning", "writer", nvidia, "NVIDIA writer failed")
         emit("PAID_FALLBACK_ACTIVATED", "warning", "writer", paid_writer, "Restarting on paid OpenRouter")
-        draft = completion(paid_writer, _messages(request))
+        try:
+            draft = call(paid_writer, _messages(request))
+        except Exception:
+            emit("FINAL_FAILURE", "error", "writer", paid_writer, "Paid fallback writer failed")
+            return OrchestrationResult(status="FAILED", resume_text=None, events=events)
         writer = paid_writer
+    except Exception:
+        emit("FINAL_FAILURE", "error", "writer", writer, "Resume writer failed")
+        return OrchestrationResult(status="FAILED", resume_text=None, events=events)
     emit("WRITER_SUCCEEDED", "info", "writer", writer, "Resume writer completed")
 
     emit("REVIEWER_STARTED", "info", "reviewer", qwen, "Qwen review started")
     try:
-        reviewed = completion(qwen, _messages(request, draft=draft))
+        reviewed = call(qwen, _messages(request, draft=draft))
         successful_reviewer = qwen
-    except TemporaryProviderError:
+    except Exception:
         emit("REVIEWER_FALLBACK", "warning", "reviewer", kimi, "Qwen failed; Kimi review started")
         try:
-            reviewed = completion(kimi, _messages(request, draft=draft))
+            reviewed = call(kimi, _messages(request, draft=draft))
             successful_reviewer = kimi
-        except TemporaryProviderError:
+        except Exception:
+            emit("FINAL_FAILURE", "error", "reviewer", kimi, "All resume reviewers failed")
             return OrchestrationResult(
                 status="WRITER_ONLY", resume_text=None, diagnostic_draft=draft, events=events
             )
@@ -171,7 +191,10 @@ def orchestrate_resume(
     try:
         validated = _validate_generated_resume(reviewed, base_resume=request.source_resume)
     except ValueError:
-        validated = reviewed.strip()
+        emit("FINAL_FAILURE", "error", "validation", successful_reviewer, "Reviewed output failed factual validation")
+        return OrchestrationResult(
+            status="WRITER_ONLY", resume_text=None, diagnostic_draft=draft, events=events
+        )
     titled, originals = replace_two_recent_titles(validated, request.target_title)
     best_text = titled
     best_score = score_fn(best_text, request.job_description)
@@ -197,7 +220,14 @@ def orchestrate_resume(
                 "Preserve all employers, dates, older roles, education, contact details, and numeric claims."
             )},
         ]
-        candidate_raw = completion(successful_reviewer, repair_messages)
+        try:
+            candidate_raw = call(successful_reviewer, repair_messages)
+        except Exception:
+            emit(
+                "ATS_REPAIR_FAILED", "warning", "repair", successful_reviewer,
+                f"Targeted ATS repair {repair_number} failed; keeping the best reviewed resume",
+            )
+            break
         try:
             candidate = _validate_generated_resume(candidate_raw, base_resume=request.source_resume)
         except ValueError:

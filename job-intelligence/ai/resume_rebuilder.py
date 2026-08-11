@@ -337,7 +337,20 @@ def _provider_order(
     else:
         preferred = default_order
     for name in preferred:
-        if name == "openrouter" and settings.openrouter_api_key:
+        if name == "omniroute" and settings.omniroute_model:
+            providers.append(
+                {
+                    "name": "omniroute",
+                    "base_url": settings.omniroute_base_url.rstrip("/"),
+                    "api_key": settings.omniroute_api_key or "",
+                    "model": selected_model or settings.omniroute_model,
+                }
+            )
+        elif (
+            name == "openrouter"
+            and selected_provider == "openrouter"
+            and settings.openrouter_api_key
+        ):
             providers.append(
                 {
                     "name": "openrouter",
@@ -382,10 +395,9 @@ def _chat_completion(*, provider: dict[str, str], messages: list[dict[str, str]]
     if provider["name"] == "gemini":
         return _gemini_completion(provider=provider, messages=messages, settings=settings)
 
-    headers = {
-        "Authorization": f"Bearer {provider['api_key']}",
-        "Content-Type": "application/json",
-    }
+    headers = {"Content-Type": "application/json"}
+    if provider["api_key"]:
+        headers["Authorization"] = f"Bearer {provider['api_key']}"
     if provider["name"] == "openrouter":
         headers["HTTP-Referer"] = settings.openrouter_site_url
         headers["X-Title"] = settings.openrouter_app_name
@@ -398,6 +410,7 @@ def _chat_completion(*, provider: dict[str, str], messages: list[dict[str, str]]
             "messages": messages,
             "temperature": 0.2,
             "max_tokens": settings.resume_rebuild_max_tokens,
+            "stream": False,
         },
         timeout=settings.ai_request_timeout_seconds,
     )

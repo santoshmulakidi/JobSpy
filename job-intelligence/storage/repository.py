@@ -252,12 +252,17 @@ class JobRepository:
 
     def delete_expired_jobs(self, *, retention_days: int = 7) -> int:
         cutoff = utc_now() - timedelta(days=retention_days)
-        applied_job_exists = exists().where(Application.job_id == Job.id)
+        retained_job_exists = or_(
+            exists().where(Application.job_id == Job.id),
+            exists().where(ResumeVersion.job_id == Job.id),
+            exists().where(CoverLetterVersion.job_id == Job.id),
+            exists().where(AIGenerationJob.job_id == Job.id),
+        )
         jobs = self.session.scalars(
             select(Job).where(
                 and_(
                     Job.first_seen_at < cutoff,
-                    not_(applied_job_exists),
+                    not_(retained_job_exists),
                 )
             )
         ).all()
