@@ -13,6 +13,7 @@ from ai.resume_rebuilder import (
     _extract_tailored_resume,
     _repair_incomplete_resume,
     _unsupported_numeric_claims,
+    compute_ats_score,
 )
 from storage.config import Settings
 
@@ -125,6 +126,7 @@ def orchestrate_resume(
     settings: Settings,
     *,
     completion: CompletionFn = _default_completion,
+    score_fn: Callable[[str, str], int] = compute_ats_score,
 ) -> OrchestrationResult:
     events: list[GenerationEvent] = []
 
@@ -155,10 +157,12 @@ def orchestrate_resume(
     emit("REVIEWER_STARTED", "info", "reviewer", qwen, "Qwen review started")
     try:
         reviewed = completion(qwen, _messages(request, draft=draft))
+        successful_reviewer = qwen
     except TemporaryProviderError:
         emit("REVIEWER_FALLBACK", "warning", "reviewer", kimi, "Qwen failed; Kimi review started")
         try:
             reviewed = completion(kimi, _messages(request, draft=draft))
+            successful_reviewer = kimi
         except TemporaryProviderError:
             return OrchestrationResult(
                 status="WRITER_ONLY", resume_text=None, diagnostic_draft=draft, events=events
@@ -169,6 +173,48 @@ def orchestrate_resume(
     except ValueError:
         validated = reviewed.strip()
     titled, originals = replace_two_recent_titles(validated, request.target_title)
+    best_text = titled
+    best_score = score_fn(best_text, request.job_description)
+    attempts = 1
+    plan = build_keyword_plan(
+        request.source_resume, request.job_description, target_title=request.target_title
+    )
+    for repair_number in range(1, settings.resume_max_repairs + 1):
+        if best_score >= settings.resume_ats_target:
+            break
+        attempts += 1
+        emit(
+            "ATS_REPAIR_STARTED", "info", "repair", successful_reviewer,
+            f"Targeted ATS repair {repair_number} started",
+        )
+        missing = [term for term in plan.supported if term.lower() not in best_text.lower()]
+        repair_messages = [
+            {"role": "system", "content": "Return a complete truthful resume. Change only summary, skills, and the two most recent roles."},
+            {"role": "user", "content": (
+                f"SOURCE FACTS:\n{request.source_resume}\n\nCURRENT REVIEWED RESUME:\n{best_text}\n\n"
+                f"Add these supported exact JD phrases naturally: {', '.join(missing) or 'improve existing placement'}. "
+                f"Never add unsupported phrases: {', '.join(plan.unsupported) or 'None'}. "
+                "Preserve all employers, dates, older roles, education, contact details, and numeric claims."
+            )},
+        ]
+        candidate_raw = completion(successful_reviewer, repair_messages)
+        try:
+            candidate = _validate_generated_resume(candidate_raw, base_resume=request.source_resume)
+        except ValueError:
+            continue
+        candidate, _ = replace_two_recent_titles(candidate, request.target_title)
+        candidate_score = score_fn(candidate, request.job_description)
+        if candidate_score > best_score:
+            best_text, best_score = candidate, candidate_score
+    final_code = "ATS_TARGET_REACHED" if best_score >= settings.resume_ats_target else "ATS_TARGET_NOT_REACHED"
+    emit(
+        final_code,
+        "info" if best_score >= settings.resume_ats_target else "warning",
+        "ats",
+        successful_reviewer,
+        f"Final internal ATS score: {best_score}",
+    )
     return OrchestrationResult(
-        status="REVIEWED", resume_text=titled, events=events, original_titles=originals
+        status="REVIEWED", resume_text=best_text, events=events,
+        original_titles=originals, ats_score=best_score, attempts=attempts,
     )

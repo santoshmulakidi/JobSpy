@@ -24,6 +24,7 @@ from storage.models import (
     JobStatus,
     ResumeVersion,
     ResumeLabProfile,
+    ResumeLabRun,
     SavedSearch,
     SearchRun,
     UserProfile,
@@ -123,6 +124,21 @@ class JobRepository:
         profile.updated_at = utc_now()
         self.session.flush()
         return profile
+
+    def get_resume_lab_run(self, run_id: str) -> ResumeLabRun | None:
+        return self.session.get(ResumeLabRun, run_id)
+
+    def find_reviewed_resume_lab_run(self, cache_key: str) -> ResumeLabRun | None:
+        return self.session.scalar(
+            select(ResumeLabRun)
+            .where(ResumeLabRun.cache_key == cache_key, ResumeLabRun.status == "REVIEWED")
+            .order_by(ResumeLabRun.created_at.desc())
+        )
+
+    def find_resume_lab_run_by_idempotency(self, key: str) -> ResumeLabRun | None:
+        return self.session.scalar(
+            select(ResumeLabRun).where(ResumeLabRun.idempotency_key == key)
+        )
 
     def create_search_run(
         self,

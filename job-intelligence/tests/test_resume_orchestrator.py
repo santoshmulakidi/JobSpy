@@ -38,7 +38,7 @@ Master of Science
 JD = "AI Engineer requiring Python, Azure, REST API, LangChain, and Kubernetes."
 
 
-def settings():
+def settings(*, repairs=0):
     return Settings(
         _env_file=None,
         nvidia_api_key="nv",
@@ -47,6 +47,7 @@ def settings():
         openrouter_resume_writer_model="deepseek/deepseek-v4-pro",
         openrouter_resume_reviewer_model="qwen/qwen3.7-plus",
         openrouter_resume_reviewer_fallback_model="moonshotai/kimi-k2.5",
+        resume_max_repairs=repairs,
     )
 
 
@@ -115,3 +116,23 @@ def test_both_reviewers_failing_is_not_success():
     result = orchestrate_resume(request(GenerationMode.IMPORTANT), settings(), completion=fake)
     assert result.status == "WRITER_ONLY"
     assert result.resume_text is None
+
+
+def test_below_85_uses_targeted_repair_and_stops_when_target_reached():
+    fake = FakeCompletion()
+    scores = iter((72, 86))
+    result = orchestrate_resume(
+        request(GenerationMode.IMPORTANT),
+        settings(repairs=2),
+        completion=fake,
+        score_fn=lambda _resume, _jd: next(scores),
+    )
+    assert fake.models == [
+        "deepseek/deepseek-v4-pro",
+        "qwen/qwen3.7-plus",
+        "qwen/qwen3.7-plus",
+    ]
+    assert result.ats_score == 86
+    assert result.attempts == 2
+    assert "ATS_REPAIR_STARTED" in result.event_codes
+    assert "ATS_TARGET_REACHED" in result.event_codes
