@@ -1,0 +1,1752 @@
+[
+  {
+    "rank": 1,
+    "sponsor_name": "AMAZON COM SERVICES LLC",
+    "new_approvals": 3137,
+    "continuation_approvals": 3330,
+    "total_approvals": 6467
+  },
+  {
+    "rank": 2,
+    "sponsor_name": "TATA CONSULTANCY SERVICES LIMITED",
+    "new_approvals": 1497,
+    "continuation_approvals": 1348,
+    "total_approvals": 2845
+  },
+  {
+    "rank": 3,
+    "sponsor_name": "GOOGLE LLC",
+    "new_approvals": 892,
+    "continuation_approvals": 1272,
+    "total_approvals": 2164
+  },
+  {
+    "rank": 4,
+    "sponsor_name": "INFOSYS LIMITED",
+    "new_approvals": 2065,
+    "continuation_approvals": 85,
+    "total_approvals": 2150
+  },
+  {
+    "rank": 5,
+    "sponsor_name": "WAL-MART ASSOCIATES INC",
+    "new_approvals": 377,
+    "continuation_approvals": 1051,
+    "total_approvals": 1428
+  },
+  {
+    "rank": 6,
+    "sponsor_name": "AMAZON DEVELOPMENT CENTER U S INC",
+    "new_approvals": 858,
+    "continuation_approvals": 483,
+    "total_approvals": 1341
+  },
+  {
+    "rank": 7,
+    "sponsor_name": "MICROSOFT CORPORATION",
+    "new_approvals": 502,
+    "continuation_approvals": 751,
+    "total_approvals": 1253
+  },
+  {
+    "rank": 8,
+    "sponsor_name": "ORACLE AMERICA INC",
+    "new_approvals": 311,
+    "continuation_approvals": 810,
+    "total_approvals": 1121
+  },
+  {
+    "rank": 9,
+    "sponsor_name": "COGNIZANT TECHNOLOGY SOLUTIONS US CORP",
+    "new_approvals": 759,
+    "continuation_approvals": 155,
+    "total_approvals": 914
+  },
+  {
+    "rank": 10,
+    "sponsor_name": "AMAZON WEB SERVICES INC",
+    "new_approvals": 363,
+    "continuation_approvals": 444,
+    "total_approvals": 807
+  },
+  {
+    "rank": 11,
+    "sponsor_name": "IBM CORPORATION",
+    "new_approvals": 650,
+    "continuation_approvals": 110,
+    "total_approvals": 760
+  },
+  {
+    "rank": 12,
+    "sponsor_name": "HCL AMERICA INC",
+    "new_approvals": 449,
+    "continuation_approvals": 225,
+    "total_approvals": 674
+  },
+  {
+    "rank": 13,
+    "sponsor_name": "ERNST AND YOUNG U S LLP",
+    "new_approvals": 272,
+    "continuation_approvals": 341,
+    "total_approvals": 613
+  },
+  {
+    "rank": 14,
+    "sponsor_name": "SALESFORCE INC",
+    "new_approvals": 165,
+    "continuation_approvals": 422,
+    "total_approvals": 587
+  },
+  {
+    "rank": 15,
+    "sponsor_name": "WIPRO LIMITED",
+    "new_approvals": 226,
+    "continuation_approvals": 311,
+    "total_approvals": 537
+  },
+  {
+    "rank": 16,
+    "sponsor_name": "CAPGEMINI AMERICA INC",
+    "new_approvals": 418,
+    "continuation_approvals": 85,
+    "total_approvals": 503
+  },
+  {
+    "rank": 17,
+    "sponsor_name": "ACCENTURE LLP",
+    "new_approvals": 280,
+    "continuation_approvals": 201,
+    "total_approvals": 481
+  },
+  {
+    "rank": 18,
+    "sponsor_name": "BLOOMBERG LP",
+    "new_approvals": 152,
+    "continuation_approvals": 294,
+    "total_approvals": 446
+  },
+  {
+    "rank": 19,
+    "sponsor_name": "MCKINSEY AND COMPANY INC UNITED STATES",
+    "new_approvals": 242,
+    "continuation_approvals": 171,
+    "total_approvals": 413
+  },
+  {
+    "rank": 20,
+    "sponsor_name": "TECH MAHINDRA AMERICAS INC",
+    "new_approvals": 219,
+    "continuation_approvals": 186,
+    "total_approvals": 405
+  },
+  {
+    "rank": 21,
+    "sponsor_name": "DELOITTE CONSULTING LLP",
+    "new_approvals": 299,
+    "continuation_approvals": 104,
+    "total_approvals": 403
+  },
+  {
+    "rank": 22,
+    "sponsor_name": "LINKEDIN CORPORATION",
+    "new_approvals": 125,
+    "continuation_approvals": 234,
+    "total_approvals": 359
+  },
+  {
+    "rank": 23,
+    "sponsor_name": "LTIMINDTREE LIMITED",
+    "new_approvals": 266,
+    "continuation_approvals": 78,
+    "total_approvals": 344
+  },
+  {
+    "rank": 24,
+    "sponsor_name": "INTUIT INC",
+    "new_approvals": 122,
+    "continuation_approvals": 210,
+    "total_approvals": 332
+  },
+  {
+    "rank": 25,
+    "sponsor_name": "AMAZON DATA SERVICES INC",
+    "new_approvals": 241,
+    "continuation_approvals": 90,
+    "total_approvals": 331
+  },
+  {
+    "rank": 26,
+    "sponsor_name": "CGI TECHNOLOGIES AND SOLUTIONS INC",
+    "new_approvals": 101,
+    "continuation_approvals": 225,
+    "total_approvals": 326
+  },
+  {
+    "rank": 27,
+    "sponsor_name": "ADOBE INC",
+    "new_approvals": 97,
+    "continuation_approvals": 219,
+    "total_approvals": 316
+  },
+  {
+    "rank": 28,
+    "sponsor_name": "BYTEDANCE INC",
+    "new_approvals": 208,
+    "continuation_approvals": 86,
+    "total_approvals": 294
+  },
+  {
+    "rank": 29,
+    "sponsor_name": "SERVICENOW INC",
+    "new_approvals": 71,
+    "continuation_approvals": 216,
+    "total_approvals": 287
+  },
+  {
+    "rank": 30,
+    "sponsor_name": "OPTUM SERVICES INC",
+    "new_approvals": 34,
+    "continuation_approvals": 245,
+    "total_approvals": 279
+  },
+  {
+    "rank": 31,
+    "sponsor_name": "EBAY INC",
+    "new_approvals": 40,
+    "continuation_approvals": 238,
+    "total_approvals": 278
+  },
+  {
+    "rank": 32,
+    "sponsor_name": "UST GLOBAL INC",
+    "new_approvals": 173,
+    "continuation_approvals": 99,
+    "total_approvals": 272
+  },
+  {
+    "rank": 33,
+    "sponsor_name": "HEWLETT PACKARD ENTERPRISE COMPANY",
+    "new_approvals": 62,
+    "continuation_approvals": 208,
+    "total_approvals": 270
+  },
+  {
+    "rank": 34,
+    "sponsor_name": "PALO ALTO NETWORKS INC",
+    "new_approvals": 86,
+    "continuation_approvals": 178,
+    "total_approvals": 264
+  },
+  {
+    "rank": 35,
+    "sponsor_name": "KPMG LLP",
+    "new_approvals": 140,
+    "continuation_approvals": 122,
+    "total_approvals": 262
+  },
+  {
+    "rank": 36,
+    "sponsor_name": "COMPUNNEL SOFTWARE GROUP INC",
+    "new_approvals": 96,
+    "continuation_approvals": 165,
+    "total_approvals": 261
+  },
+  {
+    "rank": 37,
+    "sponsor_name": "BOSTON CONSULTING GROUP INC",
+    "new_approvals": 236,
+    "continuation_approvals": 16,
+    "total_approvals": 252
+  },
+  {
+    "rank": 38,
+    "sponsor_name": "UBER TECHNOLOGIES INC",
+    "new_approvals": 63,
+    "continuation_approvals": 172,
+    "total_approvals": 235
+  },
+  {
+    "rank": 39,
+    "sponsor_name": "META PLATFORMS INC",
+    "new_approvals": 218,
+    "continuation_approvals": 6,
+    "total_approvals": 224
+  },
+  {
+    "rank": 40,
+    "sponsor_name": "EXPEDIA INC",
+    "new_approvals": 67,
+    "continuation_approvals": 156,
+    "total_approvals": 223
+  },
+  {
+    "rank": 41,
+    "sponsor_name": "MPHASIS CORPORATION",
+    "new_approvals": 146,
+    "continuation_approvals": 76,
+    "total_approvals": 222
+  },
+  {
+    "rank": 42,
+    "sponsor_name": "TIKTOK INC",
+    "new_approvals": 166,
+    "continuation_approvals": 44,
+    "total_approvals": 210
+  },
+  {
+    "rank": 43,
+    "sponsor_name": "VIRTUSA CORPORATION",
+    "new_approvals": 125,
+    "continuation_approvals": 74,
+    "total_approvals": 199
+  },
+  {
+    "rank": 44,
+    "sponsor_name": "SAP AMERICA INC",
+    "new_approvals": 76,
+    "continuation_approvals": 114,
+    "total_approvals": 190
+  },
+  {
+    "rank": 45,
+    "sponsor_name": "EXLSERVICE COM LLC",
+    "new_approvals": 140,
+    "continuation_approvals": 46,
+    "total_approvals": 186
+  },
+  {
+    "rank": 46,
+    "sponsor_name": "TT COMMERCE AND GLOBAL SERVICES LLC",
+    "new_approvals": 183,
+    "continuation_approvals": 0,
+    "total_approvals": 183
+  },
+  {
+    "rank": 47,
+    "sponsor_name": "ADP TECHNOLOGY SERVICES INC",
+    "new_approvals": 69,
+    "continuation_approvals": 106,
+    "total_approvals": 175
+  },
+  {
+    "rank": 48,
+    "sponsor_name": "NOKIA OF AMERICA CORPORATION",
+    "new_approvals": 74,
+    "continuation_approvals": 101,
+    "total_approvals": 175
+  },
+  {
+    "rank": 49,
+    "sponsor_name": "CHARTER COMMUNICATIONS INC",
+    "new_approvals": 7,
+    "continuation_approvals": 159,
+    "total_approvals": 166
+  },
+  {
+    "rank": 50,
+    "sponsor_name": "RANDSTAD DIGITAL LLC",
+    "new_approvals": 76,
+    "continuation_approvals": 81,
+    "total_approvals": 157
+  },
+  {
+    "rank": 51,
+    "sponsor_name": "THE MATHWORKS INC",
+    "new_approvals": 30,
+    "continuation_approvals": 126,
+    "total_approvals": 156
+  },
+  {
+    "rank": 52,
+    "sponsor_name": "HOME DEPOT MANAGEMENT COMPANY LLC",
+    "new_approvals": 29,
+    "continuation_approvals": 122,
+    "total_approvals": 151
+  },
+  {
+    "rank": 53,
+    "sponsor_name": "PWC ADVISORY SERVICES LLC",
+    "new_approvals": 147,
+    "continuation_approvals": 4,
+    "total_approvals": 151
+  },
+  {
+    "rank": 54,
+    "sponsor_name": "SNOWFLAKE INC",
+    "new_approvals": 79,
+    "continuation_approvals": 67,
+    "total_approvals": 146
+  },
+  {
+    "rank": 55,
+    "sponsor_name": "DELOITTE TAX LLP",
+    "new_approvals": 132,
+    "continuation_approvals": 6,
+    "total_approvals": 138
+  },
+  {
+    "rank": 56,
+    "sponsor_name": "CAPGEMINI AMERICA, INC.",
+    "new_approvals": 3,
+    "continuation_approvals": 121,
+    "total_approvals": 124
+  },
+  {
+    "rank": 57,
+    "sponsor_name": "DOORDASH INC",
+    "new_approvals": 91,
+    "continuation_approvals": 31,
+    "total_approvals": 122
+  },
+  {
+    "rank": 58,
+    "sponsor_name": "CITIUSTECH INC",
+    "new_approvals": 72,
+    "continuation_approvals": 48,
+    "total_approvals": 120
+  },
+  {
+    "rank": 59,
+    "sponsor_name": "T-MOBILE USA, INC.",
+    "new_approvals": 24,
+    "continuation_approvals": 95,
+    "total_approvals": 119
+  },
+  {
+    "rank": 60,
+    "sponsor_name": "AUTODESK INC",
+    "new_approvals": 50,
+    "continuation_approvals": 68,
+    "total_approvals": 118
+  },
+  {
+    "rank": 61,
+    "sponsor_name": "L AND T TECHNOLOGY SERVICES LTD",
+    "new_approvals": 72,
+    "continuation_approvals": 43,
+    "total_approvals": 115
+  },
+  {
+    "rank": 62,
+    "sponsor_name": "ARISTA NETWORKS INC",
+    "new_approvals": 50,
+    "continuation_approvals": 62,
+    "total_approvals": 112
+  },
+  {
+    "rank": 63,
+    "sponsor_name": "WSP USA INC",
+    "new_approvals": 44,
+    "continuation_approvals": 68,
+    "total_approvals": 112
+  },
+  {
+    "rank": 64,
+    "sponsor_name": "UT-BATTELLE LLC ORNL",
+    "new_approvals": 22,
+    "continuation_approvals": 89,
+    "total_approvals": 111
+  },
+  {
+    "rank": 65,
+    "sponsor_name": "AMGEN INC",
+    "new_approvals": 15,
+    "continuation_approvals": 94,
+    "total_approvals": 109
+  },
+  {
+    "rank": 66,
+    "sponsor_name": "NTT DATA AMERICAS INC",
+    "new_approvals": 16,
+    "continuation_approvals": 93,
+    "total_approvals": 109
+  },
+  {
+    "rank": 67,
+    "sponsor_name": "SIEMENS INDUSTRY SOFTWARE INC",
+    "new_approvals": 63,
+    "continuation_approvals": 46,
+    "total_approvals": 109
+  },
+  {
+    "rank": 68,
+    "sponsor_name": "BAIN AND COMPANY INC",
+    "new_approvals": 91,
+    "continuation_approvals": 16,
+    "total_approvals": 107
+  },
+  {
+    "rank": 69,
+    "sponsor_name": "WORKDAY INC",
+    "new_approvals": 22,
+    "continuation_approvals": 85,
+    "total_approvals": 107
+  },
+  {
+    "rank": 70,
+    "sponsor_name": "DELOITTE AND TOUCHE LLP",
+    "new_approvals": 92,
+    "continuation_approvals": 6,
+    "total_approvals": 98
+  },
+  {
+    "rank": 71,
+    "sponsor_name": "AKAMAI TECHNOLOGIES INC",
+    "new_approvals": 20,
+    "continuation_approvals": 77,
+    "total_approvals": 97
+  },
+  {
+    "rank": 72,
+    "sponsor_name": "OPENAI OPCO LLC",
+    "new_approvals": 89,
+    "continuation_approvals": 7,
+    "total_approvals": 96
+  },
+  {
+    "rank": 73,
+    "sponsor_name": "THERMO FISHER SCIENTIFIC INC",
+    "new_approvals": 26,
+    "continuation_approvals": 70,
+    "total_approvals": 96
+  },
+  {
+    "rank": 74,
+    "sponsor_name": "VMWARE LLC",
+    "new_approvals": 6,
+    "continuation_approvals": 90,
+    "total_approvals": 96
+  },
+  {
+    "rank": 75,
+    "sponsor_name": "AECOM TECHNICAL SERVICES INC",
+    "new_approvals": 52,
+    "continuation_approvals": 38,
+    "total_approvals": 90
+  },
+  {
+    "rank": 76,
+    "sponsor_name": "CVS SHARED SERVICES RESOURCES LLC",
+    "new_approvals": 88,
+    "continuation_approvals": 1,
+    "total_approvals": 89
+  },
+  {
+    "rank": 77,
+    "sponsor_name": "NUTANIX INC",
+    "new_approvals": 24,
+    "continuation_approvals": 65,
+    "total_approvals": 89
+  },
+  {
+    "rank": 78,
+    "sponsor_name": "CHEWY INC",
+    "new_approvals": 29,
+    "continuation_approvals": 59,
+    "total_approvals": 88
+  },
+  {
+    "rank": 79,
+    "sponsor_name": "GLOBALLOGIC INC",
+    "new_approvals": 60,
+    "continuation_approvals": 27,
+    "total_approvals": 87
+  },
+  {
+    "rank": 80,
+    "sponsor_name": "DATABRICKS INC",
+    "new_approvals": 83,
+    "continuation_approvals": 1,
+    "total_approvals": 84
+  },
+  {
+    "rank": 81,
+    "sponsor_name": "VERIZON DATA SERVICES LLC",
+    "new_approvals": 2,
+    "continuation_approvals": 82,
+    "total_approvals": 84
+  },
+  {
+    "rank": 82,
+    "sponsor_name": "DANA-FARBER CANCER INSTITUTE",
+    "new_approvals": 54,
+    "continuation_approvals": 29,
+    "total_approvals": 83
+  },
+  {
+    "rank": 83,
+    "sponsor_name": "HONEYWELL INTERNATIONAL INC",
+    "new_approvals": 56,
+    "continuation_approvals": 26,
+    "total_approvals": 82
+  },
+  {
+    "rank": 84,
+    "sponsor_name": "ENVIRONMENTAL SYSTEMS RESEARCH INSTITUTE INC",
+    "new_approvals": 43,
+    "continuation_approvals": 37,
+    "total_approvals": 80
+  },
+  {
+    "rank": 85,
+    "sponsor_name": "STAPLES INC",
+    "new_approvals": 26,
+    "continuation_approvals": 54,
+    "total_approvals": 80
+  },
+  {
+    "rank": 86,
+    "sponsor_name": "SYNOPSYS INC",
+    "new_approvals": 24,
+    "continuation_approvals": 55,
+    "total_approvals": 79
+  },
+  {
+    "rank": 87,
+    "sponsor_name": "WAYFAIR LLC",
+    "new_approvals": 53,
+    "continuation_approvals": 26,
+    "total_approvals": 79
+  },
+  {
+    "rank": 88,
+    "sponsor_name": "GENPACT LLC",
+    "new_approvals": 41,
+    "continuation_approvals": 36,
+    "total_approvals": 77
+  },
+  {
+    "rank": 89,
+    "sponsor_name": "SLALOM INC",
+    "new_approvals": 14,
+    "continuation_approvals": 63,
+    "total_approvals": 77
+  },
+  {
+    "rank": 90,
+    "sponsor_name": "SLK AMERICA INC",
+    "new_approvals": 38,
+    "continuation_approvals": 39,
+    "total_approvals": 77
+  },
+  {
+    "rank": 91,
+    "sponsor_name": "ATOS SYNTEL INC",
+    "new_approvals": 30,
+    "continuation_approvals": 45,
+    "total_approvals": 75
+  },
+  {
+    "rank": 92,
+    "sponsor_name": "ARM INC",
+    "new_approvals": 47,
+    "continuation_approvals": 27,
+    "total_approvals": 74
+  },
+  {
+    "rank": 93,
+    "sponsor_name": "COMCAST CABLE COMMUNICATIONS, LLC",
+    "new_approvals": 2,
+    "continuation_approvals": 72,
+    "total_approvals": 74
+  },
+  {
+    "rank": 94,
+    "sponsor_name": "PINTEREST INC",
+    "new_approvals": 33,
+    "continuation_approvals": 40,
+    "total_approvals": 73
+  },
+  {
+    "rank": 95,
+    "sponsor_name": "GRANT THORNTON ADVISORS LLC",
+    "new_approvals": 67,
+    "continuation_approvals": 5,
+    "total_approvals": 72
+  },
+  {
+    "rank": 96,
+    "sponsor_name": "NETFLIX INC",
+    "new_approvals": 55,
+    "continuation_approvals": 15,
+    "total_approvals": 70
+  },
+  {
+    "rank": 97,
+    "sponsor_name": "DOCUSIGN INC",
+    "new_approvals": 9,
+    "continuation_approvals": 60,
+    "total_approvals": 69
+  },
+  {
+    "rank": 98,
+    "sponsor_name": "LAWRENCE BERKELEY NATIONAL LABORATORY",
+    "new_approvals": 30,
+    "continuation_approvals": 39,
+    "total_approvals": 69
+  },
+  {
+    "rank": 99,
+    "sponsor_name": "COFORGE LIMITED",
+    "new_approvals": 41,
+    "continuation_approvals": 27,
+    "total_approvals": 68
+  },
+  {
+    "rank": 100,
+    "sponsor_name": "MANKIND AMERICA LLC",
+    "new_approvals": 66,
+    "continuation_approvals": 0,
+    "total_approvals": 66
+  },
+  {
+    "rank": 101,
+    "sponsor_name": "TIGER ANALYTICS INC",
+    "new_approvals": 37,
+    "continuation_approvals": 29,
+    "total_approvals": 66
+  },
+  {
+    "rank": 102,
+    "sponsor_name": "TIKTOK USDS JOINT VENTURE LLC",
+    "new_approvals": 36,
+    "continuation_approvals": 30,
+    "total_approvals": 66
+  },
+  {
+    "rank": 103,
+    "sponsor_name": "F5 INC",
+    "new_approvals": 24,
+    "continuation_approvals": 41,
+    "total_approvals": 65
+  },
+  {
+    "rank": 104,
+    "sponsor_name": "GILEAD SCIENCES INC",
+    "new_approvals": 29,
+    "continuation_approvals": 36,
+    "total_approvals": 65
+  },
+  {
+    "rank": 105,
+    "sponsor_name": "ZS ASSOCIATES INC",
+    "new_approvals": 29,
+    "continuation_approvals": 36,
+    "total_approvals": 65
+  },
+  {
+    "rank": 106,
+    "sponsor_name": "DISH NETWORK LLC",
+    "new_approvals": 20,
+    "continuation_approvals": 44,
+    "total_approvals": 64
+  },
+  {
+    "rank": 107,
+    "sponsor_name": "DISH WIRELESS LLC",
+    "new_approvals": 21,
+    "continuation_approvals": 43,
+    "total_approvals": 64
+  },
+  {
+    "rank": 108,
+    "sponsor_name": "HOWARD HUGHES MEDICAL INSTITUTE",
+    "new_approvals": 26,
+    "continuation_approvals": 38,
+    "total_approvals": 64
+  },
+  {
+    "rank": 109,
+    "sponsor_name": "GENENTECH INC",
+    "new_approvals": 31,
+    "continuation_approvals": 32,
+    "total_approvals": 63
+  },
+  {
+    "rank": 110,
+    "sponsor_name": "INFINITE COMPUTER SOLUTIONS INC",
+    "new_approvals": 46,
+    "continuation_approvals": 17,
+    "total_approvals": 63
+  },
+  {
+    "rank": 111,
+    "sponsor_name": "ASCENDION, INC. FORMERLY KNOWN AS COLLABERA, INC.",
+    "new_approvals": 43,
+    "continuation_approvals": 19,
+    "total_approvals": 62
+  },
+  {
+    "rank": 112,
+    "sponsor_name": "AT AND T SERVICES INC",
+    "new_approvals": 28,
+    "continuation_approvals": 34,
+    "total_approvals": 62
+  },
+  {
+    "rank": 113,
+    "sponsor_name": "MSR TECHNOLOGY GROUP LLC",
+    "new_approvals": 8,
+    "continuation_approvals": 54,
+    "total_approvals": 62
+  },
+  {
+    "rank": 114,
+    "sponsor_name": "COHESITY INC",
+    "new_approvals": 34,
+    "continuation_approvals": 27,
+    "total_approvals": 61
+  },
+  {
+    "rank": 115,
+    "sponsor_name": "COTIVITI INC",
+    "new_approvals": 34,
+    "continuation_approvals": 27,
+    "total_approvals": 61
+  },
+  {
+    "rank": 116,
+    "sponsor_name": "RELX INC D B A LEXISNEXIS USA",
+    "new_approvals": 29,
+    "continuation_approvals": 32,
+    "total_approvals": 61
+  },
+  {
+    "rank": 117,
+    "sponsor_name": "VALUEMOMENTUM INC",
+    "new_approvals": 12,
+    "continuation_approvals": 48,
+    "total_approvals": 60
+  },
+  {
+    "rank": 118,
+    "sponsor_name": "YAHOO HOLDINGS INC",
+    "new_approvals": 21,
+    "continuation_approvals": 39,
+    "total_approvals": 60
+  },
+  {
+    "rank": 119,
+    "sponsor_name": "ATLASSIAN US INC",
+    "new_approvals": 12,
+    "continuation_approvals": 47,
+    "total_approvals": 59
+  },
+  {
+    "rank": 120,
+    "sponsor_name": "BIRLASOFT SOLUTIONS INC",
+    "new_approvals": 44,
+    "continuation_approvals": 15,
+    "total_approvals": 59
+  },
+  {
+    "rank": 121,
+    "sponsor_name": "SAFEWAY INC",
+    "new_approvals": 11,
+    "continuation_approvals": 48,
+    "total_approvals": 59
+  },
+  {
+    "rank": 122,
+    "sponsor_name": "BROOKHAVEN NATIONAL LABORATORY",
+    "new_approvals": 24,
+    "continuation_approvals": 34,
+    "total_approvals": 58
+  },
+  {
+    "rank": 123,
+    "sponsor_name": "NTT DATA SERVICES LLC",
+    "new_approvals": 9,
+    "continuation_approvals": 49,
+    "total_approvals": 58
+  },
+  {
+    "rank": 124,
+    "sponsor_name": "FISERV SOLUTIONS LLC",
+    "new_approvals": 28,
+    "continuation_approvals": 29,
+    "total_approvals": 57
+  },
+  {
+    "rank": 125,
+    "sponsor_name": "KFORCE INC",
+    "new_approvals": 46,
+    "continuation_approvals": 11,
+    "total_approvals": 57
+  },
+  {
+    "rank": 126,
+    "sponsor_name": "SPOTIFY USA INC",
+    "new_approvals": 35,
+    "continuation_approvals": 22,
+    "total_approvals": 57
+  },
+  {
+    "rank": 127,
+    "sponsor_name": "WAYMO LLC",
+    "new_approvals": 22,
+    "continuation_approvals": 35,
+    "total_approvals": 57
+  },
+  {
+    "rank": 128,
+    "sponsor_name": "ANSYS INC",
+    "new_approvals": 23,
+    "continuation_approvals": 33,
+    "total_approvals": 56
+  },
+  {
+    "rank": 129,
+    "sponsor_name": "FIS MANAGEMENT SERVICES LLC",
+    "new_approvals": 4,
+    "continuation_approvals": 52,
+    "total_approvals": 56
+  },
+  {
+    "rank": 130,
+    "sponsor_name": "IQVIA INC",
+    "new_approvals": 13,
+    "continuation_approvals": 43,
+    "total_approvals": 56
+  },
+  {
+    "rank": 131,
+    "sponsor_name": "TARGET ENTERPRISE INC",
+    "new_approvals": 12,
+    "continuation_approvals": 44,
+    "total_approvals": 56
+  },
+  {
+    "rank": 132,
+    "sponsor_name": "FORTINET INC",
+    "new_approvals": 3,
+    "continuation_approvals": 52,
+    "total_approvals": 55
+  },
+  {
+    "rank": 133,
+    "sponsor_name": "INSIGHT GLOBAL LLC",
+    "new_approvals": 50,
+    "continuation_approvals": 5,
+    "total_approvals": 55
+  },
+  {
+    "rank": 134,
+    "sponsor_name": "EPSILON DATA MANAGEMENT LLC",
+    "new_approvals": 1,
+    "continuation_approvals": 53,
+    "total_approvals": 54
+  },
+  {
+    "rank": 135,
+    "sponsor_name": "NATIONAL INSTITUTES OF HEALTH HHS",
+    "new_approvals": 4,
+    "continuation_approvals": 50,
+    "total_approvals": 54
+  },
+  {
+    "rank": 136,
+    "sponsor_name": "MACYS SYSTEMS AND TECHNOLOGY INC",
+    "new_approvals": 1,
+    "continuation_approvals": 52,
+    "total_approvals": 53
+  },
+  {
+    "rank": 137,
+    "sponsor_name": "QUADRANT TECHNOLOGIES LLC",
+    "new_approvals": 12,
+    "continuation_approvals": 41,
+    "total_approvals": 53
+  },
+  {
+    "rank": 138,
+    "sponsor_name": "BATTELLE MEMORIAL INSTITUTE",
+    "new_approvals": 16,
+    "continuation_approvals": 36,
+    "total_approvals": 52
+  },
+  {
+    "rank": 139,
+    "sponsor_name": "PALANTIR TECHNOLOGIES INC",
+    "new_approvals": 35,
+    "continuation_approvals": 17,
+    "total_approvals": 52
+  },
+  {
+    "rank": 140,
+    "sponsor_name": "SNAP INC",
+    "new_approvals": 43,
+    "continuation_approvals": 9,
+    "total_approvals": 52
+  },
+  {
+    "rank": 141,
+    "sponsor_name": "ANTHROPIC PBC",
+    "new_approvals": 48,
+    "continuation_approvals": 3,
+    "total_approvals": 51
+  },
+  {
+    "rank": 142,
+    "sponsor_name": "DASSAULT SYSTEMES AMERICAS CORP",
+    "new_approvals": 21,
+    "continuation_approvals": 30,
+    "total_approvals": 51
+  },
+  {
+    "rank": 143,
+    "sponsor_name": "LOWES COMPANIES INC",
+    "new_approvals": 6,
+    "continuation_approvals": 44,
+    "total_approvals": 50
+  },
+  {
+    "rank": 144,
+    "sponsor_name": "STANTEC CONSULTING SERVICES INC.",
+    "new_approvals": 47,
+    "continuation_approvals": 3,
+    "total_approvals": 50
+  },
+  {
+    "rank": 145,
+    "sponsor_name": "BIRLASOFT INC",
+    "new_approvals": 47,
+    "continuation_approvals": 2,
+    "total_approvals": 49
+  },
+  {
+    "rank": 146,
+    "sponsor_name": "EQUINIX INC",
+    "new_approvals": 16,
+    "continuation_approvals": 33,
+    "total_approvals": 49
+  },
+  {
+    "rank": 147,
+    "sponsor_name": "VERTEX PHARMACEUTICALS INCORPORATED",
+    "new_approvals": 24,
+    "continuation_approvals": 25,
+    "total_approvals": 49
+  },
+  {
+    "rank": 148,
+    "sponsor_name": "ZIFO TECHNOLOGIES INC",
+    "new_approvals": 40,
+    "continuation_approvals": 9,
+    "total_approvals": 49
+  },
+  {
+    "rank": 149,
+    "sponsor_name": "CYIENT INC",
+    "new_approvals": 42,
+    "continuation_approvals": 6,
+    "total_approvals": 48
+  },
+  {
+    "rank": 150,
+    "sponsor_name": "INNOVA SOLUTIONS INC",
+    "new_approvals": 34,
+    "continuation_approvals": 14,
+    "total_approvals": 48
+  },
+  {
+    "rank": 151,
+    "sponsor_name": "MAPLEBEAR INC D B A INSTACART",
+    "new_approvals": 27,
+    "continuation_approvals": 21,
+    "total_approvals": 48
+  },
+  {
+    "rank": 152,
+    "sponsor_name": "NORDSTROM INC D B A NORDSTROM",
+    "new_approvals": 16,
+    "continuation_approvals": 32,
+    "total_approvals": 48
+  },
+  {
+    "rank": 153,
+    "sponsor_name": "PPD DEVELOPMENT L P",
+    "new_approvals": 23,
+    "continuation_approvals": 25,
+    "total_approvals": 48
+  },
+  {
+    "rank": 154,
+    "sponsor_name": "AUDIBLE INC",
+    "new_approvals": 5,
+    "continuation_approvals": 42,
+    "total_approvals": 47
+  },
+  {
+    "rank": 155,
+    "sponsor_name": "CREDIT KARMA LLC",
+    "new_approvals": 10,
+    "continuation_approvals": 37,
+    "total_approvals": 47
+  },
+  {
+    "rank": 156,
+    "sponsor_name": "KINGSTON TECHNOLOGIES INC",
+    "new_approvals": 47,
+    "continuation_approvals": 0,
+    "total_approvals": 47
+  },
+  {
+    "rank": 157,
+    "sponsor_name": "MCKESSON CORPORATION",
+    "new_approvals": 3,
+    "continuation_approvals": 44,
+    "total_approvals": 47
+  },
+  {
+    "rank": 158,
+    "sponsor_name": "VISIONET SYSTEMS INC.",
+    "new_approvals": 29,
+    "continuation_approvals": 18,
+    "total_approvals": 47
+  },
+  {
+    "rank": 159,
+    "sponsor_name": "XORIANT CORPORATION",
+    "new_approvals": 30,
+    "continuation_approvals": 17,
+    "total_approvals": 47
+  },
+  {
+    "rank": 160,
+    "sponsor_name": "7-ELEVEN INC",
+    "new_approvals": 11,
+    "continuation_approvals": 35,
+    "total_approvals": 46
+  },
+  {
+    "rank": 161,
+    "sponsor_name": "AKKODIS INC",
+    "new_approvals": 29,
+    "continuation_approvals": 17,
+    "total_approvals": 46
+  },
+  {
+    "rank": 162,
+    "sponsor_name": "INDEED INC",
+    "new_approvals": 12,
+    "continuation_approvals": 34,
+    "total_approvals": 46
+  },
+  {
+    "rank": 163,
+    "sponsor_name": "STRATEGIC SYSTEMS INC",
+    "new_approvals": 39,
+    "continuation_approvals": 7,
+    "total_approvals": 46
+  },
+  {
+    "rank": 164,
+    "sponsor_name": "REGENERON PHARMACEUTICALS INC",
+    "new_approvals": 23,
+    "continuation_approvals": 22,
+    "total_approvals": 45
+  },
+  {
+    "rank": 165,
+    "sponsor_name": "SIEMENS ENERGY INC",
+    "new_approvals": 27,
+    "continuation_approvals": 18,
+    "total_approvals": 45
+  },
+  {
+    "rank": 166,
+    "sponsor_name": "COMCAST CABLE COMMUNICATIONS LLC",
+    "new_approvals": 26,
+    "continuation_approvals": 18,
+    "total_approvals": 44
+  },
+  {
+    "rank": 167,
+    "sponsor_name": "DATADOG INC",
+    "new_approvals": 34,
+    "continuation_approvals": 10,
+    "total_approvals": 44
+  },
+  {
+    "rank": 168,
+    "sponsor_name": "EPAM SYSTEMS INC",
+    "new_approvals": 24,
+    "continuation_approvals": 20,
+    "total_approvals": 44
+  },
+  {
+    "rank": 169,
+    "sponsor_name": "INFINITE COMPUTER SOLUTIONS, INC.",
+    "new_approvals": 8,
+    "continuation_approvals": 36,
+    "total_approvals": 44
+  },
+  {
+    "rank": 170,
+    "sponsor_name": "AMARTHY IT SOLUTIONS LLC",
+    "new_approvals": 43,
+    "continuation_approvals": 0,
+    "total_approvals": 43
+  },
+  {
+    "rank": 171,
+    "sponsor_name": "C3 AI INC",
+    "new_approvals": 27,
+    "continuation_approvals": 16,
+    "total_approvals": 43
+  },
+  {
+    "rank": 172,
+    "sponsor_name": "ELECTRONIC ARTS INC",
+    "new_approvals": 24,
+    "continuation_approvals": 19,
+    "total_approvals": 43
+  },
+  {
+    "rank": 173,
+    "sponsor_name": "MIRACLE SOFTWARE SYSTEMS INC",
+    "new_approvals": 12,
+    "continuation_approvals": 31,
+    "total_approvals": 43
+  },
+  {
+    "rank": 174,
+    "sponsor_name": "ORACLE FINANCIAL SERVICES SOFTWARE INC",
+    "new_approvals": 17,
+    "continuation_approvals": 26,
+    "total_approvals": 43
+  },
+  {
+    "rank": 175,
+    "sponsor_name": "ARCADIS U S INC",
+    "new_approvals": 31,
+    "continuation_approvals": 11,
+    "total_approvals": 42
+  },
+  {
+    "rank": 176,
+    "sponsor_name": "GUIDEWIRE SOFTWARE INC",
+    "new_approvals": 11,
+    "continuation_approvals": 31,
+    "total_approvals": 42
+  },
+  {
+    "rank": 177,
+    "sponsor_name": "HEXAWARE TECHNOLOGIES INC",
+    "new_approvals": 40,
+    "continuation_approvals": 2,
+    "total_approvals": 42
+  },
+  {
+    "rank": 178,
+    "sponsor_name": "HUBSPOT INC",
+    "new_approvals": 36,
+    "continuation_approvals": 6,
+    "total_approvals": 42
+  },
+  {
+    "rank": 179,
+    "sponsor_name": "TATA ELXSI LIMITED",
+    "new_approvals": 24,
+    "continuation_approvals": 18,
+    "total_approvals": 42
+  },
+  {
+    "rank": 180,
+    "sponsor_name": "V-SOFT CONSULTING GROUP, INC.",
+    "new_approvals": 14,
+    "continuation_approvals": 28,
+    "total_approvals": 42
+  },
+  {
+    "rank": 181,
+    "sponsor_name": "ZSCALER INC",
+    "new_approvals": 12,
+    "continuation_approvals": 30,
+    "total_approvals": 42
+  },
+  {
+    "rank": 182,
+    "sponsor_name": "BILL OPERATIONS LLC",
+    "new_approvals": 10,
+    "continuation_approvals": 31,
+    "total_approvals": 41
+  },
+  {
+    "rank": 183,
+    "sponsor_name": "CIGNITI TECHNOLOGIES, INC.",
+    "new_approvals": 28,
+    "continuation_approvals": 13,
+    "total_approvals": 41
+  },
+  {
+    "rank": 184,
+    "sponsor_name": "ITC INFOTECH USA INC",
+    "new_approvals": 24,
+    "continuation_approvals": 17,
+    "total_approvals": 41
+  },
+  {
+    "rank": 185,
+    "sponsor_name": "PERFICIENT INC",
+    "new_approvals": 6,
+    "continuation_approvals": 35,
+    "total_approvals": 41
+  },
+  {
+    "rank": 186,
+    "sponsor_name": "QUEST GLOBAL SERVICES-NA INC",
+    "new_approvals": 34,
+    "continuation_approvals": 7,
+    "total_approvals": 41
+  },
+  {
+    "rank": 187,
+    "sponsor_name": "RIOT GAMES INC",
+    "new_approvals": 27,
+    "continuation_approvals": 14,
+    "total_approvals": 41
+  },
+  {
+    "rank": 188,
+    "sponsor_name": "ANALYSIS GROUP INC",
+    "new_approvals": 25,
+    "continuation_approvals": 15,
+    "total_approvals": 40
+  },
+  {
+    "rank": 189,
+    "sponsor_name": "CRA INTERNATIONAL INC",
+    "new_approvals": 32,
+    "continuation_approvals": 8,
+    "total_approvals": 40
+  },
+  {
+    "rank": 190,
+    "sponsor_name": "HCL GLOBAL SYSTEMS INC",
+    "new_approvals": 19,
+    "continuation_approvals": 21,
+    "total_approvals": 40
+  },
+  {
+    "rank": 191,
+    "sponsor_name": "NAGARRO INC",
+    "new_approvals": 35,
+    "continuation_approvals": 5,
+    "total_approvals": 40
+  },
+  {
+    "rank": 192,
+    "sponsor_name": "SAPIENT CORPORATION",
+    "new_approvals": 8,
+    "continuation_approvals": 32,
+    "total_approvals": 40
+  },
+  {
+    "rank": 193,
+    "sponsor_name": "TATA TECHNOLOGIES INC",
+    "new_approvals": 35,
+    "continuation_approvals": 5,
+    "total_approvals": 40
+  },
+  {
+    "rank": 194,
+    "sponsor_name": "ZENSAR TECHNOLOGIES INC",
+    "new_approvals": 27,
+    "continuation_approvals": 13,
+    "total_approvals": 40
+  },
+  {
+    "rank": 195,
+    "sponsor_name": "AMALGAM TECHNOLOGIES INC",
+    "new_approvals": 38,
+    "continuation_approvals": 1,
+    "total_approvals": 39
+  },
+  {
+    "rank": 196,
+    "sponsor_name": "DATAFLAKE LLC",
+    "new_approvals": 39,
+    "continuation_approvals": 0,
+    "total_approvals": 39
+  },
+  {
+    "rank": 197,
+    "sponsor_name": "NETAPP INC",
+    "new_approvals": 39,
+    "continuation_approvals": 0,
+    "total_approvals": 39
+  },
+  {
+    "rank": 198,
+    "sponsor_name": "RED HAT LLC",
+    "new_approvals": 6,
+    "continuation_approvals": 33,
+    "total_approvals": 39
+  },
+  {
+    "rank": 199,
+    "sponsor_name": "THE SPHERE INSTITUTE",
+    "new_approvals": 21,
+    "continuation_approvals": 18,
+    "total_approvals": 39
+  },
+  {
+    "rank": 200,
+    "sponsor_name": "ACTIVISION PUBLISHING INC",
+    "new_approvals": 31,
+    "continuation_approvals": 7,
+    "total_approvals": 38
+  },
+  {
+    "rank": 201,
+    "sponsor_name": "IBASE OPERATIONS CORP D B A QUALITEST GROUP",
+    "new_approvals": 25,
+    "continuation_approvals": 13,
+    "total_approvals": 38
+  },
+  {
+    "rank": 202,
+    "sponsor_name": "INTRAEDGE, INC.",
+    "new_approvals": 31,
+    "continuation_approvals": 7,
+    "total_approvals": 38
+  },
+  {
+    "rank": 203,
+    "sponsor_name": "LEXISNEXIS RISK SOLUTIONS INC",
+    "new_approvals": 14,
+    "continuation_approvals": 24,
+    "total_approvals": 38
+  },
+  {
+    "rank": 204,
+    "sponsor_name": "MERCK SHARP AND DOHME LLC",
+    "new_approvals": 33,
+    "continuation_approvals": 5,
+    "total_approvals": 38
+  },
+  {
+    "rank": 205,
+    "sponsor_name": "MONGODB INC",
+    "new_approvals": 13,
+    "continuation_approvals": 25,
+    "total_approvals": 38
+  },
+  {
+    "rank": 206,
+    "sponsor_name": "STV INCORPORATED",
+    "new_approvals": 31,
+    "continuation_approvals": 7,
+    "total_approvals": 38
+  },
+  {
+    "rank": 207,
+    "sponsor_name": "USACS MEDICAL GROUP LTD",
+    "new_approvals": 6,
+    "continuation_approvals": 32,
+    "total_approvals": 38
+  },
+  {
+    "rank": 208,
+    "sponsor_name": "VERKADA INC",
+    "new_approvals": 26,
+    "continuation_approvals": 12,
+    "total_approvals": 38
+  },
+  {
+    "rank": 209,
+    "sponsor_name": "ANTRA INC",
+    "new_approvals": 26,
+    "continuation_approvals": 11,
+    "total_approvals": 37
+  },
+  {
+    "rank": 210,
+    "sponsor_name": "BAHWAN CYBERTEK INC",
+    "new_approvals": 32,
+    "continuation_approvals": 5,
+    "total_approvals": 37
+  },
+  {
+    "rank": 211,
+    "sponsor_name": "BLIZZARD ENTERTAINMENT INC",
+    "new_approvals": 27,
+    "continuation_approvals": 10,
+    "total_approvals": 37
+  },
+  {
+    "rank": 212,
+    "sponsor_name": "EPITEC INC",
+    "new_approvals": 21,
+    "continuation_approvals": 16,
+    "total_approvals": 37
+  },
+  {
+    "rank": 213,
+    "sponsor_name": "HTC GLOBAL SERVICES INC",
+    "new_approvals": 37,
+    "continuation_approvals": 0,
+    "total_approvals": 37
+  },
+  {
+    "rank": 214,
+    "sponsor_name": "INFORMATICA LLC",
+    "new_approvals": 9,
+    "continuation_approvals": 28,
+    "total_approvals": 37
+  },
+  {
+    "rank": 215,
+    "sponsor_name": "SAI BUSINESS SOLUTIONS LLC",
+    "new_approvals": 35,
+    "continuation_approvals": 2,
+    "total_approvals": 37
+  },
+  {
+    "rank": 216,
+    "sponsor_name": "UCHICAGO ARGONNE LLC",
+    "new_approvals": 32,
+    "continuation_approvals": 5,
+    "total_approvals": 37
+  },
+  {
+    "rank": 217,
+    "sponsor_name": "BURNS AND MCDONNELL ENGINEERING COMPANY INC",
+    "new_approvals": 11,
+    "continuation_approvals": 25,
+    "total_approvals": 36
+  },
+  {
+    "rank": 218,
+    "sponsor_name": "INFOGAIN CORPORATION",
+    "new_approvals": 24,
+    "continuation_approvals": 12,
+    "total_approvals": 36
+  },
+  {
+    "rank": 219,
+    "sponsor_name": "LYFT INC",
+    "new_approvals": 18,
+    "continuation_approvals": 18,
+    "total_approvals": 36
+  },
+  {
+    "rank": 220,
+    "sponsor_name": "SQUAD SOFTWARE INC",
+    "new_approvals": 35,
+    "continuation_approvals": 1,
+    "total_approvals": 36
+  },
+  {
+    "rank": 221,
+    "sponsor_name": "SS AND C TECHNOLOGIES INC",
+    "new_approvals": 9,
+    "continuation_approvals": 27,
+    "total_approvals": 36
+  },
+  {
+    "rank": 222,
+    "sponsor_name": "VEEVA SYSTEMS INC",
+    "new_approvals": 21,
+    "continuation_approvals": 15,
+    "total_approvals": 36
+  },
+  {
+    "rank": 223,
+    "sponsor_name": "BLACK AND VEATCH CORPORATION",
+    "new_approvals": 29,
+    "continuation_approvals": 6,
+    "total_approvals": 35
+  },
+  {
+    "rank": 224,
+    "sponsor_name": "BLOCK INC",
+    "new_approvals": 10,
+    "continuation_approvals": 25,
+    "total_approvals": 35
+  },
+  {
+    "rank": 225,
+    "sponsor_name": "COGNIER INC",
+    "new_approvals": 33,
+    "continuation_approvals": 2,
+    "total_approvals": 35
+  },
+  {
+    "rank": 226,
+    "sponsor_name": "NOVARTIS PHARMACEUTICALS CORPORATION",
+    "new_approvals": 17,
+    "continuation_approvals": 18,
+    "total_approvals": 35
+  },
+  {
+    "rank": 227,
+    "sponsor_name": "SONY INTERACTIVE ENTERTAINMENT LLC",
+    "new_approvals": 18,
+    "continuation_approvals": 17,
+    "total_approvals": 35
+  },
+  {
+    "rank": 228,
+    "sponsor_name": "SPARK TECHNOLOGIES INC",
+    "new_approvals": 35,
+    "continuation_approvals": 0,
+    "total_approvals": 35
+  },
+  {
+    "rank": 229,
+    "sponsor_name": "TAVANT TECHNOLOGIES INC",
+    "new_approvals": 29,
+    "continuation_approvals": 6,
+    "total_approvals": 35
+  },
+  {
+    "rank": 230,
+    "sponsor_name": "THE METHODIST HOSPITAL RESEARCH INSTITUTE",
+    "new_approvals": 29,
+    "continuation_approvals": 6,
+    "total_approvals": 35
+  },
+  {
+    "rank": 231,
+    "sponsor_name": "TWILIO INC",
+    "new_approvals": 12,
+    "continuation_approvals": 23,
+    "total_approvals": 35
+  },
+  {
+    "rank": 232,
+    "sponsor_name": "3I INFOTECH INC",
+    "new_approvals": 5,
+    "continuation_approvals": 29,
+    "total_approvals": 34
+  },
+  {
+    "rank": 233,
+    "sponsor_name": "AMAZON ADVERTISING LLC",
+    "new_approvals": 23,
+    "continuation_approvals": 11,
+    "total_approvals": 34
+  },
+  {
+    "rank": 234,
+    "sponsor_name": "ARIBA INC",
+    "new_approvals": 4,
+    "continuation_approvals": 30,
+    "total_approvals": 34
+  },
+  {
+    "rank": 235,
+    "sponsor_name": "CIRRUS LOGIC INTERNATIONAL SEMICONDUCTOR LTD.",
+    "new_approvals": 17,
+    "continuation_approvals": 17,
+    "total_approvals": 34
+  },
+  {
+    "rank": 236,
+    "sponsor_name": "DIGIPULSE TECHNOLOGIES INC",
+    "new_approvals": 5,
+    "continuation_approvals": 29,
+    "total_approvals": 34
+  },
+  {
+    "rank": 237,
+    "sponsor_name": "EXPERIAN INFORMATION SOLUTIONS INC",
+    "new_approvals": 12,
+    "continuation_approvals": 22,
+    "total_approvals": 34
+  },
+  {
+    "rank": 238,
+    "sponsor_name": "MASTECH DIGITAL TECHNOLOGIES, INC., A MASTECH DIGITAL, INC. COMPANY",
+    "new_approvals": 11,
+    "continuation_approvals": 23,
+    "total_approvals": 34
+  },
+  {
+    "rank": 239,
+    "sponsor_name": "PAYCOM PAYROLL LLC",
+    "new_approvals": 27,
+    "continuation_approvals": 7,
+    "total_approvals": 34
+  },
+  {
+    "rank": 240,
+    "sponsor_name": "PYRAMID CONSULTING INC",
+    "new_approvals": 30,
+    "continuation_approvals": 4,
+    "total_approvals": 34
+  },
+  {
+    "rank": 241,
+    "sponsor_name": "SAMSUNG RESEARCH AMERICA INC",
+    "new_approvals": 21,
+    "continuation_approvals": 13,
+    "total_approvals": 34
+  },
+  {
+    "rank": 242,
+    "sponsor_name": "ADVITHRI TECHNOLOGIES LLC",
+    "new_approvals": 28,
+    "continuation_approvals": 5,
+    "total_approvals": 33
+  },
+  {
+    "rank": 243,
+    "sponsor_name": "APPLABS TECH SOLUTIONS INC",
+    "new_approvals": 33,
+    "continuation_approvals": 0,
+    "total_approvals": 33
+  },
+  {
+    "rank": 244,
+    "sponsor_name": "BLUE YONDER INC",
+    "new_approvals": 18,
+    "continuation_approvals": 15,
+    "total_approvals": 33
+  },
+  {
+    "rank": 245,
+    "sponsor_name": "COGNITECH TECHNOLOGIES INC.",
+    "new_approvals": 33,
+    "continuation_approvals": 0,
+    "total_approvals": 33
+  },
+  {
+    "rank": 246,
+    "sponsor_name": "ENDAVA SOLUTIONS LLC",
+    "new_approvals": 10,
+    "continuation_approvals": 23,
+    "total_approvals": 33
+  },
+  {
+    "rank": 247,
+    "sponsor_name": "HEADSTRONG SERVICES LLC",
+    "new_approvals": 9,
+    "continuation_approvals": 24,
+    "total_approvals": 33
+  },
+  {
+    "rank": 248,
+    "sponsor_name": "INTELI PLATFORMS INC",
+    "new_approvals": 31,
+    "continuation_approvals": 2,
+    "total_approvals": 33
+  },
+  {
+    "rank": 249,
+    "sponsor_name": "OKTA INC",
+    "new_approvals": 5,
+    "continuation_approvals": 28,
+    "total_approvals": 33
+  },
+  {
+    "rank": 250,
+    "sponsor_name": "RESEARCH FOUNDATION FOR THE STATE UNIVERSITY OF NEW YORK",
+    "new_approvals": 26,
+    "continuation_approvals": 7,
+    "total_approvals": 33
+  }
+]
