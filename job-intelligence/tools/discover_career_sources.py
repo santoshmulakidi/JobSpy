@@ -5,14 +5,24 @@ import json
 import re
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunsplit
 
 import httpx
 from ats_scrapers import find_company
 
+from career_alerts.registry import provider_matches_url
+
 DEFAULT_OUTPUT = Path("data/top250_career_candidates.json")
 DEFAULT_REVIEW = Path("data/top250_career_targets.review.json")
-FORBIDDEN_HOSTS = {"indeed.com", "linkedin.com"}
+FORBIDDEN_HOSTS = {
+    "careerbuilder.com",
+    "glassdoor.com",
+    "indeed.com",
+    "join.com",
+    "linkedin.com",
+    "monster.com",
+    "ziprecruiter.com",
+}
 LEGAL_WORDS = {
     "america",
     "americas",
@@ -107,19 +117,63 @@ def freehire_candidates(client: httpx.Client, sponsor_name: str) -> list[dict[st
     return candidates
 
 
-def validate_http(client: httpx.Client, url: str | None) -> dict[str, object]:
+def _identity_domain(host: str) -> str:
+    parts = host.lower().rstrip(".").split(".")
+    return ".".join(parts[-2:]) if len(parts) >= 2 else host
+
+
+def validate_http(
+    client: httpx.Client,
+    url: str | None,
+    *,
+    allowed_final_hosts: set[str] | None = None,
+) -> dict[str, object]:
+    """Record reachability, HTTP success, and redirect identity as separate facts."""
     if not url:
-        return {"ok": False, "status_code": None, "final_url": None, "error": "no candidate"}
+        return {
+            "reachable": False,
+            "http_success": False,
+            "redirect_identity_ok": False,
+            "ok": False,
+            "status_code": None,
+            "final_url": None,
+            "error": "no candidate",
+        }
     try:
         response = client.get(url)
+        original = urlparse(url)
+        final = urlparse(str(response.url))
+        original_host = (original.hostname or "").lower()
+        final_host = (final.hostname or "").lower()
+        allowed = {host.lower() for host in (allowed_final_hosts or set())}
+        redirect_identity_ok = (
+            final.scheme == "https"
+            and not is_aggregator(str(response.url))
+            and (
+                _identity_domain(original_host) == _identity_domain(final_host)
+                or final_host in allowed
+            )
+        )
+        http_success = 200 <= response.status_code < 400
         return {
-            "ok": response.status_code < 500 and not is_aggregator(str(response.url)),
+            "reachable": True,
+            "http_success": http_success,
+            "redirect_identity_ok": redirect_identity_ok,
+            "ok": http_success and redirect_identity_ok,
             "status_code": response.status_code,
-            "final_url": str(response.url),
+            "final_url": urlunsplit((final.scheme, final.netloc, final.path, "", "")),
             "error": None,
         }
     except httpx.HTTPError as exc:
-        return {"ok": False, "status_code": None, "final_url": None, "error": str(exc)}
+        return {
+            "reachable": False,
+            "http_success": False,
+            "redirect_identity_ok": False,
+            "ok": False,
+            "status_code": None,
+            "final_url": None,
+            "error": str(exc),
+        }
 
 
 def apply_review_decisions(
@@ -128,25 +182,61 @@ def apply_review_decisions(
     """Materialize an explicitly human-reviewed registry; never infer approval."""
     decisions = json.loads(decisions_path.read_text(encoding="utf-8"))
     by_rank: dict[int, dict[str, object]] = {}
-    for group in decisions.get("verified_groups", []):
-        for rank in group["ranks"]:
-            by_rank[int(rank)] = {
+
+    def add_decision(rank: int, decision: dict[str, object]) -> None:
+        if rank in by_rank:
+            raise ValueError(f"duplicate review decision for rank {rank}")
+        by_rank[rank] = decision
+
+    if isinstance(decisions, list):
+        for row in decisions:
+            if not isinstance(row, dict):
+                raise TypeError("review evidence rows must be objects")
+            status = row.get("decision")
+            if status not in {"verified", "unsupported"}:
+                raise ValueError(f"invalid review decision {status!r}")
+            add_decision(
+                int(row["rank"]),
+                {
+                    "canonical_company": row["canonical_company"],
+                    "career_url": row.get("career_url"),
+                    "provider": row.get("provider"),
+                    "provider_key": row.get("provider_key"),
+                    "mapping_status": status,
+                    "validation_notes": row["decision_reason"],
+                    "sponsor_name": row["sponsor_name"],
+                    "total_approvals": row["total_approvals"],
+                },
+            )
+    elif isinstance(decisions, dict):
+        for group in decisions.get("verified_groups", []):
+            for rank in group["ranks"]:
+                provider = str(group["provider"])
+                provider_key = str(group["provider_key"])
+                career_url = str(group["career_url"])
+                if provider != "html" and not provider_matches_url(
+                    provider, provider_key, career_url
+                ):
+                    provider = "html"
+                add_decision(int(rank), {
                 "canonical_company": group["canonical_company"],
-                "career_url": group["career_url"],
-                "provider": group["provider"],
-                "provider_key": group["provider_key"],
+                "career_url": career_url,
+                "provider": provider,
+                "provider_key": provider_key,
                 "mapping_status": "verified",
                 "validation_notes": group["validation_notes"],
-            }
-    for row in decisions.get("unsupported", []):
-        by_rank[int(row["rank"])] = {
-            "canonical_company": row.get("canonical_company"),
-            "career_url": None,
-            "provider": None,
-            "provider_key": None,
-            "mapping_status": "unsupported",
-            "validation_notes": row["validation_notes"],
-        }
+                })
+        for row in decisions.get("unsupported", []):
+            add_decision(int(row["rank"]), {
+                "canonical_company": row.get("canonical_company"),
+                "career_url": None,
+                "provider": None,
+                "provider_key": None,
+                "mapping_status": "unsupported",
+                "validation_notes": row["validation_notes"],
+            })
+    else:
+        raise TypeError("review decisions must be an object or array")
 
     expected = {int(row["rank"]) for row in sponsors}
     actual = set(by_rank)
@@ -160,6 +250,10 @@ def apply_review_decisions(
     for sponsor in sponsors:
         rank = int(sponsor["rank"])
         decision = by_rank[rank]
+        if decision.get("sponsor_name") not in {None, sponsor["sponsor_name"]}:
+            raise ValueError(f"review sponsor identity mismatch at rank {rank}")
+        if decision.get("total_approvals") not in {None, sponsor["total_approvals"]}:
+            raise ValueError(f"review approvals mismatch at rank {rank}")
         output.append(
             {
                 "rank": rank,
@@ -175,6 +269,59 @@ def apply_review_decisions(
             }
         )
     return output
+
+
+def review_redirect_allowlist(decisions_path: Path) -> dict[str, set[str]]:
+    """Return explicit, human-reviewed final-host exceptions keyed by source URL."""
+    payload = json.loads(decisions_path.read_text(encoding="utf-8"))
+    allowlist: dict[str, set[str]] = {}
+    if isinstance(payload, dict):
+        rows = payload.get("verified_groups", [])
+    elif isinstance(payload, list):
+        rows = payload
+    else:
+        return allowlist
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        url = row.get("career_url")
+        hosts = row.get("allowed_final_hosts", [])
+        if isinstance(url, str) and isinstance(hosts, list):
+            allowlist[url] = {
+                str(host).lower() for host in hosts if isinstance(host, str) and host
+            }
+    return allowlist
+
+
+def review_candidate_metadata(decisions_path: Path) -> dict[int, dict[str, object]]:
+    """Preserve reviewed candidates even when the final decision is unsupported."""
+    payload = json.loads(decisions_path.read_text(encoding="utf-8"))
+    metadata: dict[int, dict[str, object]] = {}
+    if isinstance(payload, list):
+        for row in payload:
+            if isinstance(row, dict):
+                metadata[int(row["rank"])] = {
+                    "candidate_url": row.get("candidate_url"),
+                    "candidate_provider": row.get("candidate_provider"),
+                    "candidate_provider_key": row.get("candidate_provider_key"),
+                }
+        return metadata
+    if not isinstance(payload, dict):
+        return metadata
+    for group in payload.get("verified_groups", []):
+        for rank in group["ranks"]:
+            metadata[int(rank)] = {
+                "candidate_url": group.get("career_url"),
+                "candidate_provider": group.get("provider"),
+                "candidate_provider_key": group.get("provider_key"),
+            }
+    for row in payload.get("unsupported", []):
+        metadata[int(row["rank"])] = {
+            "candidate_url": row.get("candidate_url"),
+            "candidate_provider": row.get("candidate_provider"),
+            "candidate_provider_key": row.get("candidate_provider_key"),
+        }
+    return metadata
 
 
 def main() -> int:
@@ -193,37 +340,89 @@ def main() -> int:
     sponsors = json.loads(args.seed.read_text(encoding="utf-8"))
     if args.review_decisions:
         output_rows = apply_review_decisions(sponsors, args.review_decisions)
+        redirect_allowlist = review_redirect_allowlist(args.review_decisions)
+        candidate_metadata = review_candidate_metadata(args.review_decisions)
         outcomes: dict[str, dict[str, object]] = {}
         with httpx.Client(
             follow_redirects=True,
             timeout=12,
             headers={"User-Agent": "JobIntelligence career-source review/1.0"},
         ) as client:
-            urls = sorted({str(row["career_url"]) for row in output_rows if row["career_url"]})
-            with ThreadPoolExecutor(max_workers=12) as executor:
-                results = executor.map(lambda url: validate_http(client, url), urls)
-                outcomes.update(zip(urls, results, strict=True))
-        review_rows = [
-            {
-                "rank": row["rank"],
-                "sponsor": row["sponsor_name"],
-                "candidate_url": row["career_url"],
-                "candidate_provider": row["provider"],
-                "candidate_provider_key": row["provider_key"],
-                "evidence_source": "human review of official company careers page or ATS tenant",
-                "mapping_status": row["mapping_status"],
-                "http_validation": outcomes.get(
-                    str(row["career_url"]),
-                    {
-                        "ok": False,
-                        "status_code": None,
-                        "final_url": None,
-                        "error": row["validation_notes"],
-                    },
-                ),
+            urls = {
+                str(row["career_url"]) for row in output_rows if row["career_url"]
             }
-            for row in output_rows
-        ]
+            urls.update(
+                str(metadata["candidate_url"])
+                for metadata in candidate_metadata.values()
+                if metadata.get("candidate_url")
+            )
+            sorted_urls = sorted(urls)
+            with ThreadPoolExecutor(max_workers=12) as executor:
+                results = executor.map(
+                    lambda url: validate_http(
+                        client,
+                        url,
+                        allowed_final_hosts=redirect_allowlist.get(url),
+                    ),
+                    sorted_urls,
+                )
+                outcomes.update(zip(sorted_urls, results, strict=True))
+        review_rows = []
+        for row in output_rows:
+            url = row["career_url"]
+            candidate = candidate_metadata.get(int(row["rank"]), {})
+            candidate_url = candidate.get("candidate_url")
+            host = urlparse(str(url)).hostname if url else None
+            if row["mapping_status"] == "verified":
+                allowed_hosts = sorted(redirect_allowlist.get(str(url), set()))
+                identity_evidence = (
+                    f"Human-reviewed official company careers domain: {host}"
+                    if row["provider"] == "html"
+                    else "Human-reviewed official ATS/first-party source: "
+                    f"provider={row['provider']}; key={row['provider_key']}; host={host}"
+                )
+                if allowed_hosts:
+                    identity_evidence += (
+                        "; explicitly reviewed official redirect host(s): "
+                        + ", ".join(allowed_hosts)
+                    )
+            else:
+                allowed_hosts = []
+                identity_evidence = None
+            evidence_url = candidate_url or url
+            http_validation = (
+                outcomes[str(evidence_url)]
+                if evidence_url
+                else {
+                    "reachable": False,
+                    "http_success": False,
+                    "redirect_identity_ok": False,
+                    "ok": False,
+                    "status_code": None,
+                    "final_url": None,
+                    "error": row["validation_notes"],
+                }
+            )
+            review_rows.append(
+                {
+                    "rank": row["rank"],
+                    "sponsor_name": row["sponsor_name"],
+                    "canonical_company": row["canonical_company"],
+                    "total_approvals": row["total_approvals"],
+                    "candidate_url": candidate_url,
+                    "candidate_provider": candidate.get("candidate_provider"),
+                    "candidate_provider_key": candidate.get("candidate_provider_key"),
+                    "career_url": url,
+                    "provider": row["provider"],
+                    "provider_key": row["provider_key"],
+                    "http_validation": http_validation,
+                    "identity_evidence": identity_evidence,
+                    "allowed_final_hosts": allowed_hosts,
+                    "decision": row["mapping_status"],
+                    "decision_reason": row["validation_notes"],
+                    "reviewed_at": "2026-08-12",
+                }
+            )
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.review_output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(output_rows, indent=2) + "\n", encoding="utf-8")

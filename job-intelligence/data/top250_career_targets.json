@@ -148,7 +148,7 @@
     "canonical_company": "Salesforce",
     "total_approvals": 587,
     "career_url": "https://careers.salesforce.com/en/jobs/",
-    "provider": "workday",
+    "provider": "html",
     "provider_key": "salesforce/external_career_site",
     "mapping_status": "verified",
     "validation_notes": "Official Salesforce careers page and Workday tenant reviewed 2026-08-12."
@@ -159,7 +159,7 @@
     "canonical_company": "Wipro",
     "total_approvals": 537,
     "career_url": "https://careers.wipro.com/",
-    "provider": "successfactors",
+    "provider": "html",
     "provider_key": "wipro",
     "mapping_status": "verified",
     "validation_notes": "Official Wipro careers page reviewed 2026-08-12."
@@ -192,7 +192,7 @@
     "canonical_company": "Bloomberg",
     "total_approvals": 446,
     "career_url": "https://www.bloomberg.com/company/careers/search",
-    "provider": "avature",
+    "provider": "html",
     "provider_key": "bloomberg",
     "mapping_status": "verified",
     "validation_notes": "Official Bloomberg career search reviewed 2026-08-12."
@@ -250,7 +250,7 @@
     "provider": "html",
     "provider_key": "ltimindtree",
     "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "validation_notes": "Official company careers page reviewed 2026-08-12; redirect to the official LTM successor domain was confirmed."
   },
   {
     "rank": 24,
@@ -305,7 +305,7 @@
     "provider": "bytedance",
     "provider_key": "bytedance",
     "mapping_status": "verified",
-    "validation_notes": "Official ByteDance jobs board reviewed 2026-08-12; ByteDance and TikTok sponsor entities share the source."
+    "validation_notes": "Official ByteDance jobs board reviewed 2026-08-12; its official joinbytedance.com redirect and shared sponsor entities were confirmed."
   },
   {
     "rank": 29,
@@ -313,7 +313,7 @@
     "canonical_company": "ServiceNow",
     "total_approvals": 287,
     "career_url": "https://careers.servicenow.com/jobs/",
-    "provider": "smartrecruiters",
+    "provider": "html",
     "provider_key": "servicenow",
     "mapping_status": "verified",
     "validation_notes": "Official ServiceNow careers page and ATS directory entry reviewed 2026-08-12."
@@ -434,7 +434,7 @@
     "canonical_company": "Expedia Group",
     "total_approvals": 223,
     "career_url": "https://careers.expediagroup.com/jobs/",
-    "provider": "workday",
+    "provider": "html",
     "provider_key": "expedia/search",
     "mapping_status": "verified",
     "validation_notes": "Official Expedia Group careers page and ATS entry reviewed 2026-08-12."
@@ -459,7 +459,7 @@
     "provider": "bytedance",
     "provider_key": "bytedance",
     "mapping_status": "verified",
-    "validation_notes": "Official ByteDance jobs board reviewed 2026-08-12; ByteDance and TikTok sponsor entities share the source."
+    "validation_notes": "Official ByteDance jobs board reviewed 2026-08-12; its official joinbytedance.com redirect and shared sponsor entities were confirmed."
   },
   {
     "rank": 43,
@@ -467,7 +467,7 @@
     "canonical_company": "Virtusa",
     "total_approvals": 199,
     "career_url": "https://www.virtusa.com/careers",
-    "provider": "smartrecruiters",
+    "provider": "html",
     "provider_key": "virtusapolaris",
     "mapping_status": "verified",
     "validation_notes": "Official Virtusa careers page and ATS entry reviewed 2026-08-12."
@@ -588,7 +588,7 @@
     "canonical_company": "Snowflake",
     "total_approvals": 146,
     "career_url": "https://careers.snowflake.com/us/en/search-results",
-    "provider": "ashby",
+    "provider": "html",
     "provider_key": "snowflake",
     "mapping_status": "verified",
     "validation_notes": "Official Snowflake careers page and ATS directory entry reviewed 2026-08-12."
@@ -632,7 +632,7 @@
     "canonical_company": "CitiusTech",
     "total_approvals": 120,
     "career_url": "https://www.citiustech.com/careers/current-openings",
-    "provider": "smartrecruiters",
+    "provider": "html",
     "provider_key": "citiustech",
     "mapping_status": "verified",
     "validation_notes": "Official CitiusTech openings page and ATS entry reviewed 2026-08-12."
@@ -676,7 +676,7 @@
     "canonical_company": "Arista Networks",
     "total_approvals": 112,
     "career_url": "https://www.arista.com/en/careers",
-    "provider": "smartrecruiters",
+    "provider": "html",
     "provider_key": "aristanetworks",
     "mapping_status": "verified",
     "validation_notes": "Official Arista careers page and ATS entry reviewed 2026-08-12."
@@ -709,7 +709,7 @@
     "canonical_company": "Amgen",
     "total_approvals": 109,
     "career_url": "https://careers.amgen.com/en/jobs/",
-    "provider": "workday",
+    "provider": "html",
     "provider_key": "amgen/careers",
     "mapping_status": "verified",
     "validation_notes": "Official Amgen careers page and Workday tenant reviewed 2026-08-12."
@@ -720,7 +720,7 @@
     "canonical_company": "NTT DATA",
     "total_approvals": 109,
     "career_url": "https://careers.services.global.ntt/global/en/search-results",
-    "provider": "eightfold",
+    "provider": "html",
     "provider_key": "nttdata",
     "mapping_status": "verified",
     "validation_notes": "Official NTT DATA careers source reviewed 2026-08-12; both sponsor entities share it."
@@ -774,11 +774,11 @@
     "sponsor_name": "AKAMAI TECHNOLOGIES INC",
     "canonical_company": "Akamai",
     "total_approvals": 97,
-    "career_url": "https://akamaicareers.inflightcloud.com/",
-    "provider": "html",
-    "provider_key": "akamai",
-    "mapping_status": "verified",
-    "validation_notes": "Official Akamai careers portal reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "The discovered inflightcloud tenant could not be confidently tied to Akamai by auditable official-domain evidence during re-review on 2026-08-12."
   },
   {
     "rank": 72,
@@ -786,7 +786,7 @@
     "canonical_company": "OpenAI",
     "total_approvals": 96,
     "career_url": "https://openai.com/careers/search/",
-    "provider": "ashby",
+    "provider": "html",
     "provider_key": "openai",
     "mapping_status": "verified",
     "validation_notes": "Official OpenAI careers search and Ashby tenant reviewed 2026-08-12."
@@ -874,7 +874,7 @@
     "canonical_company": "Databricks",
     "total_approvals": 84,
     "career_url": "https://www.databricks.com/company/careers/open-positions",
-    "provider": "greenhouse",
+    "provider": "html",
     "provider_key": "databricks",
     "mapping_status": "verified",
     "validation_notes": "Official Databricks openings page and Greenhouse tenant reviewed 2026-08-12."
@@ -929,7 +929,7 @@
     "canonical_company": "Staples",
     "total_approvals": 80,
     "career_url": "https://careers.staples.com/",
-    "provider": "oracle",
+    "provider": "html",
     "provider_key": "staplesinc",
     "mapping_status": "verified",
     "validation_notes": "Official Staples careers page and Oracle tenant reviewed 2026-08-12."
@@ -940,7 +940,7 @@
     "canonical_company": "Synopsys",
     "total_approvals": 79,
     "career_url": "https://careers.synopsys.com/",
-    "provider": "avature",
+    "provider": "html",
     "provider_key": "synopsys",
     "mapping_status": "verified",
     "validation_notes": "Official Synopsys careers page and ATS entry reviewed 2026-08-12."
@@ -962,7 +962,7 @@
     "canonical_company": "Genpact",
     "total_approvals": 77,
     "career_url": "https://www.genpact.com/careers/jobsearch",
-    "provider": "avature",
+    "provider": "html",
     "provider_key": "genpact",
     "mapping_status": "verified",
     "validation_notes": "Official Genpact career search reviewed 2026-08-12; Headstrong is consolidated to the parent board."
@@ -1006,7 +1006,7 @@
     "canonical_company": "Arm",
     "total_approvals": 74,
     "career_url": "https://careers.arm.com/search-jobs",
-    "provider": "adp",
+    "provider": "html",
     "provider_key": "arm",
     "mapping_status": "verified",
     "validation_notes": "Official Arm careers search and ATS directory entry reviewed 2026-08-12."
@@ -1028,7 +1028,7 @@
     "canonical_company": "Pinterest",
     "total_approvals": 73,
     "career_url": "https://www.pinterestcareers.com/jobs/",
-    "provider": "greenhouse",
+    "provider": "html",
     "provider_key": "pinterest",
     "mapping_status": "verified",
     "validation_notes": "Official Pinterest careers page and Greenhouse tenant reviewed 2026-08-12."
@@ -1050,7 +1050,7 @@
     "canonical_company": "Netflix",
     "total_approvals": 70,
     "career_url": "https://jobs.netflix.com/search",
-    "provider": "eightfold",
+    "provider": "html",
     "provider_key": "netflix",
     "mapping_status": "verified",
     "validation_notes": "Official Netflix jobs search and ATS entry reviewed 2026-08-12."
@@ -1061,7 +1061,7 @@
     "canonical_company": "Docusign",
     "total_approvals": 69,
     "career_url": "https://careers.docusign.com/jobs/",
-    "provider": "icims",
+    "provider": "html",
     "provider_key": "uscareers-docusign",
     "mapping_status": "verified",
     "validation_notes": "Official Docusign careers page and iCIMS tenant reviewed 2026-08-12."
@@ -1105,7 +1105,7 @@
     "canonical_company": "Tiger Analytics",
     "total_approvals": 66,
     "career_url": "https://www.tigeranalytics.com/careers/current-openings/",
-    "provider": "workable",
+    "provider": "html",
     "provider_key": "tiger-analytics",
     "mapping_status": "verified",
     "validation_notes": "Official Tiger Analytics openings page and ATS entry reviewed 2026-08-12."
@@ -1119,7 +1119,7 @@
     "provider": "bytedance",
     "provider_key": "bytedance",
     "mapping_status": "verified",
-    "validation_notes": "Official ByteDance jobs board reviewed 2026-08-12; ByteDance and TikTok sponsor entities share the source."
+    "validation_notes": "Official ByteDance jobs board reviewed 2026-08-12; its official joinbytedance.com redirect and shared sponsor entities were confirmed."
   },
   {
     "rank": 103,
@@ -1163,7 +1163,7 @@
     "provider": "html",
     "provider_key": "dish",
     "mapping_status": "verified",
-    "validation_notes": "Official DISH careers page reviewed 2026-08-12; Network and Wireless sponsor entities share it."
+    "validation_notes": "Official DISH careers page reviewed 2026-08-12; redirect to parent EchoStar careers and shared sponsor entities were confirmed."
   },
   {
     "rank": 107,
@@ -1174,7 +1174,7 @@
     "provider": "html",
     "provider_key": "dish",
     "mapping_status": "verified",
-    "validation_notes": "Official DISH careers page reviewed 2026-08-12; Network and Wireless sponsor entities share it."
+    "validation_notes": "Official DISH careers page reviewed 2026-08-12; redirect to parent EchoStar careers and shared sponsor entities were confirmed."
   },
   {
     "rank": 108,
@@ -1182,7 +1182,7 @@
     "canonical_company": "Howard Hughes Medical Institute",
     "total_approvals": 64,
     "career_url": "https://www.hhmi.org/careers",
-    "provider": "workday",
+    "provider": "html",
     "provider_key": "hhmi/external",
     "mapping_status": "verified",
     "validation_notes": "Official HHMI careers page and Workday tenant reviewed 2026-08-12."
@@ -1347,7 +1347,7 @@
     "canonical_company": "NTT DATA",
     "total_approvals": 58,
     "career_url": "https://careers.services.global.ntt/global/en/search-results",
-    "provider": "eightfold",
+    "provider": "html",
     "provider_key": "nttdata",
     "mapping_status": "verified",
     "validation_notes": "Official NTT DATA careers source reviewed 2026-08-12; both sponsor entities share it."
@@ -1358,7 +1358,7 @@
     "canonical_company": "Fiserv",
     "total_approvals": 57,
     "career_url": "https://www.careers.fiserv.com/",
-    "provider": "workday",
+    "provider": "html",
     "provider_key": "fiserv/ext",
     "mapping_status": "verified",
     "validation_notes": "Official Fiserv careers page and Workday tenant reviewed 2026-08-12."
@@ -1391,7 +1391,7 @@
     "canonical_company": "Waymo",
     "total_approvals": 57,
     "career_url": "https://careers.withwaymo.com/jobs/",
-    "provider": "greenhouse",
+    "provider": "html",
     "provider_key": "waymo",
     "mapping_status": "verified",
     "validation_notes": "Official Waymo careers page and Greenhouse tenant reviewed 2026-08-12."
@@ -1405,7 +1405,7 @@
     "provider": "html",
     "provider_key": "ansys",
     "mapping_status": "verified",
-    "validation_notes": "Official Ansys careers board reviewed 2026-08-12."
+    "validation_notes": "Official Ansys careers page reviewed 2026-08-12; redirect to the official Synopsys acquisition careers page was confirmed."
   },
   {
     "rank": 129,
@@ -1424,7 +1424,7 @@
     "canonical_company": "IQVIA",
     "total_approvals": 56,
     "career_url": "https://jobs.iqvia.com/en/",
-    "provider": "workday",
+    "provider": "html",
     "provider_key": "iqvia/iqvia",
     "mapping_status": "verified",
     "validation_notes": "Official IQVIA careers page and Workday tenant reviewed 2026-08-12."
@@ -1489,11 +1489,11 @@
     "sponsor_name": "MACYS SYSTEMS AND TECHNOLOGY INC",
     "canonical_company": "Macy's",
     "total_approvals": 53,
-    "career_url": "https://www.macysjobs.com/search-jobs",
-    "provider": "html",
-    "provider_key": "macys",
+    "career_url": "https://ebwh.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/search-jobs",
+    "provider": "oracle",
+    "provider_key": "macys-cx_1001",
     "mapping_status": "verified",
-    "validation_notes": "Official company jobs search reviewed 2026-08-12."
+    "validation_notes": "Official Macy's Oracle Cloud ATS tenant reached from the company jobs search and reviewed 2026-08-12."
   },
   {
     "rank": 137,
@@ -1523,7 +1523,7 @@
     "canonical_company": "Palantir",
     "total_approvals": 52,
     "career_url": "https://www.palantir.com/careers/",
-    "provider": "lever",
+    "provider": "html",
     "provider_key": "palantir",
     "mapping_status": "verified",
     "validation_notes": "Official Palantir careers page and Lever tenant reviewed 2026-08-12."
@@ -1702,7 +1702,7 @@
     "provider": "html",
     "provider_key": "credit-karma",
     "mapping_status": "verified",
-    "validation_notes": "Official company jobs page reviewed 2026-08-12."
+    "validation_notes": "Official Credit Karma careers page reviewed 2026-08-12; redirect to parent Intuit's Credit Karma-filtered jobs search was confirmed."
   },
   {
     "rank": 156,
@@ -1721,7 +1721,7 @@
     "canonical_company": "McKesson",
     "total_approvals": 47,
     "career_url": "https://careers.mckesson.com/en/",
-    "provider": "smartrecruiters",
+    "provider": "html",
     "provider_key": "mckesson4",
     "mapping_status": "verified",
     "validation_notes": "Official McKesson careers page and ATS entry reviewed 2026-08-12."
@@ -1831,7 +1831,7 @@
     "canonical_company": "Datadog",
     "total_approvals": 44,
     "career_url": "https://careers.datadoghq.com/",
-    "provider": "greenhouse",
+    "provider": "html",
     "provider_key": "datadog",
     "mapping_status": "verified",
     "validation_notes": "Official Datadog careers page and Greenhouse tenant reviewed 2026-08-12."
@@ -1875,7 +1875,7 @@
     "canonical_company": "C3 AI",
     "total_approvals": 43,
     "career_url": "https://c3.ai/careers/",
-    "provider": "greenhouse",
+    "provider": "html",
     "provider_key": "c3iot",
     "mapping_status": "verified",
     "validation_notes": "Official C3 AI careers page and Greenhouse tenant reviewed 2026-08-12."
@@ -1886,7 +1886,7 @@
     "canonical_company": "Electronic Arts",
     "total_approvals": 43,
     "career_url": "https://jobs.ea.com/en_US/careers",
-    "provider": "avature",
+    "provider": "html",
     "provider_key": "ea",
     "mapping_status": "verified",
     "validation_notes": "Official EA careers board and ATS entry reviewed 2026-08-12."
@@ -1985,7 +1985,7 @@
     "canonical_company": "Zscaler",
     "total_approvals": 42,
     "career_url": "https://www.zscaler.com/careers/search",
-    "provider": "greenhouse",
+    "provider": "html",
     "provider_key": "zscaler",
     "mapping_status": "verified",
     "validation_notes": "Official Zscaler careers search and Greenhouse tenant reviewed 2026-08-12."
@@ -2062,7 +2062,7 @@
     "canonical_company": "Analysis Group",
     "total_approvals": 40,
     "career_url": "https://www.analysisgroup.com/careers/career-opportunities/",
-    "provider": "icims",
+    "provider": "html",
     "provider_key": "analysisgroup",
     "mapping_status": "verified",
     "validation_notes": "Official Analysis Group opportunities page and iCIMS tenant reviewed 2026-08-12."
@@ -2095,7 +2095,7 @@
     "canonical_company": "Nagarro",
     "total_approvals": 40,
     "career_url": "https://www.nagarro.com/en/careers",
-    "provider": "smartrecruiters",
+    "provider": "html",
     "provider_key": "nagarro1",
     "mapping_status": "verified",
     "validation_notes": "Official Nagarro careers page and ATS entry reviewed 2026-08-12."
@@ -2161,7 +2161,7 @@
     "canonical_company": "NetApp",
     "total_approvals": 39,
     "career_url": "https://careers.netapp.com/",
-    "provider": "eightfold",
+    "provider": "html",
     "provider_key": "netapp",
     "mapping_status": "verified",
     "validation_notes": "Official NetApp careers page and ATS entry reviewed 2026-08-12."
@@ -2204,11 +2204,11 @@
     "sponsor_name": "IBASE OPERATIONS CORP D B A QUALITEST GROUP",
     "canonical_company": "Qualitest",
     "total_approvals": 38,
-    "career_url": "https://careers.qualitestgroup.com/",
-    "provider": "html",
-    "provider_key": "qualitest",
-    "mapping_status": "verified",
-    "validation_notes": "Official Qualitest careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "The previously reviewed careers URL now redirects to a generic SAP recruiting product page, so no current official Qualitest job source could be confidently evidenced on 2026-08-12."
   },
   {
     "rank": 202,
@@ -2249,7 +2249,7 @@
     "canonical_company": "MongoDB",
     "total_approvals": 38,
     "career_url": "https://www.mongodb.com/company/careers/teams/engineering",
-    "provider": "greenhouse",
+    "provider": "html",
     "provider_key": "mongodb",
     "mapping_status": "verified",
     "validation_notes": "Official MongoDB careers page and Greenhouse tenant reviewed 2026-08-12."
@@ -2282,7 +2282,7 @@
     "canonical_company": "Verkada",
     "total_approvals": 38,
     "career_url": "https://www.verkada.com/careers/",
-    "provider": "greenhouse",
+    "provider": "html",
     "provider_key": "verkada",
     "mapping_status": "verified",
     "validation_notes": "Official Verkada careers page and Greenhouse tenant reviewed 2026-08-12."
@@ -2304,7 +2304,7 @@
     "canonical_company": "Bahwan CyberTek",
     "total_approvals": 37,
     "career_url": "https://www.bahwancybertek.com/careers",
-    "provider": "workable",
+    "provider": "html",
     "provider_key": "bahwan-cybertek-group",
     "mapping_status": "verified",
     "validation_notes": "Official Bahwan CyberTek careers page and ATS entry reviewed 2026-08-12."
@@ -2351,7 +2351,7 @@
     "provider": "html",
     "provider_key": "informatica",
     "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "validation_notes": "Official Informatica careers page reviewed 2026-08-12; redirect to parent Salesforce's Informatica-filtered search was confirmed."
   },
   {
     "rank": 215,
@@ -2391,11 +2391,11 @@
     "sponsor_name": "INFOGAIN CORPORATION",
     "canonical_company": "Infogain",
     "total_approvals": 36,
-    "career_url": "https://www.infogain.com/careers/",
-    "provider": "html",
-    "provider_key": "infogain",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "The previously reviewed Infogain careers URL redirects to an unrelated successor brand without sufficient auditable sponsor identity evidence, so it was not activated on 2026-08-12."
   },
   {
     "rank": 219,
@@ -2403,7 +2403,7 @@
     "canonical_company": "Lyft",
     "total_approvals": 36,
     "career_url": "https://www.lyft.com/careers",
-    "provider": "greenhouse",
+    "provider": "html",
     "provider_key": "lyft",
     "mapping_status": "verified",
     "validation_notes": "Official Lyft careers page and Greenhouse tenant reviewed 2026-08-12."
@@ -2458,7 +2458,7 @@
     "canonical_company": "Block",
     "total_approvals": 35,
     "career_url": "https://block.xyz/careers/jobs",
-    "provider": "greenhouse",
+    "provider": "html",
     "provider_key": "block",
     "mapping_status": "verified",
     "validation_notes": "Official Block careers page and Greenhouse tenant reviewed 2026-08-12."
@@ -2491,7 +2491,7 @@
     "canonical_company": "Sony Interactive Entertainment",
     "total_approvals": 35,
     "career_url": "https://careers.playstation.com/",
-    "provider": "greenhouse",
+    "provider": "html",
     "provider_key": "siei",
     "mapping_status": "verified",
     "validation_notes": "Official PlayStation careers page and Greenhouse tenant reviewed 2026-08-12."
@@ -2535,7 +2535,7 @@
     "canonical_company": "Twilio",
     "total_approvals": 35,
     "career_url": "https://www.twilio.com/en-us/company/jobs",
-    "provider": "eightfold",
+    "provider": "html",
     "provider_key": "twilio",
     "mapping_status": "verified",
     "validation_notes": "Official Twilio jobs page and ATS entry reviewed 2026-08-12."
@@ -2623,7 +2623,7 @@
     "canonical_company": "Paycom",
     "total_approvals": 34,
     "career_url": "https://www.paycom.com/careers/",
-    "provider": "paycom",
+    "provider": "html",
     "provider_key": "paycom",
     "mapping_status": "verified",
     "validation_notes": "Official company careers page reviewed 2026-08-12."
@@ -2633,11 +2633,11 @@
     "sponsor_name": "PYRAMID CONSULTING INC",
     "canonical_company": "Pyramid Consulting",
     "total_approvals": 34,
-    "career_url": "https://pyramidci.com/careers",
-    "provider": "html",
-    "provider_key": "pyramid-consulting",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "The company careers URL redirected to a third-party hosted board whose tenant identity could not be confidently evidenced as official during review on 2026-08-12."
   },
   {
     "rank": 241,
@@ -2700,7 +2700,7 @@
     "canonical_company": "Endava",
     "total_approvals": 33,
     "career_url": "https://www.endava.com/careers/jobs",
-    "provider": "smartrecruiters",
+    "provider": "html",
     "provider_key": "endava",
     "mapping_status": "verified",
     "validation_notes": "Official Endava jobs page and ATS entry reviewed 2026-08-12."
@@ -2711,7 +2711,7 @@
     "canonical_company": "Genpact",
     "total_approvals": 33,
     "career_url": "https://www.genpact.com/careers/jobsearch",
-    "provider": "avature",
+    "provider": "html",
     "provider_key": "genpact",
     "mapping_status": "verified",
     "validation_notes": "Official Genpact career search reviewed 2026-08-12; Headstrong is consolidated to the parent board."
@@ -2733,7 +2733,7 @@
     "canonical_company": "Okta",
     "total_approvals": 33,
     "career_url": "https://www.okta.com/company/careers/",
-    "provider": "greenhouse",
+    "provider": "html",
     "provider_key": "okta",
     "mapping_status": "verified",
     "validation_notes": "Official Okta careers page and Greenhouse tenant reviewed 2026-08-12."
