@@ -48,11 +48,11 @@
     "sponsor_name": "WAL-MART ASSOCIATES INC",
     "canonical_company": "Walmart",
     "total_approvals": 1428,
-    "career_url": "https://careers.walmart.com/",
-    "provider": "html",
-    "provider_key": "walmart",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 6,
@@ -92,11 +92,11 @@
     "sponsor_name": "COGNIZANT TECHNOLOGY SOLUTIONS US CORP",
     "canonical_company": "Cognizant",
     "total_approvals": 914,
-    "career_url": "https://careers.cognizant.com/global-en/",
-    "provider": "html",
-    "provider_key": "cognizant",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
   },
   {
     "rank": 10,
@@ -136,33 +136,33 @@
     "sponsor_name": "ERNST AND YOUNG U S LLP",
     "canonical_company": "EY",
     "total_approvals": 613,
-    "career_url": "https://careers.ey.com/",
-    "provider": "html",
-    "provider_key": "ey",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 14,
     "sponsor_name": "SALESFORCE INC",
     "canonical_company": "Salesforce",
     "total_approvals": 587,
-    "career_url": "https://careers.salesforce.com/en/jobs/",
-    "provider": "html",
-    "provider_key": "salesforce/external_career_site",
-    "mapping_status": "verified",
-    "validation_notes": "Official Salesforce careers page and Workday tenant reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 15,
     "sponsor_name": "WIPRO LIMITED",
     "canonical_company": "Wipro",
     "total_approvals": 537,
-    "career_url": "https://careers.wipro.com/",
-    "provider": "html",
-    "provider_key": "wipro",
-    "mapping_status": "verified",
-    "validation_notes": "Official Wipro careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 16,
@@ -191,33 +191,33 @@
     "sponsor_name": "BLOOMBERG LP",
     "canonical_company": "Bloomberg",
     "total_approvals": 446,
-    "career_url": "https://www.bloomberg.com/company/careers/search",
-    "provider": "html",
-    "provider_key": "bloomberg",
-    "mapping_status": "verified",
-    "validation_notes": "Official Bloomberg career search reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 19,
     "sponsor_name": "MCKINSEY AND COMPANY INC UNITED STATES",
     "canonical_company": "McKinsey & Company",
     "total_approvals": 413,
-    "career_url": "https://www.mckinsey.com/careers/search-jobs",
-    "provider": "html",
-    "provider_key": "mckinsey",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
   },
   {
     "rank": 20,
     "sponsor_name": "TECH MAHINDRA AMERICAS INC",
     "canonical_company": "Tech Mahindra",
     "total_approvals": 405,
-    "career_url": "https://careers.techmahindra.com/",
-    "provider": "html",
-    "provider_key": "tech-mahindra",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 21,
@@ -246,22 +246,22 @@
     "sponsor_name": "LTIMINDTREE LIMITED",
     "canonical_company": "LTIMindtree",
     "total_approvals": 344,
-    "career_url": "https://www.ltimindtree.com/careers/",
-    "provider": "html",
-    "provider_key": "ltimindtree",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12; redirect to the official LTM successor domain was confirmed."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
   },
   {
     "rank": 24,
     "sponsor_name": "INTUIT INC",
     "canonical_company": "Intuit",
     "total_approvals": 332,
-    "career_url": "https://jobs.intuit.com/",
-    "provider": "html",
-    "provider_key": "intuit",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 25,
@@ -279,11 +279,11 @@
     "sponsor_name": "CGI TECHNOLOGIES AND SOLUTIONS INC",
     "canonical_company": "CGI",
     "total_approvals": 326,
-    "career_url": "https://cgi.njoyn.com/",
-    "provider": "html",
-    "provider_key": "cgi",
-    "mapping_status": "verified",
-    "validation_notes": "Official CGI applicant portal reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 27,
@@ -312,11 +312,11 @@
     "sponsor_name": "SERVICENOW INC",
     "canonical_company": "ServiceNow",
     "total_approvals": 287,
-    "career_url": "https://careers.servicenow.com/jobs/",
-    "provider": "html",
+    "career_url": "https://careers.smartrecruiters.com/servicenow",
+    "provider": "smartrecruiters",
     "provider_key": "servicenow",
     "mapping_status": "verified",
-    "validation_notes": "Official ServiceNow careers page and ATS directory entry reviewed 2026-08-12."
+    "validation_notes": "Official ServiceNow careers page and ATS directory entry reviewed 2026-08-12; HTTP 403 indicated automation blocking, overridden by independent ATS directory evidence."
   },
   {
     "rank": 30,
@@ -345,11 +345,11 @@
     "sponsor_name": "UST GLOBAL INC",
     "canonical_company": "UST",
     "total_approvals": 272,
-    "career_url": "https://www.ust.com/en/careers",
-    "provider": "html",
-    "provider_key": "ust",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
   },
   {
     "rank": 33,
@@ -378,11 +378,11 @@
     "sponsor_name": "KPMG LLP",
     "canonical_company": "KPMG",
     "total_approvals": 262,
-    "career_url": "https://www.kpmguscareers.com/search-jobs",
-    "provider": "html",
-    "provider_key": "kpmg-us",
-    "mapping_status": "verified",
-    "validation_notes": "Official KPMG US careers search reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 36,
@@ -415,40 +415,40 @@
     "provider": "uber",
     "provider_key": "uber",
     "mapping_status": "verified",
-    "validation_notes": "Official Uber careers job list reviewed 2026-08-12."
+    "validation_notes": "Official Uber careers job list reviewed 2026-08-12; HTTP 406 indicated automation blocking, overridden by independent first-party source evidence."
   },
   {
     "rank": 39,
     "sponsor_name": "META PLATFORMS INC",
     "canonical_company": "Meta",
     "total_approvals": 224,
-    "career_url": "https://www.metacareers.com/jobs/",
-    "provider": "html",
-    "provider_key": "meta",
-    "mapping_status": "verified",
-    "validation_notes": "Official Meta Careers board reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 429 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 40,
     "sponsor_name": "EXPEDIA INC",
     "canonical_company": "Expedia Group",
     "total_approvals": 223,
-    "career_url": "https://careers.expediagroup.com/jobs/",
-    "provider": "html",
-    "provider_key": "expedia/search",
-    "mapping_status": "verified",
-    "validation_notes": "Official Expedia Group careers page and ATS entry reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 41,
     "sponsor_name": "MPHASIS CORPORATION",
     "canonical_company": "Mphasis",
     "total_approvals": 222,
-    "career_url": "https://careers.mphasis.com/",
-    "provider": "html",
-    "provider_key": "mphasis",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 42,
@@ -466,8 +466,8 @@
     "sponsor_name": "VIRTUSA CORPORATION",
     "canonical_company": "Virtusa",
     "total_approvals": 199,
-    "career_url": "https://www.virtusa.com/careers",
-    "provider": "html",
+    "career_url": "https://careers.smartrecruiters.com/virtusapolaris",
+    "provider": "smartrecruiters",
     "provider_key": "virtusapolaris",
     "mapping_status": "verified",
     "validation_notes": "Official Virtusa careers page and ATS entry reviewed 2026-08-12."
@@ -477,11 +477,11 @@
     "sponsor_name": "SAP AMERICA INC",
     "canonical_company": "SAP",
     "total_approvals": 190,
-    "career_url": "https://jobs.sap.com/",
-    "provider": "html",
-    "provider_key": "sap",
-    "mapping_status": "verified",
-    "validation_notes": "Official SAP jobs board reviewed 2026-08-12; SAP America and Ariba share it."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 45,
@@ -510,11 +510,11 @@
     "sponsor_name": "ADP TECHNOLOGY SERVICES INC",
     "canonical_company": "ADP",
     "total_approvals": 175,
-    "career_url": "https://jobs.adp.com/",
-    "provider": "html",
-    "provider_key": "adp",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 48,
@@ -532,11 +532,11 @@
     "sponsor_name": "CHARTER COMMUNICATIONS INC",
     "canonical_company": "Charter Communications / Spectrum",
     "total_approvals": 166,
-    "career_url": "https://jobs.spectrum.com/",
-    "provider": "html",
-    "provider_key": "spectrum",
-    "mapping_status": "verified",
-    "validation_notes": "Official Spectrum careers board reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 50,
@@ -587,8 +587,8 @@
     "sponsor_name": "SNOWFLAKE INC",
     "canonical_company": "Snowflake",
     "total_approvals": 146,
-    "career_url": "https://careers.snowflake.com/us/en/search-results",
-    "provider": "html",
+    "career_url": "https://jobs.ashbyhq.com/snowflake",
+    "provider": "ashby",
     "provider_key": "snowflake",
     "mapping_status": "verified",
     "validation_notes": "Official Snowflake careers page and ATS directory entry reviewed 2026-08-12."
@@ -620,19 +620,19 @@
     "sponsor_name": "DOORDASH INC",
     "canonical_company": "DoorDash",
     "total_approvals": 122,
-    "career_url": "https://careersatdoordash.com/job-search/",
-    "provider": "html",
-    "provider_key": "doordash",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
   },
   {
     "rank": 58,
     "sponsor_name": "CITIUSTECH INC",
     "canonical_company": "CitiusTech",
     "total_approvals": 120,
-    "career_url": "https://www.citiustech.com/careers/current-openings",
-    "provider": "html",
+    "career_url": "https://careers.smartrecruiters.com/citiustech",
+    "provider": "smartrecruiters",
     "provider_key": "citiustech",
     "mapping_status": "verified",
     "validation_notes": "Official CitiusTech openings page and ATS entry reviewed 2026-08-12."
@@ -642,22 +642,22 @@
     "sponsor_name": "T-MOBILE USA, INC.",
     "canonical_company": "T-Mobile",
     "total_approvals": 119,
-    "career_url": "https://careers.t-mobile.com/job-search-results/",
-    "provider": "html",
-    "provider_key": "t-mobile",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 60,
     "sponsor_name": "AUTODESK INC",
     "canonical_company": "Autodesk",
     "total_approvals": 118,
-    "career_url": "https://autodesk.wd1.myworkdayjobs.com/Ext",
-    "provider": "workday",
-    "provider_key": "autodesk/ext",
-    "mapping_status": "verified",
-    "validation_notes": "Official Autodesk Workday tenant reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 61,
@@ -675,8 +675,8 @@
     "sponsor_name": "ARISTA NETWORKS INC",
     "canonical_company": "Arista Networks",
     "total_approvals": 112,
-    "career_url": "https://www.arista.com/en/careers",
-    "provider": "html",
+    "career_url": "https://careers.smartrecruiters.com/aristanetworks",
+    "provider": "smartrecruiters",
     "provider_key": "aristanetworks",
     "mapping_status": "verified",
     "validation_notes": "Official Arista careers page and ATS entry reviewed 2026-08-12."
@@ -686,41 +686,41 @@
     "sponsor_name": "WSP USA INC",
     "canonical_company": "WSP",
     "total_approvals": 112,
-    "career_url": "https://www.wsp.com/en-us/careers",
-    "provider": "html",
-    "provider_key": "wsp-us",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
   },
   {
     "rank": 64,
     "sponsor_name": "UT-BATTELLE LLC ORNL",
     "canonical_company": "Oak Ridge National Laboratory",
     "total_approvals": 111,
-    "career_url": "https://jobs.ornl.gov/",
-    "provider": "html",
-    "provider_key": "ornl",
-    "mapping_status": "verified",
-    "validation_notes": "Official ORNL jobs board reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 65,
     "sponsor_name": "AMGEN INC",
     "canonical_company": "Amgen",
     "total_approvals": 109,
-    "career_url": "https://careers.amgen.com/en/jobs/",
-    "provider": "html",
-    "provider_key": "amgen/careers",
-    "mapping_status": "verified",
-    "validation_notes": "Official Amgen careers page and Workday tenant reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 66,
     "sponsor_name": "NTT DATA AMERICAS INC",
     "canonical_company": "NTT DATA",
     "total_approvals": 109,
-    "career_url": "https://careers.services.global.ntt/global/en/search-results",
-    "provider": "html",
+    "career_url": "https://nttdata.eightfold.ai/careers",
+    "provider": "eightfold",
     "provider_key": "nttdata",
     "mapping_status": "verified",
     "validation_notes": "Official NTT DATA careers source reviewed 2026-08-12; both sponsor entities share it."
@@ -752,7 +752,7 @@
     "sponsor_name": "WORKDAY INC",
     "canonical_company": "Workday",
     "total_approvals": 107,
-    "career_url": "https://workday.wd5.myworkdayjobs.com/Workday",
+    "career_url": "https://workday.wd5.myworkdayjobs.com/workday",
     "provider": "workday",
     "provider_key": "workday/workday",
     "mapping_status": "verified",
@@ -785,11 +785,11 @@
     "sponsor_name": "OPENAI OPCO LLC",
     "canonical_company": "OpenAI",
     "total_approvals": 96,
-    "career_url": "https://openai.com/careers/search/",
-    "provider": "html",
+    "career_url": "https://jobs.ashbyhq.com/openai",
+    "provider": "ashby",
     "provider_key": "openai",
     "mapping_status": "verified",
-    "validation_notes": "Official OpenAI careers search and Ashby tenant reviewed 2026-08-12."
+    "validation_notes": "Official OpenAI careers search and Ashby tenant reviewed 2026-08-12; HTTP 403 indicated automation blocking, overridden by independent ATS directory evidence."
   },
   {
     "rank": 73,
@@ -818,11 +818,11 @@
     "sponsor_name": "AECOM TECHNICAL SERVICES INC",
     "canonical_company": "AECOM",
     "total_approvals": 90,
-    "career_url": "https://aecom.jobs/",
-    "provider": "html",
-    "provider_key": "aecom",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 76,
@@ -840,11 +840,11 @@
     "sponsor_name": "NUTANIX INC",
     "canonical_company": "Nutanix",
     "total_approvals": 89,
-    "career_url": "https://careers.nutanix.com/jobs/",
-    "provider": "html",
-    "provider_key": "nutanix",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
   },
   {
     "rank": 78,
@@ -873,8 +873,8 @@
     "sponsor_name": "DATABRICKS INC",
     "canonical_company": "Databricks",
     "total_approvals": 84,
-    "career_url": "https://www.databricks.com/company/careers/open-positions",
-    "provider": "html",
+    "career_url": "https://job-boards.greenhouse.io/databricks",
+    "provider": "greenhouse",
     "provider_key": "databricks",
     "mapping_status": "verified",
     "validation_notes": "Official Databricks openings page and Greenhouse tenant reviewed 2026-08-12."
@@ -884,22 +884,22 @@
     "sponsor_name": "VERIZON DATA SERVICES LLC",
     "canonical_company": "Verizon",
     "total_approvals": 84,
-    "career_url": "https://mycareer.verizon.com/jobs/",
-    "provider": "html",
-    "provider_key": "verizon",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
   },
   {
     "rank": 82,
     "sponsor_name": "DANA-FARBER CANCER INSTITUTE",
     "canonical_company": "Dana-Farber Cancer Institute",
     "total_approvals": 83,
-    "career_url": "https://careers.dana-farber.org/",
-    "provider": "html",
-    "provider_key": "dana-farber",
-    "mapping_status": "verified",
-    "validation_notes": "Official institute careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 83,
@@ -928,22 +928,22 @@
     "sponsor_name": "STAPLES INC",
     "canonical_company": "Staples",
     "total_approvals": 80,
-    "career_url": "https://careers.staples.com/",
-    "provider": "html",
-    "provider_key": "staplesinc",
-    "mapping_status": "verified",
-    "validation_notes": "Official Staples careers page and Oracle tenant reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 86,
     "sponsor_name": "SYNOPSYS INC",
     "canonical_company": "Synopsys",
     "total_approvals": 79,
-    "career_url": "https://careers.synopsys.com/",
-    "provider": "html",
-    "provider_key": "synopsys",
-    "mapping_status": "verified",
-    "validation_notes": "Official Synopsys careers page and ATS entry reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 87,
@@ -961,11 +961,11 @@
     "sponsor_name": "GENPACT LLC",
     "canonical_company": "Genpact",
     "total_approvals": 77,
-    "career_url": "https://www.genpact.com/careers/jobsearch",
-    "provider": "html",
-    "provider_key": "genpact",
-    "mapping_status": "verified",
-    "validation_notes": "Official Genpact career search reviewed 2026-08-12; Headstrong is consolidated to the parent board."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 89,
@@ -994,11 +994,11 @@
     "sponsor_name": "ATOS SYNTEL INC",
     "canonical_company": "Atos",
     "total_approvals": 75,
-    "career_url": "https://jobs.atos.net/",
-    "provider": "html",
-    "provider_key": "atos",
-    "mapping_status": "verified",
-    "validation_notes": "Official Atos jobs board reviewed 2026-08-12; Atos Syntel is consolidated to it."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 92,
@@ -1027,11 +1027,11 @@
     "sponsor_name": "PINTEREST INC",
     "canonical_company": "Pinterest",
     "total_approvals": 73,
-    "career_url": "https://www.pinterestcareers.com/jobs/",
-    "provider": "html",
+    "career_url": "https://job-boards.greenhouse.io/pinterest",
+    "provider": "greenhouse",
     "provider_key": "pinterest",
     "mapping_status": "verified",
-    "validation_notes": "Official Pinterest careers page and Greenhouse tenant reviewed 2026-08-12."
+    "validation_notes": "Official Pinterest careers page and Greenhouse tenant reviewed 2026-08-12; HTTP 403 indicated automation blocking, overridden by independent ATS directory evidence."
   },
   {
     "rank": 95,
@@ -1049,11 +1049,11 @@
     "sponsor_name": "NETFLIX INC",
     "canonical_company": "Netflix",
     "total_approvals": 70,
-    "career_url": "https://jobs.netflix.com/search",
-    "provider": "html",
-    "provider_key": "netflix",
-    "mapping_status": "verified",
-    "validation_notes": "Official Netflix jobs search and ATS entry reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 97,
@@ -1071,22 +1071,22 @@
     "sponsor_name": "LAWRENCE BERKELEY NATIONAL LABORATORY",
     "canonical_company": "Lawrence Berkeley National Laboratory",
     "total_approvals": 69,
-    "career_url": "https://jobs.lbl.gov/",
-    "provider": "html",
-    "provider_key": "lbl",
-    "mapping_status": "verified",
-    "validation_notes": "Official laboratory jobs board reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 99,
     "sponsor_name": "COFORGE LIMITED",
     "canonical_company": "Coforge",
     "total_approvals": 68,
-    "career_url": "https://careers.coforge.com/",
-    "provider": "html",
-    "provider_key": "coforge",
-    "mapping_status": "verified",
-    "validation_notes": "Official Coforge careers page reviewed 2026-08-12; Cigniti is consolidated after acquisition."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 100,
@@ -1104,8 +1104,8 @@
     "sponsor_name": "TIGER ANALYTICS INC",
     "canonical_company": "Tiger Analytics",
     "total_approvals": 66,
-    "career_url": "https://www.tigeranalytics.com/careers/current-openings/",
-    "provider": "html",
+    "career_url": "https://apply.workable.com/tiger-analytics",
+    "provider": "workable",
     "provider_key": "tiger-analytics",
     "mapping_status": "verified",
     "validation_notes": "Official Tiger Analytics openings page and ATS entry reviewed 2026-08-12."
@@ -1137,55 +1137,55 @@
     "sponsor_name": "GILEAD SCIENCES INC",
     "canonical_company": "Gilead Sciences",
     "total_approvals": 65,
-    "career_url": "https://gilead.wd1.myworkdayjobs.com/gileadhotjobcareers",
-    "provider": "workday",
-    "provider_key": "gilead/gileadhotjobcareers",
-    "mapping_status": "verified",
-    "validation_notes": "Official Gilead Workday tenant reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 105,
     "sponsor_name": "ZS ASSOCIATES INC",
     "canonical_company": "ZS Associates",
     "total_approvals": 65,
-    "career_url": "https://jobs.zs.com/",
-    "provider": "html",
-    "provider_key": "zs",
-    "mapping_status": "verified",
-    "validation_notes": "Official company jobs board reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 106,
     "sponsor_name": "DISH NETWORK LLC",
     "canonical_company": "DISH",
     "total_approvals": 64,
-    "career_url": "https://careers.dish.com/",
-    "provider": "html",
-    "provider_key": "dish",
-    "mapping_status": "verified",
-    "validation_notes": "Official DISH careers page reviewed 2026-08-12; redirect to parent EchoStar careers and shared sponsor entities were confirmed."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 107,
     "sponsor_name": "DISH WIRELESS LLC",
     "canonical_company": "DISH",
     "total_approvals": 64,
-    "career_url": "https://careers.dish.com/",
-    "provider": "html",
-    "provider_key": "dish",
-    "mapping_status": "verified",
-    "validation_notes": "Official DISH careers page reviewed 2026-08-12; redirect to parent EchoStar careers and shared sponsor entities were confirmed."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 108,
     "sponsor_name": "HOWARD HUGHES MEDICAL INSTITUTE",
     "canonical_company": "Howard Hughes Medical Institute",
     "total_approvals": 64,
-    "career_url": "https://www.hhmi.org/careers",
-    "provider": "html",
-    "provider_key": "hhmi/external",
-    "mapping_status": "verified",
-    "validation_notes": "Official HHMI careers page and Workday tenant reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 109,
@@ -1247,7 +1247,7 @@
     "sponsor_name": "COHESITY INC",
     "canonical_company": "Cohesity",
     "total_approvals": 61,
-    "career_url": "https://cohesity.wd5.myworkdayjobs.com/Cohesity_Careers",
+    "career_url": "https://cohesity.wd5.myworkdayjobs.com/cohesity_careers",
     "provider": "workday",
     "provider_key": "cohesity/cohesity_careers",
     "mapping_status": "verified",
@@ -1269,11 +1269,11 @@
     "sponsor_name": "RELX INC D B A LEXISNEXIS USA",
     "canonical_company": "RELX / LexisNexis",
     "total_approvals": 61,
-    "career_url": "https://relx.wd3.myworkdayjobs.com/relx",
-    "provider": "workday",
-    "provider_key": "relx/relx",
-    "mapping_status": "verified",
-    "validation_notes": "Official RELX Workday board reviewed 2026-08-12; LexisNexis sponsor entities share it."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 117,
@@ -1335,19 +1335,19 @@
     "sponsor_name": "BROOKHAVEN NATIONAL LABORATORY",
     "canonical_company": "Brookhaven National Laboratory",
     "total_approvals": 58,
-    "career_url": "https://jobs.bnl.gov/",
-    "provider": "html",
-    "provider_key": "bnl",
-    "mapping_status": "verified",
-    "validation_notes": "Official laboratory jobs board reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 123,
     "sponsor_name": "NTT DATA SERVICES LLC",
     "canonical_company": "NTT DATA",
     "total_approvals": 58,
-    "career_url": "https://careers.services.global.ntt/global/en/search-results",
-    "provider": "html",
+    "career_url": "https://nttdata.eightfold.ai/careers",
+    "provider": "eightfold",
     "provider_key": "nttdata",
     "mapping_status": "verified",
     "validation_notes": "Official NTT DATA careers source reviewed 2026-08-12; both sponsor entities share it."
@@ -1357,22 +1357,22 @@
     "sponsor_name": "FISERV SOLUTIONS LLC",
     "canonical_company": "Fiserv",
     "total_approvals": 57,
-    "career_url": "https://www.careers.fiserv.com/",
-    "provider": "html",
-    "provider_key": "fiserv/ext",
-    "mapping_status": "verified",
-    "validation_notes": "Official Fiserv careers page and Workday tenant reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 125,
     "sponsor_name": "KFORCE INC",
     "canonical_company": "Kforce",
     "total_approvals": 57,
-    "career_url": "https://www.kforce.com/jobs/",
-    "provider": "html",
-    "provider_key": "kforce",
-    "mapping_status": "verified",
-    "validation_notes": "Official company job search reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 126,
@@ -1390,11 +1390,11 @@
     "sponsor_name": "WAYMO LLC",
     "canonical_company": "Waymo",
     "total_approvals": 57,
-    "career_url": "https://careers.withwaymo.com/jobs/",
-    "provider": "html",
-    "provider_key": "waymo",
-    "mapping_status": "verified",
-    "validation_notes": "Official Waymo careers page and Greenhouse tenant reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 128,
@@ -1423,11 +1423,11 @@
     "sponsor_name": "IQVIA INC",
     "canonical_company": "IQVIA",
     "total_approvals": 56,
-    "career_url": "https://jobs.iqvia.com/en/",
-    "provider": "html",
-    "provider_key": "iqvia/iqvia",
-    "mapping_status": "verified",
-    "validation_notes": "Official IQVIA careers page and Workday tenant reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 131,
@@ -1456,11 +1456,11 @@
     "sponsor_name": "INSIGHT GLOBAL LLC",
     "canonical_company": "Insight Global",
     "total_approvals": 55,
-    "career_url": "https://jobs.insightglobal.com/",
-    "provider": "html",
-    "provider_key": "insight-global",
-    "mapping_status": "verified",
-    "validation_notes": "Official company jobs board reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 134,
@@ -1478,11 +1478,11 @@
     "sponsor_name": "NATIONAL INSTITUTES OF HEALTH HHS",
     "canonical_company": "National Institutes of Health",
     "total_approvals": 54,
-    "career_url": "https://jobs.nih.gov/",
-    "provider": "html",
-    "provider_key": "nih",
-    "mapping_status": "verified",
-    "validation_notes": "Official NIH jobs site reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 136,
@@ -1511,19 +1511,19 @@
     "sponsor_name": "BATTELLE MEMORIAL INSTITUTE",
     "canonical_company": "Battelle",
     "total_approvals": 52,
-    "career_url": "https://jobs.battelle.org/",
-    "provider": "html",
-    "provider_key": "battelle",
-    "mapping_status": "verified",
-    "validation_notes": "Official company jobs board reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 139,
     "sponsor_name": "PALANTIR TECHNOLOGIES INC",
     "canonical_company": "Palantir",
     "total_approvals": 52,
-    "career_url": "https://www.palantir.com/careers/",
-    "provider": "html",
+    "career_url": "https://jobs.lever.co/palantir",
+    "provider": "lever",
     "provider_key": "palantir",
     "mapping_status": "verified",
     "validation_notes": "Official Palantir careers page and Lever tenant reviewed 2026-08-12."
@@ -1577,11 +1577,11 @@
     "sponsor_name": "STANTEC CONSULTING SERVICES INC.",
     "canonical_company": "Stantec",
     "total_approvals": 50,
-    "career_url": "https://stantec.jobs/",
-    "provider": "html",
-    "provider_key": "stantec",
-    "mapping_status": "verified",
-    "validation_notes": "Official company jobs board reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 145,
@@ -1599,22 +1599,22 @@
     "sponsor_name": "EQUINIX INC",
     "canonical_company": "Equinix",
     "total_approvals": 49,
-    "career_url": "https://equinix.wd1.myworkdayjobs.com/External",
-    "provider": "workday",
-    "provider_key": "equinix/external",
-    "mapping_status": "verified",
-    "validation_notes": "Official Equinix Workday tenant reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 147,
     "sponsor_name": "VERTEX PHARMACEUTICALS INCORPORATED",
     "canonical_company": "Vertex Pharmaceuticals",
     "total_approvals": 49,
-    "career_url": "https://www.vrtx.com/careers/open-positions",
-    "provider": "html",
-    "provider_key": "vertex-pharma",
-    "mapping_status": "verified",
-    "validation_notes": "Official company open-positions page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 148,
@@ -1632,11 +1632,11 @@
     "sponsor_name": "CYIENT INC",
     "canonical_company": "Cyient",
     "total_approvals": 48,
-    "career_url": "https://www.cyient.careers/",
-    "provider": "html",
-    "provider_key": "cyient",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 150,
@@ -1665,11 +1665,11 @@
     "sponsor_name": "NORDSTROM INC D B A NORDSTROM",
     "canonical_company": "Nordstrom",
     "total_approvals": 48,
-    "career_url": "https://careers.nordstrom.com/",
-    "provider": "html",
-    "provider_key": "nordstrom",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 153,
@@ -1687,11 +1687,11 @@
     "sponsor_name": "AUDIBLE INC",
     "canonical_company": "Audible",
     "total_approvals": 47,
-    "career_url": "https://www.audiblecareers.com/",
-    "provider": "html",
-    "provider_key": "audible",
-    "mapping_status": "verified",
-    "validation_notes": "Official Audible careers site reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 155,
@@ -1709,19 +1709,19 @@
     "sponsor_name": "KINGSTON TECHNOLOGIES INC",
     "canonical_company": "Kingston Technology",
     "total_approvals": 47,
-    "career_url": "https://www.kingston.com/en/company/careers",
-    "provider": "html",
-    "provider_key": "kingston",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
   },
   {
     "rank": 157,
     "sponsor_name": "MCKESSON CORPORATION",
     "canonical_company": "McKesson",
     "total_approvals": 47,
-    "career_url": "https://careers.mckesson.com/en/",
-    "provider": "html",
+    "career_url": "https://careers.smartrecruiters.com/mckesson4",
+    "provider": "smartrecruiters",
     "provider_key": "mckesson4",
     "mapping_status": "verified",
     "validation_notes": "Official McKesson careers page and ATS entry reviewed 2026-08-12."
@@ -1753,11 +1753,11 @@
     "sponsor_name": "7-ELEVEN INC",
     "canonical_company": "7-Eleven",
     "total_approvals": 46,
-    "career_url": "https://careers.7-eleven.com/",
-    "provider": "html",
-    "provider_key": "7-eleven",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 161,
@@ -1797,11 +1797,11 @@
     "sponsor_name": "REGENERON PHARMACEUTICALS INC",
     "canonical_company": "Regeneron",
     "total_approvals": 45,
-    "career_url": "https://careers.regeneron.com/en/jobs/",
-    "provider": "html",
-    "provider_key": "regeneron",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
   },
   {
     "rank": 165,
@@ -1830,22 +1830,22 @@
     "sponsor_name": "DATADOG INC",
     "canonical_company": "Datadog",
     "total_approvals": 44,
-    "career_url": "https://careers.datadoghq.com/",
-    "provider": "html",
-    "provider_key": "datadog",
-    "mapping_status": "verified",
-    "validation_notes": "Official Datadog careers page and Greenhouse tenant reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 168,
     "sponsor_name": "EPAM SYSTEMS INC",
     "canonical_company": "EPAM",
     "total_approvals": 44,
-    "career_url": "https://www.epam.com/careers/job-listings",
-    "provider": "html",
-    "provider_key": "epam",
-    "mapping_status": "verified",
-    "validation_notes": "Official company jobs board reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
   },
   {
     "rank": 169,
@@ -1874,8 +1874,8 @@
     "sponsor_name": "C3 AI INC",
     "canonical_company": "C3 AI",
     "total_approvals": 43,
-    "career_url": "https://c3.ai/careers/",
-    "provider": "html",
+    "career_url": "https://job-boards.greenhouse.io/c3iot",
+    "provider": "greenhouse",
     "provider_key": "c3iot",
     "mapping_status": "verified",
     "validation_notes": "Official C3 AI careers page and Greenhouse tenant reviewed 2026-08-12."
@@ -1885,8 +1885,8 @@
     "sponsor_name": "ELECTRONIC ARTS INC",
     "canonical_company": "Electronic Arts",
     "total_approvals": 43,
-    "career_url": "https://jobs.ea.com/en_US/careers",
-    "provider": "html",
+    "career_url": "https://ea.avature.net/careers/SearchJobs",
+    "provider": "avature",
     "provider_key": "ea",
     "mapping_status": "verified",
     "validation_notes": "Official EA careers board and ATS entry reviewed 2026-08-12."
@@ -1896,11 +1896,11 @@
     "sponsor_name": "MIRACLE SOFTWARE SYSTEMS INC",
     "canonical_company": "Miracle Software Systems",
     "total_approvals": 43,
-    "career_url": "https://careers.miraclesoft.com/",
-    "provider": "html",
-    "provider_key": "miracle-software",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 174,
@@ -1918,11 +1918,11 @@
     "sponsor_name": "ARCADIS U S INC",
     "canonical_company": "Arcadis",
     "total_approvals": 42,
-    "career_url": "https://careers.arcadis.com/",
-    "provider": "html",
-    "provider_key": "arcadis",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 176,
@@ -1940,11 +1940,11 @@
     "sponsor_name": "HEXAWARE TECHNOLOGIES INC",
     "canonical_company": "Hexaware",
     "total_approvals": 42,
-    "career_url": "https://jobs.hexaware.com/",
-    "provider": "html",
-    "provider_key": "hexaware",
-    "mapping_status": "verified",
-    "validation_notes": "Official company jobs board reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 178,
@@ -1984,8 +1984,8 @@
     "sponsor_name": "ZSCALER INC",
     "canonical_company": "Zscaler",
     "total_approvals": 42,
-    "career_url": "https://www.zscaler.com/careers/search",
-    "provider": "html",
+    "career_url": "https://job-boards.greenhouse.io/zscaler",
+    "provider": "greenhouse",
     "provider_key": "zscaler",
     "mapping_status": "verified",
     "validation_notes": "Official Zscaler careers search and Greenhouse tenant reviewed 2026-08-12."
@@ -1995,55 +1995,55 @@
     "sponsor_name": "BILL OPERATIONS LLC",
     "canonical_company": "BILL",
     "total_approvals": 41,
-    "career_url": "https://www.bill.com/careers/jobs",
-    "provider": "html",
-    "provider_key": "bill",
-    "mapping_status": "verified",
-    "validation_notes": "Official company jobs page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 183,
     "sponsor_name": "CIGNITI TECHNOLOGIES, INC.",
     "canonical_company": "Coforge",
     "total_approvals": 41,
-    "career_url": "https://careers.coforge.com/",
-    "provider": "html",
-    "provider_key": "coforge",
-    "mapping_status": "verified",
-    "validation_notes": "Official Coforge careers page reviewed 2026-08-12; Cigniti is consolidated after acquisition."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 184,
     "sponsor_name": "ITC INFOTECH USA INC",
     "canonical_company": "ITC Infotech",
     "total_approvals": 41,
-    "career_url": "https://www.itcinfotech.com/careers/",
-    "provider": "html",
-    "provider_key": "itc-infotech",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 185,
     "sponsor_name": "PERFICIENT INC",
     "canonical_company": "Perficient",
     "total_approvals": 41,
-    "career_url": "https://careers.perficient.com/",
-    "provider": "html",
-    "provider_key": "perficient",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 186,
     "sponsor_name": "QUEST GLOBAL SERVICES-NA INC",
     "canonical_company": "Quest Global",
     "total_approvals": 41,
-    "career_url": "https://careers.quest-global.com/",
-    "provider": "html",
-    "provider_key": "quest-global",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 187,
@@ -2061,22 +2061,22 @@
     "sponsor_name": "ANALYSIS GROUP INC",
     "canonical_company": "Analysis Group",
     "total_approvals": 40,
-    "career_url": "https://www.analysisgroup.com/careers/career-opportunities/",
-    "provider": "html",
-    "provider_key": "analysisgroup",
-    "mapping_status": "verified",
-    "validation_notes": "Official Analysis Group opportunities page and iCIMS tenant reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 189,
     "sponsor_name": "CRA INTERNATIONAL INC",
     "canonical_company": "Charles River Associates",
     "total_approvals": 40,
-    "career_url": "https://www.crai.com/careers/open-positions/",
-    "provider": "html",
-    "provider_key": "crai",
-    "mapping_status": "verified",
-    "validation_notes": "Official company open-positions page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 190,
@@ -2094,8 +2094,8 @@
     "sponsor_name": "NAGARRO INC",
     "canonical_company": "Nagarro",
     "total_approvals": 40,
-    "career_url": "https://www.nagarro.com/en/careers",
-    "provider": "html",
+    "career_url": "https://careers.smartrecruiters.com/nagarro1",
+    "provider": "smartrecruiters",
     "provider_key": "nagarro1",
     "mapping_status": "verified",
     "validation_notes": "Official Nagarro careers page and ATS entry reviewed 2026-08-12."
@@ -2116,11 +2116,11 @@
     "sponsor_name": "TATA TECHNOLOGIES INC",
     "canonical_company": "Tata Technologies",
     "total_approvals": 40,
-    "career_url": "https://www.tatatechnologies.com/in/careers/",
-    "provider": "html",
-    "provider_key": "tata-technologies",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
   },
   {
     "rank": 194,
@@ -2160,18 +2160,18 @@
     "sponsor_name": "NETAPP INC",
     "canonical_company": "NetApp",
     "total_approvals": 39,
-    "career_url": "https://careers.netapp.com/",
-    "provider": "html",
-    "provider_key": "netapp",
-    "mapping_status": "verified",
-    "validation_notes": "Official NetApp careers page and ATS entry reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 198,
     "sponsor_name": "RED HAT LLC",
     "canonical_company": "Red Hat",
     "total_approvals": 39,
-    "career_url": "https://redhat.wd5.myworkdayjobs.com/Jobs",
+    "career_url": "https://redhat.wd5.myworkdayjobs.com/jobs",
     "provider": "workday",
     "provider_key": "redhat/jobs",
     "mapping_status": "verified",
@@ -2193,11 +2193,11 @@
     "sponsor_name": "ACTIVISION PUBLISHING INC",
     "canonical_company": "Activision",
     "total_approvals": 38,
-    "career_url": "https://careers.activision.com/",
-    "provider": "html",
-    "provider_key": "activision",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 201,
@@ -2215,22 +2215,22 @@
     "sponsor_name": "INTRAEDGE, INC.",
     "canonical_company": "IntraEdge",
     "total_approvals": 38,
-    "career_url": "https://www.intraedge.com/careers/",
-    "provider": "html",
-    "provider_key": "intraedge",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 203,
     "sponsor_name": "LEXISNEXIS RISK SOLUTIONS INC",
     "canonical_company": "RELX / LexisNexis",
     "total_approvals": 38,
-    "career_url": "https://relx.wd3.myworkdayjobs.com/relx",
-    "provider": "workday",
-    "provider_key": "relx/relx",
-    "mapping_status": "verified",
-    "validation_notes": "Official RELX Workday board reviewed 2026-08-12; LexisNexis sponsor entities share it."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 204,
@@ -2248,8 +2248,8 @@
     "sponsor_name": "MONGODB INC",
     "canonical_company": "MongoDB",
     "total_approvals": 38,
-    "career_url": "https://www.mongodb.com/company/careers/teams/engineering",
-    "provider": "html",
+    "career_url": "https://job-boards.greenhouse.io/mongodb",
+    "provider": "greenhouse",
     "provider_key": "mongodb",
     "mapping_status": "verified",
     "validation_notes": "Official MongoDB careers page and Greenhouse tenant reviewed 2026-08-12."
@@ -2281,8 +2281,8 @@
     "sponsor_name": "VERKADA INC",
     "canonical_company": "Verkada",
     "total_approvals": 38,
-    "career_url": "https://www.verkada.com/careers/",
-    "provider": "html",
+    "career_url": "https://job-boards.greenhouse.io/verkada",
+    "provider": "greenhouse",
     "provider_key": "verkada",
     "mapping_status": "verified",
     "validation_notes": "Official Verkada careers page and Greenhouse tenant reviewed 2026-08-12."
@@ -2303,8 +2303,8 @@
     "sponsor_name": "BAHWAN CYBERTEK INC",
     "canonical_company": "Bahwan CyberTek",
     "total_approvals": 37,
-    "career_url": "https://www.bahwancybertek.com/careers",
-    "provider": "html",
+    "career_url": "https://apply.workable.com/bahwan-cybertek-group",
+    "provider": "workable",
     "provider_key": "bahwan-cybertek-group",
     "mapping_status": "verified",
     "validation_notes": "Official Bahwan CyberTek careers page and ATS entry reviewed 2026-08-12."
@@ -2369,22 +2369,22 @@
     "sponsor_name": "UCHICAGO ARGONNE LLC",
     "canonical_company": "Argonne National Laboratory",
     "total_approvals": 37,
-    "career_url": "https://www.anl.gov/hr/careers",
-    "provider": "html",
-    "provider_key": "argonne",
-    "mapping_status": "verified",
-    "validation_notes": "Official laboratory careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
   },
   {
     "rank": 217,
     "sponsor_name": "BURNS AND MCDONNELL ENGINEERING COMPANY INC",
     "canonical_company": "Burns & McDonnell",
     "total_approvals": 36,
-    "career_url": "https://burnsmcd.jobs/",
-    "provider": "html",
-    "provider_key": "burns-mcdonnell",
-    "mapping_status": "verified",
-    "validation_notes": "Official company jobs board reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 218,
@@ -2402,8 +2402,8 @@
     "sponsor_name": "LYFT INC",
     "canonical_company": "Lyft",
     "total_approvals": 36,
-    "career_url": "https://www.lyft.com/careers",
-    "provider": "html",
+    "career_url": "https://job-boards.greenhouse.io/lyft",
+    "provider": "greenhouse",
     "provider_key": "lyft",
     "mapping_status": "verified",
     "validation_notes": "Official Lyft careers page and Greenhouse tenant reviewed 2026-08-12."
@@ -2424,11 +2424,11 @@
     "sponsor_name": "SS AND C TECHNOLOGIES INC",
     "canonical_company": "SS&C Technologies",
     "total_approvals": 36,
-    "career_url": "https://careers.ssctech.com/us/en",
-    "provider": "html",
-    "provider_key": "ssc-technologies",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 222,
@@ -2446,19 +2446,19 @@
     "sponsor_name": "BLACK AND VEATCH CORPORATION",
     "canonical_company": "Black & Veatch",
     "total_approvals": 35,
-    "career_url": "https://careers.bv.com/",
-    "provider": "html",
-    "provider_key": "black-veatch",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 224,
     "sponsor_name": "BLOCK INC",
     "canonical_company": "Block",
     "total_approvals": 35,
-    "career_url": "https://block.xyz/careers/jobs",
-    "provider": "html",
+    "career_url": "https://job-boards.greenhouse.io/block",
+    "provider": "greenhouse",
     "provider_key": "block",
     "mapping_status": "verified",
     "validation_notes": "Official Block careers page and Greenhouse tenant reviewed 2026-08-12."
@@ -2490,11 +2490,11 @@
     "sponsor_name": "SONY INTERACTIVE ENTERTAINMENT LLC",
     "canonical_company": "Sony Interactive Entertainment",
     "total_approvals": 35,
-    "career_url": "https://careers.playstation.com/",
-    "provider": "html",
-    "provider_key": "siei",
-    "mapping_status": "verified",
-    "validation_notes": "Official PlayStation careers page and Greenhouse tenant reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 228,
@@ -2534,8 +2534,8 @@
     "sponsor_name": "TWILIO INC",
     "canonical_company": "Twilio",
     "total_approvals": 35,
-    "career_url": "https://www.twilio.com/en-us/company/jobs",
-    "provider": "html",
+    "career_url": "https://twilio.eightfold.ai/careers",
+    "provider": "eightfold",
     "provider_key": "twilio",
     "mapping_status": "verified",
     "validation_notes": "Official Twilio jobs page and ATS entry reviewed 2026-08-12."
@@ -2567,22 +2567,22 @@
     "sponsor_name": "ARIBA INC",
     "canonical_company": "SAP",
     "total_approvals": 34,
-    "career_url": "https://jobs.sap.com/",
-    "provider": "html",
-    "provider_key": "sap",
-    "mapping_status": "verified",
-    "validation_notes": "Official SAP jobs board reviewed 2026-08-12; SAP America and Ariba share it."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 235,
     "sponsor_name": "CIRRUS LOGIC INTERNATIONAL SEMICONDUCTOR LTD.",
     "canonical_company": "Cirrus Logic",
     "total_approvals": 34,
-    "career_url": "https://www.cirrus.com/company/careers/",
-    "provider": "html",
-    "provider_key": "cirrus-logic",
-    "mapping_status": "verified",
-    "validation_notes": "Official company careers page reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
   },
   {
     "rank": 236,
@@ -2600,11 +2600,11 @@
     "sponsor_name": "EXPERIAN INFORMATION SOLUTIONS INC",
     "canonical_company": "Experian",
     "total_approvals": 34,
-    "career_url": "https://jobs.experian.com/",
-    "provider": "html",
-    "provider_key": "experian",
-    "mapping_status": "verified",
-    "validation_notes": "Official company jobs board reviewed 2026-08-12."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
   },
   {
     "rank": 238,
@@ -2699,8 +2699,8 @@
     "sponsor_name": "ENDAVA SOLUTIONS LLC",
     "canonical_company": "Endava",
     "total_approvals": 33,
-    "career_url": "https://www.endava.com/careers/jobs",
-    "provider": "html",
+    "career_url": "https://careers.smartrecruiters.com/endava",
+    "provider": "smartrecruiters",
     "provider_key": "endava",
     "mapping_status": "verified",
     "validation_notes": "Official Endava jobs page and ATS entry reviewed 2026-08-12."
@@ -2710,11 +2710,11 @@
     "sponsor_name": "HEADSTRONG SERVICES LLC",
     "canonical_company": "Genpact",
     "total_approvals": 33,
-    "career_url": "https://www.genpact.com/careers/jobsearch",
-    "provider": "html",
-    "provider_key": "genpact",
-    "mapping_status": "verified",
-    "validation_notes": "Official Genpact career search reviewed 2026-08-12; Headstrong is consolidated to the parent board."
+    "career_url": null,
+    "provider": null,
+    "provider_key": null,
+    "mapping_status": "unsupported",
+    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
   },
   {
     "rank": 248,
@@ -2732,8 +2732,8 @@
     "sponsor_name": "OKTA INC",
     "canonical_company": "Okta",
     "total_approvals": 33,
-    "career_url": "https://www.okta.com/company/careers/",
-    "provider": "html",
+    "career_url": "https://job-boards.greenhouse.io/okta",
+    "provider": "greenhouse",
     "provider_key": "okta",
     "mapping_status": "verified",
     "validation_notes": "Official Okta careers page and Greenhouse tenant reviewed 2026-08-12."

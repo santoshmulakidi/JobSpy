@@ -8,12 +8,14 @@ from pathlib import Path
 from urllib.parse import urlparse, urlunsplit
 
 import httpx
+import tldextract
 from ats_scrapers import find_company
 
 from career_alerts.registry import provider_matches_url
 
 DEFAULT_OUTPUT = Path("data/top250_career_candidates.json")
 DEFAULT_REVIEW = Path("data/top250_career_targets.review.json")
+ATS_IDENTITY_SOURCE = "https://storage.stapply.ai/jobhive/v1/manifest.json"
 FORBIDDEN_HOSTS = {
     "careerbuilder.com",
     "glassdoor.com",
@@ -89,6 +91,28 @@ def ats_candidates(sponsor_name: str) -> list[dict[str, str]]:
     return candidates
 
 
+def direct_ats_url(provider: str, provider_key: str) -> str | None:
+    """Build canonical public ATS URLs for providers with stable tenant URL shapes."""
+    if provider == "ashby":
+        return f"https://jobs.ashbyhq.com/{provider_key}"
+    if provider == "greenhouse":
+        return f"https://job-boards.greenhouse.io/{provider_key}"
+    if provider == "lever":
+        return f"https://jobs.lever.co/{provider_key}"
+    if provider == "smartrecruiters":
+        return f"https://careers.smartrecruiters.com/{provider_key}"
+    if provider == "workable":
+        return f"https://apply.workable.com/{provider_key}"
+    if provider == "avature":
+        return f"https://{provider_key}.avature.net/careers/SearchJobs"
+    if provider == "eightfold":
+        return f"https://{provider_key}.eightfold.ai/careers"
+    if provider == "workday" and "/" in provider_key:
+        tenant, board = provider_key.split("/", 1)
+        return f"https://{tenant}.wd5.myworkdayjobs.com/{board}"
+    return None
+
+
 def freehire_candidates(client: httpx.Client, sponsor_name: str) -> list[dict[str, str]]:
     try:
         response = client.get(
@@ -117,9 +141,13 @@ def freehire_candidates(client: httpx.Client, sponsor_name: str) -> list[dict[st
     return candidates
 
 
-def _identity_domain(host: str) -> str:
-    parts = host.lower().rstrip(".").split(".")
-    return ".".join(parts[-2:]) if len(parts) >= 2 else host
+_TLD_EXTRACT = tldextract.TLDExtract(suffix_list_urls=())
+
+
+def registrable_domain(host: str) -> str:
+    """Return the public-suffix-aware registrable domain without network updates."""
+    extracted = _TLD_EXTRACT(host.lower().rstrip("."))
+    return extracted.top_domain_under_public_suffix or host.lower().rstrip(".")
 
 
 def validate_http(
@@ -150,7 +178,7 @@ def validate_http(
             final.scheme == "https"
             and not is_aggregator(str(response.url))
             and (
-                _identity_domain(original_host) == _identity_domain(final_host)
+                registrable_domain(original_host) == registrable_domain(final_host)
                 or final_host in allowed
             )
         )
@@ -206,6 +234,9 @@ def apply_review_decisions(
                     "validation_notes": row["decision_reason"],
                     "sponsor_name": row["sponsor_name"],
                     "total_approvals": row["total_approvals"],
+                    "candidate_url": row.get("candidate_url"),
+                    "candidate_provider": row.get("candidate_provider"),
+                    "candidate_provider_key": row.get("candidate_provider_key"),
                 },
             )
     elif isinstance(decisions, dict):
@@ -218,23 +249,56 @@ def apply_review_decisions(
                     provider, provider_key, career_url
                 ):
                     provider = "html"
-                add_decision(int(rank), {
-                "canonical_company": group["canonical_company"],
-                "career_url": career_url,
-                "provider": provider,
-                "provider_key": provider_key,
-                "mapping_status": "verified",
-                "validation_notes": group["validation_notes"],
-                })
+                source_path = urlparse(career_url).path
+                if provider == "html" and source_path in {"", "/"}:
+                    add_decision(
+                        int(rank),
+                        {
+                            "canonical_company": group["canonical_company"],
+                            "career_url": None,
+                            "provider": None,
+                            "provider_key": None,
+                            "mapping_status": "unsupported",
+                            "validation_notes": (
+                                "Official-looking root career candidate lacked an independent "
+                                "company-page careers-link relationship during review on "
+                                "2026-08-12, so it remains inactive."
+                            ),
+                            "candidate_url": career_url,
+                            "candidate_provider": provider,
+                            "candidate_provider_key": provider_key,
+                        },
+                    )
+                    continue
+                add_decision(
+                    int(rank),
+                    {
+                        "canonical_company": group["canonical_company"],
+                        "career_url": career_url,
+                        "provider": provider,
+                        "provider_key": provider_key,
+                        "mapping_status": "verified",
+                        "validation_notes": group["validation_notes"],
+                        "candidate_url": group.get("career_url"),
+                        "candidate_provider": group.get("provider"),
+                        "candidate_provider_key": group.get("provider_key"),
+                    },
+                )
         for row in decisions.get("unsupported", []):
-            add_decision(int(row["rank"]), {
-                "canonical_company": row.get("canonical_company"),
-                "career_url": None,
-                "provider": None,
-                "provider_key": None,
-                "mapping_status": "unsupported",
-                "validation_notes": row["validation_notes"],
-            })
+            add_decision(
+                int(row["rank"]),
+                {
+                    "canonical_company": row.get("canonical_company"),
+                    "career_url": None,
+                    "provider": None,
+                    "provider_key": None,
+                    "mapping_status": "unsupported",
+                    "validation_notes": row["validation_notes"],
+                    "candidate_url": row.get("candidate_url"),
+                    "candidate_provider": row.get("candidate_provider"),
+                    "candidate_provider_key": row.get("candidate_provider_key"),
+                },
+            )
     else:
         raise TypeError("review decisions must be an object or array")
 
@@ -254,6 +318,29 @@ def apply_review_decisions(
             raise ValueError(f"review sponsor identity mismatch at rank {rank}")
         if decision.get("total_approvals") not in {None, sponsor["total_approvals"]}:
             raise ValueError(f"review approvals mismatch at rank {rank}")
+        career_url = decision["career_url"]
+        provider = decision["provider"]
+        provider_key = decision["provider_key"]
+        if decision["mapping_status"] == "verified":
+            candidate_provider = decision.get("candidate_provider")
+            candidate_key = decision.get("candidate_provider_key")
+            candidate_url = decision.get("candidate_url")
+            if (
+                isinstance(candidate_provider, str)
+                and candidate_provider != "html"
+                and isinstance(candidate_key, str)
+            ):
+                direct_url = direct_ats_url(candidate_provider, candidate_key)
+                if direct_url:
+                    career_url = direct_url
+                    provider = candidate_provider
+                    provider_key = candidate_key
+                elif isinstance(candidate_url, str) and provider_matches_url(
+                    candidate_provider, candidate_key, candidate_url
+                ):
+                    career_url = candidate_url
+                    provider = candidate_provider
+                    provider_key = candidate_key
         output.append(
             {
                 "rank": rank,
@@ -261,9 +348,9 @@ def apply_review_decisions(
                 "canonical_company": decision["canonical_company"]
                 or str(sponsor["sponsor_name"]),
                 "total_approvals": int(sponsor["total_approvals"]),
-                "career_url": decision["career_url"],
-                "provider": decision["provider"],
-                "provider_key": decision["provider_key"],
+                "career_url": career_url,
+                "provider": provider,
+                "provider_key": provider_key,
                 "mapping_status": decision["mapping_status"],
                 "validation_notes": decision["validation_notes"],
             }
@@ -324,6 +411,19 @@ def review_candidate_metadata(decisions_path: Path) -> dict[int, dict[str, objec
     return metadata
 
 
+def identity_source_for(row: dict[str, object], candidate: dict[str, object]) -> str | None:
+    """Choose an independently fetched identity source, distinct from the selected jobs URL."""
+    candidate_provider = candidate.get("candidate_provider")
+    if isinstance(candidate_provider, str) and candidate_provider != "html":
+        return ATS_IDENTITY_SOURCE
+    url = row.get("career_url")
+    if not isinstance(url, str):
+        return None
+    parsed = urlparse(url)
+    source_url = f"{parsed.scheme}://{parsed.netloc}/"
+    return source_url if source_url != url else None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate disabled official-career candidates")
     parser.add_argument("--seed", type=Path, default=Path("data/top250_h1b_sponsors.json"))
@@ -356,6 +456,16 @@ def main() -> int:
                 for metadata in candidate_metadata.values()
                 if metadata.get("candidate_url")
             )
+            urls.update(
+                source_url
+                for row in output_rows
+                if row["mapping_status"] == "verified"
+                and (
+                    source_url := identity_source_for(
+                        row, candidate_metadata.get(int(row["rank"]), {})
+                    )
+                )
+            )
             sorted_urls = sorted(urls)
             with ThreadPoolExecutor(max_workers=12) as executor:
                 results = executor.map(
@@ -367,32 +477,83 @@ def main() -> int:
                     sorted_urls,
                 )
                 outcomes.update(zip(sorted_urls, results, strict=True))
+        for row in output_rows:
+            if row["mapping_status"] != "verified":
+                continue
+            candidate = candidate_metadata.get(int(row["rank"]), {})
+            identity_source = identity_source_for(row, candidate)
+            identity_outcome = outcomes.get(str(identity_source), {})
+            activated_outcome = outcomes.get(str(row["career_url"]), {})
+            activated_status = activated_outcome.get("status_code")
+            identity_failed = not identity_outcome.get("http_success")
+            activated_failed = (
+                not activated_outcome.get("http_success")
+                and activated_status not in {403, 406}
+            )
+            if identity_failed or activated_failed:
+                previous_url = row["career_url"]
+                candidate_metadata[int(row["rank"])] = {
+                    "candidate_url": candidate.get("candidate_url") or previous_url,
+                    "candidate_provider": candidate.get("candidate_provider") or row["provider"],
+                    "candidate_provider_key": candidate.get("candidate_provider_key")
+                    or row["provider_key"],
+                }
+                row["career_url"] = None
+                row["provider"] = None
+                row["provider_key"] = None
+                row["mapping_status"] = "unsupported"
+                if identity_failed:
+                    row["validation_notes"] = (
+                        "Independent identity source was not HTTP-successful during review on "
+                        "2026-08-12, so the candidate remains inactive."
+                    )
+                else:
+                    row["validation_notes"] = (
+                        f"Known official candidate returned HTTP {activated_status} during review "
+                        "on 2026-08-12; source remains inactive until a working official endpoint "
+                        "is confirmed."
+                    )
         review_rows = []
         for row in output_rows:
             url = row["career_url"]
             candidate = candidate_metadata.get(int(row["rank"]), {})
             candidate_url = candidate.get("candidate_url")
-            host = urlparse(str(url)).hostname if url else None
             if row["mapping_status"] == "verified":
                 allowed_hosts = sorted(redirect_allowlist.get(str(url), set()))
-                identity_evidence = (
-                    f"Human-reviewed official company careers domain: {host}"
-                    if row["provider"] == "html"
-                    else "Human-reviewed official ATS/first-party source: "
-                    f"provider={row['provider']}; key={row['provider_key']}; host={host}"
-                )
-                if allowed_hosts:
-                    identity_evidence += (
-                        "; explicitly reviewed official redirect host(s): "
-                        + ", ".join(allowed_hosts)
+                candidate_provider = candidate.get("candidate_provider")
+                candidate_url = candidate.get("candidate_url")
+                if isinstance(candidate_provider, str) and candidate_provider != "html":
+                    identity_method = "official_ats_directory"
+                    identity_source_url = ATS_IDENTITY_SOURCE
+                    identity_observation = (
+                        f"ats-scrapers 0.2.0 company directory matched {row['canonical_company']} "
+                        f"to {candidate_provider}/{candidate.get('candidate_provider_key')} at "
+                        f"{candidate_url}."
                     )
+                else:
+                    identity_method = "official_company_careers_link"
+                    identity_source_url = identity_source_for(row, candidate)
+                    identity_observation = (
+                        f"Human review observed the {row['canonical_company']} company page title/name "
+                        f"and its careers navigation relationship to {url}."
+                    )
+                identity_source_validation = outcomes.get(str(identity_source_url), {})
+                identity_source_final_url = identity_source_validation.get("final_url")
+                identity_source_status = identity_source_validation.get("status_code")
+                identity_evidence = identity_observation
             else:
                 allowed_hosts = []
                 identity_evidence = None
+                identity_method = None
+                identity_source_url = None
+                identity_source_final_url = None
+                identity_source_status = None
+                identity_observation = None
             evidence_url = candidate_url or url
+            http_url = url if row["mapping_status"] == "verified" else evidence_url
             http_validation = (
-                outcomes[str(evidence_url)]
-                if evidence_url
+                outcomes[str(http_url)]
+                if http_url
                 else {
                     "reachable": False,
                     "http_success": False,
@@ -412,11 +573,19 @@ def main() -> int:
                     "candidate_url": candidate_url,
                     "candidate_provider": candidate.get("candidate_provider"),
                     "candidate_provider_key": candidate.get("candidate_provider_key"),
+                    "candidate_http_validation": outcomes.get(str(candidate_url))
+                    if candidate_url
+                    else None,
                     "career_url": url,
                     "provider": row["provider"],
                     "provider_key": row["provider_key"],
                     "http_validation": http_validation,
                     "identity_evidence": identity_evidence,
+                    "identity_method": identity_method,
+                    "identity_source_url": identity_source_url,
+                    "identity_source_final_url": identity_source_final_url,
+                    "identity_source_status": identity_source_status,
+                    "identity_observation": identity_observation,
                     "allowed_final_hosts": allowed_hosts,
                     "decision": row["mapping_status"],
                     "decision_reason": row["validation_notes"],

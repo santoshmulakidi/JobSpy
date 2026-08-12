@@ -4,7 +4,11 @@ import httpx
 import pytest
 
 from career_alerts.registry import load_registry, validate_registry
-from tools.discover_career_sources import apply_review_decisions, validate_http
+from tools.discover_career_sources import (
+    apply_review_decisions,
+    registrable_domain,
+    validate_http,
+)
 
 
 def _row(**overrides):
@@ -167,6 +171,166 @@ def test_registry_rejects_html_source_key_mismatch(tmp_path):
     assert any("approved official company source/key" in error for error in errors)
 
 
+def test_registry_rejects_verified_404_evidence(tmp_path, monkeypatch):
+    targets = _load(tmp_path, [_row()])
+    evidence = ({
+        "rank": 1,
+        "sponsor_name": "Acme",
+        "canonical_company": "Acme",
+        "total_approvals": 10,
+        "candidate_url": "https://jobs.ashbyhq.com/acme",
+        "candidate_provider": "ashby",
+        "candidate_provider_key": "acme",
+        "career_url": "https://jobs.ashbyhq.com/acme",
+        "provider": "ashby",
+        "provider_key": "acme",
+        "http_validation": {"status_code": 404, "http_success": False},
+        "identity_method": "official_ats_directory",
+        "identity_source_url": "https://jobs.ashbyhq.com/acme",
+        "identity_source_final_url": "https://jobs.ashbyhq.com/acme",
+        "identity_source_status": 200,
+        "identity_observation": "ATS directory company name matched Acme and tenant key acme.",
+        "allowed_final_hosts": [],
+        "decision": "verified",
+        "decision_reason": "official tenant",
+        "reviewed_at": "2026-08-12",
+    },)
+    monkeypatch.setattr("career_alerts.registry._review_evidence", lambda: evidence)
+
+    errors = validate_registry(targets, require_complete=False)
+
+    assert any("HTTP 404 evidence cannot be verified" in error for error in errors)
+
+
+def test_bot_block_override_requires_independent_identity(tmp_path, monkeypatch):
+    targets = _load(tmp_path, [_row(validation_notes="official page blocked automation")])
+    evidence = ({
+        "rank": 1,
+        "sponsor_name": "Acme",
+        "canonical_company": "Acme",
+        "total_approvals": 10,
+        "candidate_url": "https://jobs.ashbyhq.com/acme",
+        "candidate_provider": "ashby",
+        "candidate_provider_key": "acme",
+        "career_url": "https://jobs.ashbyhq.com/acme",
+        "provider": "ashby",
+        "provider_key": "acme",
+        "http_validation": {"status_code": 403, "http_success": False},
+        "identity_method": "selected_url_assertion",
+        "identity_source_url": "https://jobs.ashbyhq.com/acme",
+        "identity_source_final_url": "https://jobs.ashbyhq.com/acme",
+        "identity_source_status": 403,
+        "identity_observation": "This is official because the selected host says so.",
+        "allowed_final_hosts": [],
+        "decision": "verified",
+        "decision_reason": "official page blocked automation",
+        "reviewed_at": "2026-08-12",
+    },)
+    monkeypatch.setattr("career_alerts.registry._review_evidence", lambda: evidence)
+
+    errors = validate_registry(targets, require_complete=False)
+
+    assert any("independent identity evidence" in error for error in errors)
+
+
+def test_semantic_evidence_cross_check_rejects_fabricated_fields(tmp_path, monkeypatch):
+    targets = _load(tmp_path, [_row()])
+    evidence = ({
+        "rank": 1,
+        "sponsor_name": "Acme",
+        "canonical_company": "Acme",
+        "total_approvals": 999,
+        "candidate_url": "https://jobs.ashbyhq.com/acme",
+        "candidate_provider": "ashby",
+        "candidate_provider_key": "acme",
+        "career_url": "https://jobs.ashbyhq.com/acme",
+        "provider": "ashby",
+        "provider_key": "acme",
+        "http_validation": {
+            "reachable": True,
+            "http_success": True,
+            "redirect_identity_ok": True,
+            "ok": True,
+            "status_code": 404,
+            "final_url": "https://evil.example/jobs",
+            "error": None,
+        },
+        "identity_method": "official_ats_directory",
+        "identity_source_url": "https://storage.stapply.ai/jobhive/v1/manifest.json",
+        "identity_source_final_url": "https://storage.stapply.ai/jobhive/v1/manifest.json",
+        "identity_source_status": 200,
+        "identity_observation": "Directory matched Acme to ashby/acme.",
+        "allowed_final_hosts": [""],
+        "decision": "verified",
+        "decision_reason": "official tenant",
+        "reviewed_at": 20260812,
+    },)
+    monkeypatch.setattr("career_alerts.registry._review_evidence", lambda: evidence)
+
+    errors = validate_registry(targets, require_complete=False)
+
+    assert any("total_approvals does not match" in error for error in errors)
+    assert any("reviewed_at" in error for error in errors)
+    assert any("allowed_final_hosts entries" in error for error in errors)
+    assert any("HTTP 404 evidence cannot be verified" in error for error in errors)
+    assert any("HTTP success flag is inconsistent" in error for error in errors)
+    assert any("redirect identity flag is inconsistent" in error for error in errors)
+
+
+def test_unrelated_html_with_self_authored_prose_is_rejected(tmp_path, monkeypatch):
+    targets = _load(
+        tmp_path,
+        [_row(career_url="https://unrelated.example/jobs", provider="html")],
+    )
+    evidence = ({
+        "rank": 1,
+        "sponsor_name": "Acme",
+        "canonical_company": "Acme",
+        "total_approvals": 10,
+        "career_url": "https://unrelated.example/jobs",
+        "provider": "html",
+        "provider_key": "acme",
+        "http_validation": {"status_code": 200, "http_success": True},
+        "identity_method": "official_company_careers_link",
+        "identity_source_url": "https://unrelated.example/jobs",
+        "identity_source_final_url": "https://unrelated.example/jobs",
+        "identity_source_status": 200,
+        "identity_observation": "Acme careers link claimed in prose.",
+        "allowed_final_hosts": [],
+        "decision": "verified",
+        "decision_reason": "official source",
+        "reviewed_at": "2026-08-12",
+    },)
+    monkeypatch.setattr("career_alerts.registry._review_evidence", lambda: evidence)
+
+    errors = validate_registry(targets, require_complete=False)
+
+    assert any("independent identity source" in error for error in errors)
+
+
+def test_oracle_provider_key_must_match_site_path(tmp_path):
+    targets = _load(
+        tmp_path,
+        [
+            _row(
+                career_url="https://tenant.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/jobs",
+                provider="oracle",
+                provider_key="different-cx_9999",
+            )
+        ],
+    )
+
+    errors = validate_registry(targets, require_complete=False)
+
+    assert any("does not match provider/key" in error for error in errors)
+
+
+def test_public_suffix_comparison_distinguishes_unrelated_co_uk_domains():
+    assert registrable_domain("careers.example.co.uk") == "example.co.uk"
+    assert registrable_domain("jobs.evil.co.uk") == "evil.co.uk"
+    assert registrable_domain("careers.example.co.uk") != registrable_domain("jobs.evil.co.uk")
+
+
 def test_load_registry_does_not_coerce_null_required_string(tmp_path):
     path = tmp_path / "targets.json"
     path.write_text(json.dumps([_row(sponsor_name=None)]))
@@ -287,6 +451,11 @@ def test_review_artifact_reproduces_registry_and_preserves_evidence():
             "provider_key",
             "http_validation",
             "identity_evidence",
+            "identity_method",
+            "identity_source_url",
+            "identity_source_final_url",
+            "identity_source_status",
+            "identity_observation",
             "decision",
             "decision_reason",
         }
@@ -303,3 +472,10 @@ def test_review_artifact_reproduces_registry_and_preserves_evidence():
     assert rejected["candidate_url"] == "https://careers.qualitestgroup.com/"
     assert rejected["career_url"] is None
     assert rejected["http_validation"]["status_code"] is not None
+    assert not any(
+        row["decision"] == "verified" and row["http_validation"]["status_code"] == 404
+        for row in evidence
+    )
+    openai = next(row for row in evidence if row["rank"] == 72)
+    assert (openai["provider"], openai["provider_key"]) == ("ashby", "openai")
+    assert openai["career_url"] == "https://jobs.ashbyhq.com/openai"
