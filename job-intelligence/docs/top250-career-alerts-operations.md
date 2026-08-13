@@ -12,9 +12,10 @@ Before a production action, inspect the active job and current alert state:
     cd /home/ubuntu/JobSpy/job-intelligence && .venv-career-alerts/bin/python -m career_alerts.cli status
     tail -n 200 /home/ubuntu/.hermes/logs/top250_career_alerts.log
 
-The status command is read-only. The log tail should be used to review source
-counts, delivery state, checkpoints, and sanitized errors; do not copy any
-sensitive values into incident notes.
+The status command is read-only and currently reports persisted source-health
+data. Use the sanitized log tail to review collection and delivery outcomes,
+including checkpoints and errors; do not copy sensitive values into incident
+notes.
 
 ## Dry run and validation
 
@@ -35,18 +36,19 @@ collection and delivery:
     CAREER_JOB_ID=$(/home/ubuntu/.hermes/hermes-agent/venv/bin/python -c 'import json; d=json.load(open("/home/ubuntu/.hermes/cron/jobs.json")); print(next(j["id"] for j in d["jobs"] if j["name"]=="top250_career_alerts_3hour"))')
     /home/ubuntu/.hermes/hermes-agent/venv/bin/hermes cron run "$CAREER_JOB_ID"
 
-Afterward, use status and the sanitized log tail above to verify the
-checkpoint, source failures, deliveries, and pending jobs. A delivery failure
-leaves that stream pending for the next run; do not manually edit the SQLite
-database to force it delivered.
+Afterward, use status to verify source-health and the sanitized log tail to
+verify the checkpoint, source failures, and delivery outcomes. A delivery
+failure leaves that stream pending for the next run; do not manually edit the
+SQLite database to force it delivered.
 
 ## Weekend and missed-run recovery
 
 The Monday 7 AM delivery window is Weekend Jobs Fri 7 PM-Mon 7 AM. Pending
 jobs discovered during a missed scheduled run remain pending and are included
 once when the next appropriate stream delivery succeeds. Do not run individual
-weekend catch-up jobs or reset delivery rows; inspect pending counts with
-status, then allow the next scheduled run or perform one approved manual run.
+weekend catch-up jobs or reset delivery rows; review the sanitized log for the
+delivery outcome, then allow the next scheduled run or perform one approved
+manual run.
 
 Offline verification covers the Friday-to-Monday window, including daylight
 saving boundaries, and verifies unsent jobs persist over missed runs.
