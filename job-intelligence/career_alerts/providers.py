@@ -825,8 +825,18 @@ def _approved_apply_url(
         and career.hostname.casefold() == job.hostname.casefold()
     )
     path_parts = [part for part in job.path.rstrip("/").split("/") if part]
+    career_parts = [
+        part for part in career.path.rstrip("/").split("/") if part
+    ]
     block_greenhouse_identity = (
         target.provider == "greenhouse"
+        and target.provider_key == "block"
+        and career.hostname
+        and career.hostname.casefold() in {
+            "boards.greenhouse.io",
+            "job-boards.greenhouse.io",
+        }
+        and career_parts == ["block"]
         and job.hostname.casefold() == "block.xyz"
         and path_parts[-3:] == ["careers", "jobs", provider_job_id]
         and parse_qs(job.query, keep_blank_values=True).get("gh_jid")
