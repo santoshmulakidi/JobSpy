@@ -734,6 +734,55 @@ def test_cross_host_http_apply_url_remains_rejected_by_email_renderer():
         )
 
 
+def test_greenhouse_cross_host_url_with_exact_job_identity_is_upgraded_and_rendered():
+    source = target(career_url="https://boards.greenhouse.io/block")
+    raw = ats_job(
+        "greenhouse",
+        "7654321",
+        "http://block.xyz/careers/jobs/7654321?gh_jid=7654321",
+    )
+    normalized = CareerProvider.normalize_jobs([source], [raw])[0]
+    match = MatchedJob(normalized, frozenset({"ai_engineer"}), "DFW Metro")
+    now = datetime(2026, 8, 13, 18, tzinfo=UTC)
+
+    messages = render_email(
+        "ai_engineer",
+        DeliveryWindow(now, now, "Initial activation", "regular"),
+        [EmailJob(match, now)],
+    )
+
+    assert normalized.apply_url == (
+        "https://block.xyz/careers/jobs/7654321?gh_jid=7654321"
+    )
+    assert len(messages) == 1
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://block.xyz/careers/jobs/7654321",
+        "http://block.xyz/careers/jobs/7654321?gh_jid=other",
+        "http://block.xyz/careers/jobs/other?gh_jid=7654321",
+        "http://untrusted.test/jobs/7654321?gh_jid=7654321",
+        "http://untrusted.test/careers/jobs/7654321?gh_jid=7654321",
+    ],
+)
+def test_arbitrary_greenhouse_cross_host_http_url_remains_rejected(url):
+    source = target(career_url="https://boards.greenhouse.io/block")
+    raw = ats_job("greenhouse", "7654321", url)
+    normalized = CareerProvider.normalize_jobs([source], [raw])[0]
+    match = MatchedJob(normalized, frozenset({"ai_engineer"}), "DFW Metro")
+    now = datetime(2026, 8, 13, 18, tzinfo=UTC)
+
+    assert normalized.apply_url == url
+    with pytest.raises(ValueError, match="HTTPS application URL"):
+        render_email(
+            "ai_engineer",
+            DeliveryWindow(now, now, "Initial activation", "regular"),
+            [EmailJob(match, now)],
+        )
+
+
 @pytest.mark.parametrize("status", [401, 403, 404])
 def test_non_retryable_http_statuses_are_not_retried(status):
     attempts = 0

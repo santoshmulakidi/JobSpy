@@ -12,7 +12,7 @@ from dataclasses import dataclass, replace
 from time import perf_counter
 from types import MethodType
 from typing import Any, Protocol, Self
-from urllib.parse import urljoin, urlparse
+from urllib.parse import parse_qs, urljoin, urlparse
 
 import httpx
 from ats_scrapers.exceptions import CompanyNotFoundError
@@ -626,14 +626,18 @@ class CareerProvider:
         sponsor_names = tuple(dict.fromkeys(item.sponsor_name for item in targets))
         jobs: list[CareerJob] = []
         for raw in raw_jobs:
-            apply_url = _approved_apply_url(
-                target,
-                str(getattr(raw, "apply_url", None) or raw.url),  # type: ignore[attr-defined]
+            raw_apply_url = str(
+                getattr(raw, "apply_url", None) or raw.url  # type: ignore[attr-defined]
             )
             provider_job_id = str(
                 getattr(raw, "ats_id", None)
                 or getattr(raw, "global_id", None)
-                or _stable_url_id(apply_url)
+                or _stable_url_id(raw_apply_url)
+            )
+            apply_url = _approved_apply_url(
+                target,
+                raw_apply_url,
+                provider_job_id,
             )
             jobs.append(
                 CareerJob(
@@ -808,17 +812,27 @@ def _looks_like_job_link(title: str, url: str) -> bool:
     return any(token in candidate for token in ("job", "career", "position", "opening", "role"))
 
 
-def _approved_apply_url(target: SponsorTarget, apply_url: str) -> str:
-    """Upgrade same-host HTTP job links under a reviewed HTTPS career source."""
+def _approved_apply_url(
+    target: SponsorTarget, apply_url: str, provider_job_id: str
+) -> str:
+    """Upgrade reviewed same-host or strongly identified Block job links."""
     career = urlparse(target.career_url or "")
     job = urlparse(apply_url)
-    if (
-        career.scheme == "https"
-        and job.scheme == "http"
-        and career.hostname
-        and job.hostname
+    if career.scheme != "https" or job.scheme != "http" or not job.hostname:
+        return apply_url
+    same_reviewed_host = bool(
+        career.hostname
         and career.hostname.casefold() == job.hostname.casefold()
-    ):
+    )
+    path_parts = [part for part in job.path.rstrip("/").split("/") if part]
+    block_greenhouse_identity = (
+        target.provider == "greenhouse"
+        and job.hostname.casefold() == "block.xyz"
+        and path_parts[-3:] == ["careers", "jobs", provider_job_id]
+        and parse_qs(job.query, keep_blank_values=True).get("gh_jid")
+        == [provider_job_id]
+    )
+    if same_reviewed_host or block_greenhouse_identity:
         return job._replace(scheme="https").geturl()
     return apply_url
 

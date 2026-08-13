@@ -130,13 +130,13 @@ def test_http_to_same_host_https_reconciles_to_one_pending_job(tmp_path):
         "ai_engineer",
         provider_job_id="block-1",
         source_key="greenhouse:block",
-        apply_url="http://block.xyz/careers/jobs/block-1?posting=42&source=ats",
+        apply_url="http://block.xyz/careers/jobs/block-1?gh_jid=block-1",
     )
     current = matched(
         "ai_engineer",
         provider_job_id="block-1",
         source_key="greenhouse:block",
-        apply_url="https://block.xyz/careers/jobs/block-1?posting=42&source=ats",
+        apply_url="https://block.xyz/careers/jobs/block-1?gh_jid=block-1",
     )
     state.upsert_matches([old], dt("2026-08-12T10:00:00Z"))
 
@@ -145,7 +145,7 @@ def test_http_to_same_host_https_reconciles_to_one_pending_job(tmp_path):
     pending = state.pending("ai_engineer")
     assert len(pending) == 1
     assert pending[0][1].job.apply_url == (
-        "https://block.xyz/careers/jobs/block-1?posting=42&source=ats"
+        "https://block.xyz/careers/jobs/block-1?gh_jid=block-1"
     )
     assert pending[0][2] == dt("2026-08-12T10:00:00Z")
     window_time = dt("2026-08-12T12:00:00Z")
