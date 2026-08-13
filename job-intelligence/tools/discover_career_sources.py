@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import importlib.metadata
 import json
 import re
 from concurrent.futures import ThreadPoolExecutor
@@ -15,7 +17,9 @@ from career_alerts.registry import provider_matches_url
 
 DEFAULT_OUTPUT = Path("data/top250_career_candidates.json")
 DEFAULT_REVIEW = Path("data/top250_career_targets.review.json")
-ATS_IDENTITY_SOURCE = "https://storage.stapply.ai/jobhive/v1/manifest.json"
+ATS_MANIFEST_URL = "https://storage.stapply.ai/jobhive/v1/manifest.json"
+ATS_DIRECTORY_PACKAGE = "ats-scrapers"
+ATS_DIRECTORY_VERSION = "0.2.0"
 FORBIDDEN_HOSTS = {
     "careerbuilder.com",
     "glassdoor.com",
@@ -89,6 +93,77 @@ def ats_candidates(sponsor_name: str) -> list[dict[str, str]]:
         if candidates:
             break
     return candidates
+
+
+def _directory_record_sha256(record: dict[str, str]) -> str:
+    encoded = json.dumps(record, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def ats_directory_match(
+    sponsor_name: str,
+    canonical_company: str,
+    provider: str,
+    provider_key: str,
+    career_url: str,
+) -> dict[str, str] | None:
+    """Return the exact pinned find_company record that activates a tenant."""
+    if importlib.metadata.version(ATS_DIRECTORY_PACKAGE) != ATS_DIRECTORY_VERSION:
+        raise RuntimeError(
+            f"{ATS_DIRECTORY_PACKAGE}=={ATS_DIRECTORY_VERSION} is required for review"
+        )
+    queries = list(
+        dict.fromkeys(search_names(sponsor_name) + search_names(canonical_company))
+    )
+    for query in queries:
+        try:
+            matches = find_company(query, limit=10)
+        except (httpx.HTTPError, OSError, ValueError):
+            continue
+        for raw in matches.to_dict(orient="records"):
+            record = {
+                "ats": str(raw.get("ats") or "").strip(),
+                "name": str(raw.get("name") or "").strip(),
+                "slug": str(raw.get("slug") or "").strip(),
+                "url": str(raw.get("url") or "").strip(),
+            }
+            if (
+                record["ats"] == provider
+                and record["slug"] == provider_key
+                and record["url"] == career_url
+            ):
+                return {
+                    "directory_package": ATS_DIRECTORY_PACKAGE,
+                    "directory_version": ATS_DIRECTORY_VERSION,
+                    "matched_query": query,
+                    "matched_company": record["name"],
+                    "matched_provider": record["ats"],
+                    "matched_provider_key": record["slug"],
+                    "matched_url": record["url"],
+                    "directory_record_sha256": _directory_record_sha256(record),
+                }
+    return None
+
+
+def ats_directory_source(client: httpx.Client) -> dict[str, str]:
+    """Capture the exact hosted inventory artifact searched by ats-scrapers 0.2.0."""
+    response = client.get(ATS_MANIFEST_URL)
+    response.raise_for_status()
+    manifest = response.json()
+    companies = manifest.get("companies", {})
+    source_url = companies.get("csv")
+    source_sha256 = companies.get("sha256")
+    if (
+        manifest.get("generator") != f"{ATS_DIRECTORY_PACKAGE}/{ATS_DIRECTORY_VERSION}"
+        or not isinstance(source_url, str)
+        or not isinstance(source_sha256, str)
+        or not re.fullmatch(r"[0-9a-f]{64}", source_sha256)
+    ):
+        raise ValueError("ATS manifest does not identify the pinned companies inventory")
+    return {
+        "directory_source_url": source_url,
+        "directory_source_sha256": source_sha256,
+    }
 
 
 def direct_ats_url(provider: str, provider_key: str) -> str | None:
@@ -415,7 +490,7 @@ def identity_source_for(row: dict[str, object], candidate: dict[str, object]) ->
     """Choose an independently fetched identity source, distinct from the selected jobs URL."""
     candidate_provider = candidate.get("candidate_provider")
     if isinstance(candidate_provider, str) and candidate_provider != "html":
-        return ATS_IDENTITY_SOURCE
+        return "https://storage.stapply.ai/jobhive/v1/companies.csv"
     url = row.get("career_url")
     if not isinstance(url, str):
         return None
@@ -443,11 +518,13 @@ def main() -> int:
         redirect_allowlist = review_redirect_allowlist(args.review_decisions)
         candidate_metadata = review_candidate_metadata(args.review_decisions)
         outcomes: dict[str, dict[str, object]] = {}
+        directory_matches: dict[int, dict[str, str]] = {}
         with httpx.Client(
             follow_redirects=True,
             timeout=12,
             headers={"User-Agent": "JobIntelligence career-source review/1.0"},
         ) as client:
+            directory_source = ats_directory_source(client)
             urls = {
                 str(row["career_url"]) for row in output_rows if row["career_url"]
             }
@@ -456,16 +533,7 @@ def main() -> int:
                 for metadata in candidate_metadata.values()
                 if metadata.get("candidate_url")
             )
-            urls.update(
-                source_url
-                for row in output_rows
-                if row["mapping_status"] == "verified"
-                and (
-                    source_url := identity_source_for(
-                        row, candidate_metadata.get(int(row["rank"]), {})
-                    )
-                )
-            )
+            urls.add(directory_source["directory_source_url"])
             sorted_urls = sorted(urls)
             with ThreadPoolExecutor(max_workers=12) as executor:
                 results = executor.map(
@@ -481,11 +549,27 @@ def main() -> int:
             if row["mapping_status"] != "verified":
                 continue
             candidate = candidate_metadata.get(int(row["rank"]), {})
-            identity_source = identity_source_for(row, candidate)
-            identity_outcome = outcomes.get(str(identity_source), {})
             activated_outcome = outcomes.get(str(row["career_url"]), {})
             activated_status = activated_outcome.get("status_code")
-            identity_failed = not identity_outcome.get("http_success")
+            provider = row.get("provider")
+            directory_match = None
+            if isinstance(provider, str) and provider != "html":
+                directory_match = ats_directory_match(
+                    str(row["sponsor_name"]),
+                    str(row["canonical_company"]),
+                    provider,
+                    str(row["provider_key"]),
+                    str(row["career_url"]),
+                )
+            if directory_match is not None:
+                directory_matches[int(row["rank"])] = directory_match
+                if activated_status in {403, 406}:
+                    row["validation_notes"] = (
+                        f"Pinned ats-scrapers company-directory identity matched; official ATS "
+                        f"tenant returned HTTP {activated_status} automation block during review "
+                        "on 2026-08-12."
+                    )
+            identity_failed = directory_match is None
             activated_failed = (
                 not activated_outcome.get("http_success")
                 and activated_status not in {403, 406}
@@ -503,10 +587,18 @@ def main() -> int:
                 row["provider_key"] = None
                 row["mapping_status"] = "unsupported"
                 if identity_failed:
-                    row["validation_notes"] = (
-                        "Independent identity source was not HTTP-successful during review on "
-                        "2026-08-12, so the candidate remains inactive."
-                    )
+                    if provider == "html":
+                        row["validation_notes"] = (
+                            "No captured independent official page content and outbound careers "
+                            "link proved this HTML candidate during review on 2026-08-12, so it "
+                            "remains inactive."
+                        )
+                    else:
+                        row["validation_notes"] = (
+                            "ats-scrapers==0.2.0 find_company returned no exact sponsor/company "
+                            "record matching this provider, key, and URL during review on "
+                            "2026-08-12, so the candidate remains inactive."
+                        )
                 else:
                     row["validation_notes"] = (
                         f"Known official candidate returned HTTP {activated_status} during review "
@@ -519,28 +611,25 @@ def main() -> int:
             candidate = candidate_metadata.get(int(row["rank"]), {})
             candidate_url = candidate.get("candidate_url")
             if row["mapping_status"] == "verified":
+                candidate_url = url
+                candidate = {
+                    "candidate_url": url,
+                    "candidate_provider": row["provider"],
+                    "candidate_provider_key": row["provider_key"],
+                }
                 allowed_hosts = sorted(redirect_allowlist.get(str(url), set()))
-                candidate_provider = candidate.get("candidate_provider")
-                candidate_url = candidate.get("candidate_url")
-                if isinstance(candidate_provider, str) and candidate_provider != "html":
-                    identity_method = "official_ats_directory"
-                    identity_source_url = ATS_IDENTITY_SOURCE
-                    identity_observation = (
-                        f"ats-scrapers 0.2.0 company directory matched {row['canonical_company']} "
-                        f"to {candidate_provider}/{candidate.get('candidate_provider_key')} at "
-                        f"{candidate_url}."
-                    )
-                else:
-                    identity_method = "official_company_careers_link"
-                    identity_source_url = identity_source_for(row, candidate)
-                    identity_observation = (
-                        f"Human review observed the {row['canonical_company']} company page title/name "
-                        f"and its careers navigation relationship to {url}."
-                    )
+                directory_evidence = directory_matches[int(row["rank"])]
+                identity_method = "official_ats_directory"
+                identity_source_url = directory_source["directory_source_url"]
+                identity_observation = "Pinned ats-scrapers company-directory record."
                 identity_source_validation = outcomes.get(str(identity_source_url), {})
                 identity_source_final_url = identity_source_validation.get("final_url")
                 identity_source_status = identity_source_validation.get("status_code")
                 identity_evidence = identity_observation
+                directory_fields: dict[str, object] = {
+                    **directory_evidence,
+                    **directory_source,
+                }
             else:
                 allowed_hosts = []
                 identity_evidence = None
@@ -549,6 +638,18 @@ def main() -> int:
                 identity_source_final_url = None
                 identity_source_status = None
                 identity_observation = None
+                directory_fields = {
+                    "directory_package": None,
+                    "directory_version": None,
+                    "directory_source_url": None,
+                    "directory_source_sha256": None,
+                    "directory_record_sha256": None,
+                    "matched_query": None,
+                    "matched_company": None,
+                    "matched_provider": None,
+                    "matched_provider_key": None,
+                    "matched_url": None,
+                }
             evidence_url = candidate_url or url
             http_url = url if row["mapping_status"] == "verified" else evidence_url
             http_validation = (
@@ -586,6 +687,11 @@ def main() -> int:
                     "identity_source_final_url": identity_source_final_url,
                     "identity_source_status": identity_source_status,
                     "identity_observation": identity_observation,
+                    **directory_fields,
+                    "observed_title": None,
+                    "observed_company_tokens": None,
+                    "observed_careers_links": None,
+                    "selected_matching_link": None,
                     "allowed_final_hosts": allowed_hosts,
                     "decision": row["mapping_status"],
                     "decision_reason": row["validation_notes"],

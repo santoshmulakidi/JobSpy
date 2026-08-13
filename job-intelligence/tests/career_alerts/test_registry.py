@@ -1,11 +1,14 @@
 import json
+from copy import deepcopy
 
 import httpx
+import pandas as pd
 import pytest
 
 from career_alerts.registry import load_registry, validate_registry
 from tools.discover_career_sources import (
     apply_review_decisions,
+    ats_directory_match,
     registrable_domain,
     validate_http,
 )
@@ -31,6 +34,65 @@ def _load(tmp_path, rows):
     path = tmp_path / "targets.json"
     path.write_text(json.dumps(rows))
     return load_registry(path)
+
+
+def _ats_evidence(**overrides):
+    record = {
+        "ats": "ashby",
+        "name": "Acme",
+        "slug": "acme",
+        "url": "https://jobs.ashbyhq.com/acme",
+    }
+    row = {
+        "rank": 1,
+        "sponsor_name": "Acme",
+        "canonical_company": "Acme",
+        "total_approvals": 10,
+        "candidate_url": "https://jobs.ashbyhq.com/acme",
+        "candidate_provider": "ashby",
+        "candidate_provider_key": "acme",
+        "candidate_http_validation": None,
+        "career_url": "https://jobs.ashbyhq.com/acme",
+        "provider": "ashby",
+        "provider_key": "acme",
+        "http_validation": {
+            "reachable": True,
+            "http_success": True,
+            "redirect_identity_ok": True,
+            "ok": True,
+            "status_code": 200,
+            "final_url": "https://jobs.ashbyhq.com/acme",
+            "error": None,
+        },
+        "identity_evidence": "Pinned company-directory record.",
+        "identity_method": "official_ats_directory",
+        "identity_source_url": "https://storage.stapply.ai/jobhive/v1/companies.csv",
+        "identity_source_final_url": "https://storage.stapply.ai/jobhive/v1/companies.csv",
+        "identity_source_status": 200,
+        "identity_observation": "Pinned company-directory record.",
+        "directory_package": "ats-scrapers",
+        "directory_version": "0.2.0",
+        "directory_source_url": "https://storage.stapply.ai/jobhive/v1/companies.csv",
+        "directory_source_sha256": "a746aec8e7d209456da73e08be041c5ef06e815c6a44b9d3467692870fa5ac13",
+        "directory_record_sha256": __import__("hashlib").sha256(
+            json.dumps(record, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest(),
+        "matched_query": "Acme",
+        "matched_company": "Acme",
+        "matched_provider": "ashby",
+        "matched_provider_key": "acme",
+        "matched_url": "https://jobs.ashbyhq.com/acme",
+        "observed_title": None,
+        "observed_company_tokens": None,
+        "observed_careers_links": None,
+        "selected_matching_link": None,
+        "allowed_final_hosts": [],
+        "decision": "verified",
+        "decision_reason": "official ATS tenant reviewed",
+        "reviewed_at": "2026-08-12",
+    }
+    row.update(overrides)
+    return row
 
 
 def test_registry_rejects_linkedin(tmp_path):
@@ -308,6 +370,158 @@ def test_unrelated_html_with_self_authored_prose_is_rejected(tmp_path, monkeypat
     assert any("independent identity source" in error for error in errors)
 
 
+def test_same_domain_html_claim_without_observed_company_content_is_rejected(
+    tmp_path, monkeypatch
+):
+    targets = _load(
+        tmp_path,
+        [
+            _row(
+                career_url="https://example.com/jobs/acme",
+                provider="html",
+                provider_key="example.com",
+                validation_notes="official company careers link reviewed",
+            )
+        ],
+    )
+    evidence = _ats_evidence(
+        career_url="https://example.com/jobs/acme",
+        provider="html",
+        provider_key="example.com",
+        candidate_url="https://example.com/jobs/acme",
+        candidate_provider="html",
+        candidate_provider_key="example.com",
+        identity_method="official_company_careers_link",
+        identity_source_url="https://example.com/about",
+        identity_source_final_url="https://example.com/about",
+        identity_observation="Acme careers link claimed in prose.",
+        directory_package=None,
+        directory_version=None,
+        directory_source_url=None,
+        directory_source_sha256=None,
+        directory_record_sha256=None,
+        matched_query=None,
+        matched_company=None,
+        matched_provider=None,
+        matched_provider_key=None,
+        matched_url=None,
+        observed_title="Example Domain",
+        observed_company_tokens=["example"],
+        observed_careers_links=["https://example.com/jobs/acme"],
+        selected_matching_link="https://example.com/jobs/acme",
+        http_validation={
+            "reachable": True,
+            "http_success": True,
+            "redirect_identity_ok": True,
+            "ok": True,
+            "status_code": 200,
+            "final_url": "https://example.com/jobs/acme",
+            "error": None,
+        },
+        decision_reason="official company careers link reviewed",
+    )
+    monkeypatch.setattr("career_alerts.registry._review_evidence", lambda: (evidence,))
+
+    errors = validate_registry(targets, require_complete=False)
+
+    assert any("captured company tokens do not identify" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("field", "tampered"),
+    [
+        ("directory_package", "invented-directory"),
+        ("directory_version", "9.9.9"),
+        ("directory_source_url", "https://example.com/companies.csv"),
+        ("directory_source_sha256", "b" * 64),
+        ("directory_record_sha256", "b" * 64),
+        ("matched_query", "Unrelated Holdings"),
+        ("matched_company", "Unrelated Holdings"),
+        ("matched_provider", "greenhouse"),
+        ("matched_provider_key", "unrelated"),
+        ("matched_url", "https://jobs.ashbyhq.com/unrelated"),
+    ],
+)
+def test_ats_directory_evidence_is_bound_to_real_shaped_record(
+    tmp_path, monkeypatch, field, tampered
+):
+    targets = _load(tmp_path, [_row()])
+    evidence = _ats_evidence()
+    evidence[field] = tampered
+    monkeypatch.setattr("career_alerts.registry._review_evidence", lambda: (evidence,))
+
+    errors = validate_registry(targets, require_complete=False)
+
+    assert any("ATS directory" in error for error in errors)
+
+
+def test_ats_directory_match_preserves_actual_find_company_record(monkeypatch):
+    record = {
+        "ats": "ashby",
+        "name": "OpenAI",
+        "slug": "openai",
+        "url": "https://jobs.ashbyhq.com/openai",
+    }
+    calls = []
+
+    def shaped_find_company(query, *, limit=10):
+        calls.append((query, limit))
+        return pd.DataFrame([record])
+
+    monkeypatch.setattr("tools.discover_career_sources.find_company", shaped_find_company)
+
+    evidence = ats_directory_match(
+        "OPENAI OPCO, LLC",
+        "OpenAI",
+        "ashby",
+        "openai",
+        "https://jobs.ashbyhq.com/openai",
+    )
+
+    assert evidence is not None
+    assert evidence["matched_query"] in {query for query, _ in calls}
+    assert evidence["matched_company"] == "OpenAI"
+    assert evidence["matched_provider"] == "ashby"
+    assert evidence["matched_provider_key"] == "openai"
+    assert evidence["matched_url"] == "https://jobs.ashbyhq.com/openai"
+    assert len(evidence["directory_record_sha256"]) == 64
+
+
+@pytest.mark.parametrize(
+    "http_validation",
+    [
+        {
+            "reachable": False,
+            "http_success": False,
+            "redirect_identity_ok": True,
+            "ok": False,
+            "status_code": 200,
+            "final_url": "https://jobs.ashbyhq.com/acme",
+            "error": None,
+        },
+        {
+            "reachable": True,
+            "http_success": False,
+            "redirect_identity_ok": False,
+            "ok": False,
+            "status_code": 200,
+            "final_url": None,
+            "error": None,
+        },
+    ],
+)
+def test_http_200_evidence_requires_consistent_flags_and_final_url(
+    tmp_path, monkeypatch, http_validation
+):
+    targets = _load(tmp_path, [_row()])
+    evidence = _ats_evidence(http_validation=deepcopy(http_validation))
+    monkeypatch.setattr("career_alerts.registry._review_evidence", lambda: (evidence,))
+
+    errors = validate_registry(targets, require_complete=False)
+
+    assert any("HTTP" in error for error in errors)
+
+
 def test_oracle_provider_key_must_match_site_path(tmp_path):
     targets = _load(
         tmp_path,
@@ -456,6 +670,20 @@ def test_review_artifact_reproduces_registry_and_preserves_evidence():
             "identity_source_final_url",
             "identity_source_status",
             "identity_observation",
+            "directory_package",
+            "directory_version",
+            "directory_source_url",
+            "directory_source_sha256",
+            "directory_record_sha256",
+            "matched_query",
+            "matched_company",
+            "matched_provider",
+            "matched_provider_key",
+            "matched_url",
+            "observed_title",
+            "observed_company_tokens",
+            "observed_careers_links",
+            "selected_matching_link",
             "decision",
             "decision_reason",
         }
@@ -479,3 +707,7 @@ def test_review_artifact_reproduces_registry_and_preserves_evidence():
     openai = next(row for row in evidence if row["rank"] == 72)
     assert (openai["provider"], openai["provider_key"]) == ("ashby", "openai")
     assert openai["career_url"] == "https://jobs.ashbyhq.com/openai"
+    assert openai["candidate_url"] == openai["matched_url"] == openai["career_url"]
+    assert openai["matched_company"] == "OpenAI"
+    assert openai["directory_package"] == "ats-scrapers"
+    assert openai["directory_version"] == "0.2.0"

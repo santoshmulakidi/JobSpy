@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import re
 from collections import Counter
 from functools import lru_cache
 from pathlib import Path
@@ -46,6 +48,25 @@ _INDEPENDENT_IDENTITY_METHODS = {
     "official_company_careers_link",
     "official_ats_directory",
     "official_parent_careers_link",
+}
+_ATS_DIRECTORY_PACKAGE = "ats-scrapers"
+_ATS_DIRECTORY_VERSION = "0.2.0"
+_ATS_DIRECTORY_SOURCE = "https://storage.stapply.ai/jobhive/v1/companies.csv"
+_ATS_DIRECTORY_SOURCE_SHA256 = "a746aec8e7d209456da73e08be041c5ef06e815c6a44b9d3467692870fa5ac13"
+_IDENTITY_STOP_WORDS = {
+    "and",
+    "company",
+    "corp",
+    "corporation",
+    "inc",
+    "llc",
+    "limited",
+    "ltd",
+    "opco",
+    "services",
+    "solutions",
+    "the",
+    "us",
 }
 
 
@@ -205,6 +226,196 @@ def _approved_html_sources() -> tuple[set[str], set[tuple[str, str]]]:
     return hosts, sources
 
 
+def _identity_tokens(value: str) -> set[str]:
+    return {
+        token
+        for token in re.findall(r"[a-z0-9]+", value.casefold())
+        if len(token) > 1 and token not in _IDENTITY_STOP_WORDS
+    }
+
+
+def _directory_queries(sponsor_name: str, canonical_company: str) -> set[str]:
+    queries: set[str] = set()
+    for value in (sponsor_name, canonical_company):
+        normalized = re.sub(r"[^a-z0-9]+", " ", value.casefold()).strip()
+        compact = " ".join(
+            token for token in normalized.split() if token not in _IDENTITY_STOP_WORDS
+        )
+        queries.update(item for item in (value, normalized, compact) if item)
+    return queries
+
+
+def _directory_record_sha256(row: dict[str, object]) -> str | None:
+    fields = {
+        "ats": row.get("matched_provider"),
+        "name": row.get("matched_company"),
+        "slug": row.get("matched_provider_key"),
+        "url": row.get("matched_url"),
+    }
+    if not all(isinstance(value, str) and value for value in fields.values()):
+        return None
+    encoded = json.dumps(fields, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _http_evidence_errors(
+    label: str,
+    target: SponsorTarget,
+    http_validation: object,
+    allowed_final_hosts: list[str],
+) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(http_validation, dict):
+        return [f"{label}: missing structured HTTP validation evidence"]
+    required = {
+        "reachable",
+        "http_success",
+        "redirect_identity_ok",
+        "ok",
+        "status_code",
+        "final_url",
+        "error",
+    }
+    if not required <= http_validation.keys():
+        errors.append(f"{label}: HTTP validation evidence fields are incomplete")
+    reachable = http_validation.get("reachable")
+    http_success = http_validation.get("http_success")
+    redirect_ok = http_validation.get("redirect_identity_ok")
+    ok = http_validation.get("ok")
+    status = http_validation.get("status_code")
+    final_url = http_validation.get("final_url")
+    error = http_validation.get("error")
+    if not all(isinstance(value, bool) for value in (reachable, http_success, redirect_ok, ok)):
+        errors.append(f"{label}: HTTP reachability/success/redirect/ok flags must be booleans")
+    if reachable is True:
+        if isinstance(status, bool) or not isinstance(status, int):
+            errors.append(f"{label}: reachable HTTP evidence requires an integer status")
+        if not isinstance(final_url, str) or not final_url.strip():
+            errors.append(f"{label}: reachable HTTP evidence requires a final URL")
+        if error is not None:
+            errors.append(f"{label}: reachable HTTP evidence must have null error")
+    elif reachable is False and (
+        status is not None
+        or final_url is not None
+        or not isinstance(error, str)
+        or not error
+    ):
+        errors.append(f"{label}: unreachable HTTP evidence requires null status/final URL and an error")
+    expected_success = isinstance(status, int) and not isinstance(status, bool) and 200 <= status < 400
+    if http_success != expected_success:
+        errors.append(f"{label}: HTTP success flag is inconsistent with status")
+    expected_redirect = False
+    if isinstance(final_url, str) and target.career_url:
+        target_host = urlparse(target.career_url).hostname or ""
+        final_host = urlparse(final_url).hostname or ""
+        same_domain = bool(
+            final_host and _registrable_domain(target_host) == _registrable_domain(final_host)
+        )
+        allowed_redirect = final_host.casefold() in {
+            host.casefold() for host in allowed_final_hosts
+        }
+        expected_redirect = bool(
+            urlparse(final_url).scheme == "https"
+            and not _is_forbidden_url(final_url)
+            and (same_domain or allowed_redirect)
+        )
+    if redirect_ok != expected_redirect:
+        errors.append(f"{label}: redirect identity flag is inconsistent with evidence")
+    if ok != (expected_success and expected_redirect):
+        errors.append(f"{label}: HTTP ok flag is inconsistent with success and redirect identity")
+    if status == 404:
+        errors.append(f"{label}: HTTP 404 evidence cannot be verified")
+    elif isinstance(status, int) and not 200 <= status < 400 and status not in {403, 406}:
+        errors.append(f"{label}: HTTP {status} evidence cannot be verified")
+    return errors
+
+
+def _ats_identity_errors(label: str, target: SponsorTarget, row: dict[str, object]) -> list[str]:
+    errors: list[str] = []
+    if row.get("directory_package") != _ATS_DIRECTORY_PACKAGE:
+        errors.append(f"{label}: ATS directory package must be {_ATS_DIRECTORY_PACKAGE}")
+    if row.get("directory_version") != _ATS_DIRECTORY_VERSION:
+        errors.append(f"{label}: ATS directory version must be {_ATS_DIRECTORY_VERSION}")
+    if row.get("directory_source_url") != _ATS_DIRECTORY_SOURCE:
+        errors.append(f"{label}: ATS directory source URL is not the pinned companies inventory")
+    if row.get("directory_source_sha256") != _ATS_DIRECTORY_SOURCE_SHA256:
+        errors.append(f"{label}: ATS directory source hash does not match pinned inventory")
+    if row.get("identity_source_url") != row.get("directory_source_url"):
+        errors.append(f"{label}: ATS directory identity source does not match inventory source")
+    if row.get("identity_source_final_url") != row.get("directory_source_url"):
+        errors.append(f"{label}: ATS directory final source URL does not match inventory source")
+    if row.get("identity_source_status") != 200:
+        errors.append(f"{label}: ATS directory source must have HTTP 200 evidence")
+    if row.get("matched_query") not in _directory_queries(
+        target.sponsor_name, target.canonical_company
+    ):
+        errors.append(f"{label}: ATS directory matched query is not derived from sponsor identity")
+    company = row.get("matched_company")
+    if not isinstance(company, str) or not (
+        _identity_tokens(company)
+        & (_identity_tokens(target.sponsor_name) | _identity_tokens(target.canonical_company))
+    ):
+        errors.append(f"{label}: ATS directory matched company does not identify sponsor")
+    bindings = {
+        "candidate_provider": target.provider,
+        "candidate_provider_key": target.provider_key,
+        "candidate_url": target.career_url,
+        "matched_provider": target.provider,
+        "matched_provider_key": target.provider_key,
+        "matched_url": target.career_url,
+    }
+    for field, expected in bindings.items():
+        if row.get(field) != expected:
+            errors.append(f"{label}: ATS directory {field} is not bound to activated source")
+    record_hash = _directory_record_sha256(row)
+    if record_hash is None or row.get("directory_record_sha256") != record_hash:
+        errors.append(f"{label}: ATS directory record hash does not match captured record")
+    return errors
+
+
+def _html_identity_errors(label: str, target: SponsorTarget, row: dict[str, object]) -> list[str]:
+    errors: list[str] = []
+    title = row.get("observed_title")
+    tokens = row.get("observed_company_tokens")
+    links = row.get("observed_careers_links")
+    selected = row.get("selected_matching_link")
+    if not isinstance(title, str) or not title.strip():
+        errors.append(f"{label}: HTML identity requires a captured page title")
+        return errors
+    title_tokens = _identity_tokens(title)
+    if (
+        not isinstance(tokens, list)
+        or not 1 <= len(tokens) <= 12
+        or not all(isinstance(token, str) and token in title_tokens for token in tokens)
+    ):
+        errors.append(f"{label}: captured company tokens must be bounded and derived from title")
+        captured_tokens: set[str] = set()
+    else:
+        captured_tokens = {token.casefold() for token in tokens}
+    company_tokens = _identity_tokens(target.canonical_company) | _identity_tokens(
+        target.sponsor_name
+    )
+    if not captured_tokens & company_tokens:
+        errors.append(f"{label}: captured company tokens do not identify canonical company")
+    if (
+        not isinstance(links, list)
+        or len(links) > 30
+        or not all(isinstance(link, str) and urlparse(link).scheme == "https" for link in links)
+    ):
+        errors.append(f"{label}: observed careers links must be a bounded HTTPS list")
+        links = []
+    if not isinstance(selected, str) or selected not in links:
+        errors.append(f"{label}: selected career link was not present in captured outbound links")
+    elif target.career_url:
+        selected_host = urlparse(selected).hostname or ""
+        target_host = urlparse(target.career_url).hostname or ""
+        if selected != target.career_url and _registrable_domain(selected_host) != _registrable_domain(
+            target_host
+        ):
+            errors.append(f"{label}: selected captured link does not match activated career URL")
+    return errors
+
+
 def _evidence_errors(targets: list[SponsorTarget]) -> list[str]:
     evidence = _review_evidence()
     counts = Counter(row.get("rank") for row in evidence)
@@ -258,63 +469,40 @@ def _evidence_errors(targets: list[SponsorTarget]) -> list[str]:
             observation = row.get("identity_observation")
             if method not in _INDEPENDENT_IDENTITY_METHODS:
                 errors.append(f"{label}: verified target requires independent identity evidence")
-            if not all(isinstance(value, str) and value.strip() for value in (
-                source_url,
-                source_final_url,
-                observation,
-            )) or not isinstance(source_status, int):
+            if not all(
+                isinstance(value, str) and value.strip()
+                for value in (source_url, source_final_url, observation)
+            ) or isinstance(source_status, bool) or not isinstance(source_status, int):
                 errors.append(f"{label}: identity evidence fields are incomplete")
             elif not 200 <= source_status < 400:
                 errors.append(f"{label}: independent identity source was not HTTP-successful")
-            if isinstance(observation, str) and target.canonical_company.casefold() not in observation.casefold():
-                errors.append(f"{label}: identity observation does not name the canonical company")
             if isinstance(source_url, str) and source_url == target.career_url:
                 errors.append(f"{label}: identity evidence requires an independent identity source")
-            if isinstance(source_url, str) and method == "official_company_careers_link":
+            if method == "official_ats_directory":
+                errors.extend(_ats_identity_errors(label, target, row))
+            elif method in {
+                "official_company_careers_link",
+                "official_parent_careers_link",
+            }:
+                errors.extend(_html_identity_errors(label, target, row))
+            if isinstance(source_url, str) and method in {
+                "official_company_careers_link",
+                "official_parent_careers_link",
+            }:
                 source_host = urlparse(source_url).hostname or ""
                 target_host = urlparse(target.career_url or "").hostname or ""
                 if not source_host or _registrable_domain(source_host) != _registrable_domain(
                     target_host
                 ):
                     errors.append(f"{label}: independent identity source does not match company domain")
+            errors.extend(
+                _http_evidence_errors(
+                    label, target, row.get("http_validation"), allowed_final_hosts
+                )
+            )
             http_validation = row.get("http_validation")
-            if not isinstance(http_validation, dict):
-                errors.append(f"{label}: missing structured HTTP validation evidence")
-            else:
+            if isinstance(http_validation, dict):
                 status = http_validation.get("status_code")
-                required_http_fields = {
-                    "reachable",
-                    "http_success",
-                    "redirect_identity_ok",
-                    "ok",
-                    "status_code",
-                    "final_url",
-                    "error",
-                }
-                if not required_http_fields <= http_validation.keys():
-                    errors.append(f"{label}: HTTP validation evidence fields are incomplete")
-                if status == 404:
-                    errors.append(f"{label}: HTTP 404 evidence cannot be verified")
-                elif isinstance(status, int) and not 200 <= status < 400 and status not in {
-                    403,
-                    406,
-                }:
-                    errors.append(f"{label}: HTTP {status} evidence cannot be verified")
-                if http_validation.get("http_success") != (
-                    isinstance(status, int) and 200 <= status < 400
-                ):
-                    errors.append(f"{label}: HTTP success flag is inconsistent with status")
-                final_url = http_validation.get("final_url")
-                if isinstance(final_url, str) and target.career_url:
-                    target_host = urlparse(target.career_url).hostname or ""
-                    final_host = urlparse(final_url).hostname or ""
-                    same_domain = _registrable_domain(target_host) == _registrable_domain(final_host)
-                    allowed_redirect = final_host.lower() in {
-                        host.lower() for host in allowed_final_hosts if isinstance(host, str)
-                    }
-                    expected_identity_ok = bool(final_host and (same_domain or allowed_redirect))
-                    if http_validation.get("redirect_identity_ok") != expected_identity_ok:
-                        errors.append(f"{label}: redirect identity flag is inconsistent with evidence")
                 if status in {403, 406} and (
                     method not in _INDEPENDENT_IDENTITY_METHODS
                     or "block" not in target.validation_notes.casefold()
@@ -414,7 +602,7 @@ def validate_registry(
             elif target.provider == "html":
                 if host not in approved_html_hosts:
                     errors.append(f"{label}: URL host is not an approved official company domain")
-                elif (target.career_url, target.provider_key) not in approved_html_sources:
+                if (target.career_url, target.provider_key) not in approved_html_sources:
                     errors.append(f"{label}: URL/key is not an approved official company source/key")
             elif target.career_url and not provider_matches_url(
                 target.provider, target.provider_key, target.career_url
