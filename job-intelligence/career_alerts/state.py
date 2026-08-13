@@ -58,7 +58,7 @@ class CareerAlertState:
                         job.title,
                         job.location,
                         job.description,
-                        _canonical_url(job.apply_url),
+                        _stored_url(job.apply_url),
                         _timestamp(job.posted_at) if job.posted_at else None,
                         int(job.is_remote),
                         observed,
@@ -293,13 +293,27 @@ def _canonical_url(url: str) -> str:
     return urlunsplit((parsed.scheme.lower(), parsed.netloc.lower(), path, "", ""))
 
 
+def _stored_url(url: str) -> str:
+    """Normalize storage while preserving query text and its ordering."""
+    parsed = urlsplit(url.strip())
+    path = parsed.path.rstrip("/") or "/"
+    return urlunsplit(
+        (parsed.scheme.lower(), parsed.netloc.lower(), path, parsed.query, "")
+    )
+
+
+def _reconciliation_url(url: str) -> str:
+    """Normalize conservatively for HTTP-to-HTTPS reconciliation."""
+    return _stored_url(url)
+
+
 def _reconcile_http_identity(
     connection: sqlite3.Connection,
     job: CareerJob,
     new_job_key: str,
 ) -> None:
     """Merge the exact HTTP predecessor of a normalized same-host HTTPS job."""
-    new_url = _canonical_url(job.apply_url)
+    new_url = _reconciliation_url(job.apply_url)
     parsed_new = urlsplit(new_url)
     if parsed_new.scheme != "https" or not parsed_new.hostname:
         return
@@ -313,7 +327,7 @@ def _reconcile_http_identity(
         (job.source_key, job.provider, job.provider_job_id, new_job_key),
     ).fetchall()
     for old in candidates:
-        old_url = _canonical_url(old["apply_url"])
+        old_url = _reconciliation_url(old["apply_url"])
         parsed_old = urlsplit(old_url)
         if (
             parsed_old.scheme != "http"

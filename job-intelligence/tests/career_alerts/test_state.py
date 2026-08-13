@@ -130,13 +130,13 @@ def test_http_to_same_host_https_reconciles_to_one_pending_job(tmp_path):
         "ai_engineer",
         provider_job_id="block-1",
         source_key="greenhouse:block",
-        apply_url="http://block.xyz/careers/jobs/block-1",
+        apply_url="http://block.xyz/careers/jobs/block-1?posting=42&source=ats",
     )
     current = matched(
         "ai_engineer",
         provider_job_id="block-1",
         source_key="greenhouse:block",
-        apply_url="https://block.xyz/careers/jobs/block-1",
+        apply_url="https://block.xyz/careers/jobs/block-1?posting=42&source=ats",
     )
     state.upsert_matches([old], dt("2026-08-12T10:00:00Z"))
 
@@ -144,7 +144,9 @@ def test_http_to_same_host_https_reconciles_to_one_pending_job(tmp_path):
 
     pending = state.pending("ai_engineer")
     assert len(pending) == 1
-    assert pending[0][1].job.apply_url == "https://block.xyz/careers/jobs/block-1"
+    assert pending[0][1].job.apply_url == (
+        "https://block.xyz/careers/jobs/block-1?posting=42&source=ats"
+    )
     assert pending[0][2] == dt("2026-08-12T10:00:00Z")
     window_time = dt("2026-08-12T12:00:00Z")
     messages = render_email(
@@ -209,4 +211,28 @@ def test_http_job_is_not_reconciled_to_different_https_host(tmp_path):
     assert {row[1].job.apply_url for row in state.pending("ai_engineer")} == {
         "http://redirect.example.test/careers/jobs/block-3",
         "https://block.xyz/careers/jobs/block-3",
+    }
+
+
+def test_http_job_is_not_reconciled_when_raw_query_differs(tmp_path):
+    state = CareerAlertState(tmp_path / "state.sqlite3")
+    old = matched(
+        "ai_engineer",
+        provider_job_id="block-query",
+        source_key="greenhouse:block",
+        apply_url="http://block.xyz/careers/jobs/view?id=1&locale=en",
+    )
+    current = matched(
+        "ai_engineer",
+        provider_job_id="block-query",
+        source_key="greenhouse:block",
+        apply_url="https://block.xyz/careers/jobs/view?id=2&locale=en",
+    )
+    state.upsert_matches([old], dt("2026-08-12T10:00:00Z"))
+
+    state.upsert_matches([current], dt("2026-08-12T12:00:00Z"))
+
+    assert {row[1].job.apply_url for row in state.pending("ai_engineer")} == {
+        "http://block.xyz/careers/jobs/view?id=1&locale=en",
+        "https://block.xyz/careers/jobs/view?id=2&locale=en",
     }
