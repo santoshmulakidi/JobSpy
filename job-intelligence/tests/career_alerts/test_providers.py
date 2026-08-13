@@ -127,6 +127,8 @@ def test_custom_html_uses_cached_bounded_css_link_crawl():
     assert config.cache_mode.value == "enabled"
     assert config.deep_crawl_strategy.max_pages == 10
     assert config.deep_crawl_strategy.include_external is False
+    assert config.max_retries == 0
+    assert config.semaphore_count == 1
     assert config.extraction_strategy.__class__.__name__ == "JsonCssExtractionStrategy"
     assert "llm" not in config.extraction_strategy.__class__.__name__.lower()
     assert observed == {**observed, "entered": True, "closed": True}
@@ -213,7 +215,8 @@ class HttpFailure(Exception):
         self.status_code = status_code
 
 
-def test_http_429_is_retried_with_injected_zero_delay_sleep():
+@pytest.mark.parametrize("status", [408, 425, 429, 500, 502, 503, 504])
+def test_only_allowed_http_statuses_are_retried_three_total_attempts(status):
     attempts = 0
     delays = []
 
@@ -222,7 +225,7 @@ def test_http_429_is_retried_with_injected_zero_delay_sleep():
             nonlocal attempts
             attempts += 1
             if attempts < 3:
-                raise HttpFailure(429)
+                raise HttpFailure(status)
             return FetchResult(targets[0].source_key, (), 1, 1, "no_open_jobs")
 
     async def zero_delay(delay):
@@ -241,6 +244,185 @@ def test_http_429_is_retried_with_injected_zero_delay_sleep():
     assert delays == [1.0, 3.0]
     assert results[0].attempt_count == 3
     assert results[0].error_code == "no_open_jobs"
+
+
+def test_ats_library_retry_hook_is_replaced_by_exact_outer_attempt_policy():
+    actual_requests = 0
+    hidden_fetchers_created = 0
+    delays = []
+
+    class Response:
+        def __init__(self):
+            self.status_code = 429
+            self.headers = {}
+            self.text = "rate limited"
+
+        def json(self):
+            return {}
+
+    class RawClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def request(self, _method, _url, **_kwargs):
+            nonlocal actual_requests
+            actual_requests += 1
+            return Response()
+
+        async def aclose(self):
+            return None
+
+    class ScraperWithHiddenRetries:
+        def make_fetcher(self):
+            nonlocal hidden_fetchers_created
+            hidden_fetchers_created += 1
+            raise AssertionError("third-party retrying fetcher must be replaced")
+
+        async def afetch(self):
+            async with self.make_fetcher() as fetch:
+                await fetch.get_json("https://api.acme.test/jobs")
+            return []
+
+    async def zero_delay(delay):
+        delays.append(delay)
+
+    provider = CareerProvider(
+        scraper_factory=lambda *_args, **_kwargs: ScraperWithHiddenRetries(),
+        http_client_factory=lambda **_kwargs: RawClient(),
+    )
+    result = asyncio.run(
+        collect_sources(
+            [target(career_url="https://api.acme.test/jobs")],
+            client=provider,
+            sleep=zero_delay,
+            jitter=lambda: 0.0,
+        )
+    )[0]
+
+    assert actual_requests == 3
+    assert hidden_fetchers_created == 0
+    assert delays == [1.0, 3.0]
+    assert result.attempt_count == 3
+    assert result.error_code == "http_429"
+
+
+def test_fanned_out_provider_requests_obey_shared_global_and_host_limits():
+    active = 0
+    peak_global = 0
+    active_hosts = defaultdict(int)
+    peak_hosts = defaultdict(int)
+    key_hosts = {
+        "one-a": "one.test",
+        "one-b": "one.test",
+        "two-a": "two.test",
+        "two-b": "two.test",
+        "three-a": "three.test",
+        "three-b": "three.test",
+    }
+
+    class Response:
+        def __init__(self):
+            self.status_code = 200
+            self.headers = {}
+            self.text = "{}"
+
+        def json(self):
+            return {}
+
+    class RawClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def request(self, _method, url, **_kwargs):
+            nonlocal active, peak_global
+            host = urlparse(url).hostname
+            active += 1
+            active_hosts[host] += 1
+            peak_global = max(peak_global, active)
+            peak_hosts[host] = max(peak_hosts[host], active_hosts[host])
+            await asyncio.sleep(0.01)
+            active -= 1
+            active_hosts[host] -= 1
+            return Response()
+
+        async def aclose(self):
+            return None
+
+    class FannedOutScraper:
+        def __init__(self, host):
+            self.host = host
+
+        def make_fetcher(self):
+            raise AssertionError("controlled fetcher was not installed")
+
+        async def afetch(self):
+            async with self.make_fetcher() as fetch:
+                await asyncio.gather(
+                    *(
+                        fetch.get_json(f"https://{self.host}/jobs?page={page}")
+                        for page in range(4)
+                    )
+                )
+            return []
+
+    provider = CareerProvider(
+        scraper_factory=lambda _provider, key, **_kwargs: FannedOutScraper(
+            key_hosts[key]
+        ),
+        http_client_factory=lambda **_kwargs: RawClient(),
+    )
+    sources = [
+        target(
+            provider_key=key,
+            rank=index + 1,
+            career_url=f"https://{host}/careers/{key}",
+        )
+        for index, (key, host) in enumerate(key_hosts.items())
+    ]
+
+    asyncio.run(
+        collect_sources(sources, client=provider, concurrency=6, per_host=2)
+    )
+
+    assert peak_global == 6
+    assert peak_hosts == {"one.test": 2, "two.test": 2, "three.test": 2}
+
+
+def test_direct_sources_finish_before_custom_sources_start_even_if_custom_is_first():
+    direct_active = 0
+    custom_observed_active = None
+
+    class OrderedClient:
+        async def fetch(self, targets):
+            nonlocal direct_active, custom_observed_active
+            if targets[0].provider == "custom":
+                custom_observed_active = direct_active
+            else:
+                direct_active += 1
+                await asyncio.sleep(0.01)
+                direct_active -= 1
+            return FetchResult(targets[0].source_key, (), 1, 1, "no_open_jobs")
+
+    sources = [
+        target("custom", "custom-first"),
+        target("greenhouse", "direct-a", rank=2),
+        target("lever", "direct-b", rank=3),
+    ]
+
+    results = asyncio.run(collect_sources(sources, client=OrderedClient(), concurrency=3))
+
+    assert custom_observed_active == 0
+    assert [result.source_key for result in results] == [
+        "greenhouse:direct-a",
+        "lever:direct-b",
+        "custom:custom-first",
+    ]
 
 
 def test_one_failed_source_does_not_cancel_successful_source():
@@ -285,45 +467,6 @@ def test_one_failed_source_does_not_cancel_successful_source():
     assert failed.attempt_count == 3
 
 
-def test_global_and_per_host_concurrency_are_bounded():
-    active = 0
-    peak_global = 0
-    active_hosts = defaultdict(int)
-    peak_hosts = defaultdict(int)
-
-    class MeasuringClient:
-        async def fetch(self, targets):
-            nonlocal active, peak_global
-            host = urlparse(targets[0].career_url).hostname
-            active += 1
-            active_hosts[host] += 1
-            peak_global = max(peak_global, active)
-            peak_hosts[host] = max(peak_hosts[host], active_hosts[host])
-            await asyncio.sleep(0.01)
-            active -= 1
-            active_hosts[host] -= 1
-            return FetchResult(targets[0].source_key, (), 1, 1, "no_open_jobs")
-
-    targets = [
-        target(
-            provider_key=f"source-{index}",
-            rank=index + 1,
-            career_url=f"https://{host}/jobs/{index}",
-        )
-        for index, host in enumerate(
-            ["one.test", "one.test", "one.test", "two.test", "two.test", "three.test"]
-        )
-    ]
-
-    asyncio.run(
-        collect_sources(targets, client=MeasuringClient(), concurrency=3, per_host=2)
-    )
-
-    assert peak_global == 3
-    assert peak_hosts["one.test"] == 2
-    assert all(peak <= 2 for peak in peak_hosts.values())
-
-
 @pytest.mark.parametrize("status", [401, 403, 404])
 def test_non_retryable_http_statuses_are_not_retried(status):
     attempts = 0
@@ -338,6 +481,18 @@ def test_non_retryable_http_statuses_are_not_retried(status):
 
     assert attempts == 1
     assert result.error_code == f"http_{status}"
+
+
+@pytest.mark.parametrize("message", ["company not found", "provider key missing"])
+def test_common_missing_provider_errors_are_structured_as_http_404(message):
+    class Client:
+        async def fetch(self, _targets):
+            raise RuntimeError(message)
+
+    result = asyncio.run(collect_sources([target()], client=Client()))[0]
+
+    assert result.attempt_count == 1
+    assert result.error_code == "http_404"
 
 
 def test_unverified_targets_are_rejected_without_fetching():

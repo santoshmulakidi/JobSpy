@@ -10,9 +10,12 @@ import re
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, replace
 from time import perf_counter
-from typing import Protocol
+from types import MethodType
+from typing import Any, Protocol, Self
 from urllib.parse import urljoin, urlparse
 
+import httpx
+from ats_scrapers.exceptions import CompanyNotFoundError
 from ats_scrapers.scrapers import get_scraper
 
 from career_alerts.types import CareerJob, SponsorTarget
@@ -20,6 +23,9 @@ from career_alerts.types import CareerJob, SponsorTarget
 REQUEST_TIMEOUT_SECONDS = 25.0
 MAX_ATTEMPTS = 3
 RETRYABLE_HTTP_STATUSES = frozenset({408, 425, 429, 500, 502, 503, 504})
+# With MAX_ATTEMPTS=3, only the waits before attempts 2 and 3 are reachable.
+# The complete specified schedule is retained here; 9 seconds would precede a
+# fourth attempt and is deliberately unreachable under the total-attempt cap.
 RETRY_DELAYS = (1.0, 3.0, 9.0)
 _HTTP_STATUS_RE = re.compile(
     r"\b(?:HTTP|returned|status(?:[_ ]code)?[=:]?)\s*(\d{3})\b",
@@ -51,6 +57,108 @@ class _StatusError(RuntimeError):
         self.status_code = status_code
 
 
+class _RequestController:
+    """Apply shared limits to every actual HTTP request, including fan-out."""
+
+    def __init__(
+        self,
+        concurrency: int,
+        per_host: int,
+        client_factory: Callable[..., object],
+    ) -> None:
+        self.global_semaphore = asyncio.Semaphore(concurrency)
+        self.per_host = per_host
+        self.host_semaphores: dict[str, asyncio.Semaphore] = {}
+        self.client_factory = client_factory
+
+    def client(self, **kwargs: object) -> _ControlledHttpClient:
+        return _ControlledHttpClient(self, self.client_factory(**kwargs))
+
+    async def request(self, raw_client: object, method: str, url: str, **kwargs: object):
+        host = urlparse(url).hostname or url
+        host_semaphore = self.host_semaphores.setdefault(
+            host, asyncio.Semaphore(self.per_host)
+        )
+        # Take the narrower host permit first so requests queued for one host
+        # do not occupy scarce global permits needed by other hosts.
+        async with host_semaphore, self.global_semaphore:
+            return await raw_client.request(method, url, **kwargs)  # type: ignore[attr-defined]
+
+
+class _ControlledHttpClient:
+    """Small httpx-compatible client whose requests use the shared controller."""
+
+    def __init__(self, controller: _RequestController, raw_client: object) -> None:
+        self.controller = controller
+        self.raw_client = raw_client
+
+    async def __aenter__(self) -> Self:
+        enter = getattr(self.raw_client, "__aenter__", None)
+        if enter is not None:
+            await enter()
+        return self
+
+    async def __aexit__(self, exc_type, exc, traceback) -> None:
+        exit_method = getattr(self.raw_client, "__aexit__", None)
+        if exit_method is not None:
+            await exit_method(exc_type, exc, traceback)
+        else:
+            await self.aclose()
+
+    async def aclose(self) -> None:
+        close = getattr(self.raw_client, "aclose", None)
+        if close is not None:
+            await close()
+
+    async def request(self, method: str, url: str, **kwargs: object):
+        return await self.controller.request(self.raw_client, method, url, **kwargs)
+
+    async def get(self, url: str, **kwargs: object):
+        return await self.request("GET", url, **kwargs)
+
+    async def post(self, url: str, **kwargs: object):
+        return await self.request("POST", url, **kwargs)
+
+
+class _ControlledFetcher:
+    """ats-scrapers fetch API with exactly one network attempt per call."""
+
+    def __init__(self, controller: _RequestController, **client_kwargs: object) -> None:
+        self.client = controller.client(**client_kwargs)
+
+    async def __aenter__(self) -> Self:
+        await self.client.__aenter__()
+        return self
+
+    async def __aexit__(self, exc_type, exc, traceback) -> None:
+        await self.client.__aexit__(exc_type, exc, traceback)
+
+    async def request(
+        self,
+        method: str,
+        url: str,
+        *,
+        handled: frozenset[int] | set[int] = frozenset(),
+        **kwargs: object,
+    ):
+        response = await self.client.request(method, url, **kwargs)
+        status = response.status_code
+        if status in handled or 200 <= status < 300:
+            return response
+        if status == 404:
+            raise CompanyNotFoundError(f"ATS source not found: {url}")
+        raise _StatusError(status, f"ATS source returned HTTP {status}: {url}")
+
+    async def get_json(self, url: str, **kwargs: object):
+        return (await self.request("GET", url, **kwargs)).json()
+
+    async def post_json(self, url: str, *, json: object = None, **kwargs: object):
+        return (await self.request("POST", url, json=json, **kwargs)).json()
+
+    async def get_text(self, url: str, **kwargs: object) -> str:
+        return (await self.request("GET", url, **kwargs)).text
+
+
 class CareerProvider:
     """Fetch and normalize one source group without coordinating retries."""
 
@@ -59,9 +167,18 @@ class CareerProvider:
         *,
         scraper_factory: Callable[..., object] = get_scraper,
         crawler_factory: Callable[[], object] | None = None,
+        http_client_factory: Callable[..., object] = httpx.AsyncClient,
     ) -> None:
         self._scraper_factory = scraper_factory
         self._crawler_factory = crawler_factory
+        self._http_client_factory = http_client_factory
+        self._request_controller = _RequestController(6, 2, http_client_factory)
+
+    def configure_request_limits(self, concurrency: int, per_host: int) -> None:
+        """Bind actual adapter requests to this collection's shared limits."""
+        self._request_controller = _RequestController(
+            concurrency, per_host, self._http_client_factory
+        )
 
     async def fetch(self, targets: list[SponsorTarget]) -> FetchResult:
         started = perf_counter()
@@ -108,12 +225,197 @@ class CareerProvider:
             target.provider_key,
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
+        self._bind_controlled_http(scraper, target.provider)
         # ats-scrapers 0.2.0's Workday constructor accepts the provider key,
         # while its fetcher parses the complete reviewed careers URL.
         if target.provider == "workday" and hasattr(scraper, "company_slug"):
             scraper.company_slug = target.career_url  # type: ignore[attr-defined]
         raw_jobs = await scraper.afetch()  # type: ignore[attr-defined]
         return self.normalize_jobs(targets, raw_jobs)
+
+    def _bind_controlled_http(self, scraper: object, provider: str | None) -> None:
+        controller = self._request_controller
+
+        def make_fetcher(_scraper, **overrides: object) -> _ControlledFetcher:
+            kwargs = {
+                "timeout": overrides.get("timeout", REQUEST_TIMEOUT_SECONDS),
+                "follow_redirects": True,
+            }
+            headers = overrides.get("headers")
+            proxy = overrides.get("proxy")
+            if headers:
+                kwargs["headers"] = headers
+            if proxy:
+                kwargs["proxy"] = proxy
+            return _ControlledFetcher(controller, **kwargs)
+
+        scraper.make_fetcher = MethodType(make_fetcher, scraper)  # type: ignore[attr-defined]
+        if provider == "workday":
+            self._bind_workday_http(scraper)
+        elif provider == "avature":
+            self._bind_avature_http(scraper)
+        elif provider == "eightfold":
+            self._bind_eightfold_http(scraper)
+
+    def _bind_workday_http(self, scraper: object) -> None:
+        controller = self._request_controller
+
+        async def fetch_all(_scraper, api, base, company, detail_prefix):
+            async with controller.client(
+                timeout=REQUEST_TIMEOUT_SECONDS, follow_redirects=True
+            ) as client:
+                sem = asyncio.Semaphore(1000)
+                seen: set[str] = set()
+                all_jobs: list[object] = []
+
+                def absorb(postings):
+                    for posting in postings:
+                        job = _scraper._parse_job(posting, base, company)
+                        key = job.ats_id or str(job.url)
+                        if key not in seen:
+                            seen.add(key)
+                            all_jobs.append(job)
+
+                await _scraper._exhaust_query(
+                    client, api, sem, applied_facets={}, absorb=absorb, depth=0
+                )
+                if _scraper.include_descriptions:
+                    await _scraper._enrich_details(client, sem, detail_prefix, all_jobs)
+                return all_jobs
+
+        async def request_once(
+            _scraper, client, api, sem, *, applied_facets, offset
+        ):
+            _scraper._check_deadline()
+            body = {
+                "appliedFacets": applied_facets,
+                "limit": 20,
+                "offset": offset,
+                "searchText": "",
+            }
+            async with sem:
+                response = await client.post(
+                    api, json=body, headers={"Content-Type": "application/json"}
+                )
+            if response.status_code == 404:
+                raise CompanyNotFoundError(
+                    f"Workday site not found: {_scraper.company_slug}"
+                )
+            if response.status_code != 200:
+                raise _StatusError(
+                    response.status_code,
+                    f"Workday returned HTTP {response.status_code}",
+                )
+            return response.json()
+
+        scraper._fetch_all = MethodType(fetch_all, scraper)  # type: ignore[attr-defined]
+        scraper._request = MethodType(request_once, scraper)  # type: ignore[attr-defined]
+
+    def _bind_avature_http(self, scraper: object) -> None:
+        controller = self._request_controller
+
+        async def fetch_direct(_scraper, base, company):
+            seen: set[str] = set()
+            all_jobs: list[object] = []
+            async with controller.client(
+                timeout=REQUEST_TIMEOUT_SECONDS, follow_redirects=True
+            ) as client:
+                page_size = _scraper_module_constant(_scraper, "_page_size")(base)
+                max_pages = _scraper_module_constant(_scraper, "MAX_PAGES")
+                for page_num in range(max_pages):
+                    html_text = await _scraper._fetch_page(
+                        client, base, page_num * page_size
+                    )
+                    page_jobs = _scraper._parse_page(html_text, base, company)
+                    new_jobs = [job for job in page_jobs if job.ats_id not in seen]
+                    if not new_jobs:
+                        break
+                    for job in new_jobs:
+                        seen.add(job.ats_id)
+                    all_jobs.extend(new_jobs)
+                    if len(page_jobs) < page_size:
+                        break
+                sem = asyncio.Semaphore(1000)
+                await asyncio.gather(
+                    *(
+                        _scraper._enrich_with_detail(client, sem, job)
+                        for job in all_jobs
+                    )
+                )
+            return all_jobs
+
+        async def fetch_page_once(_scraper, client, base, offset):
+            url = _scraper_module_constant(_scraper, "_paginated_search_url")(
+                base, offset
+            )
+            headers = _scraper_module_constant(_scraper, "_BROWSER_HEADERS")
+            response = await client.get(url, headers=headers)
+            if response.status_code == 404:
+                raise CompanyNotFoundError(f"Avature site not found: {base}")
+            if response.status_code != 200:
+                raise _StatusError(
+                    response.status_code,
+                    f"Avature returned HTTP {response.status_code}",
+                )
+            return response.text
+
+        scraper._fetch_direct = MethodType(fetch_direct, scraper)  # type: ignore[attr-defined]
+        scraper._fetch_page = MethodType(fetch_page_once, scraper)  # type: ignore[attr-defined]
+
+    def _bind_eightfold_http(self, scraper: object) -> None:
+        controller = self._request_controller
+        scraper.client_kind = "httpx"  # type: ignore[attr-defined]
+
+        async def fetch_via_httpx(_scraper, seen, all_jobs):
+            async with controller.client(
+                timeout=REQUEST_TIMEOUT_SECONDS, follow_redirects=True
+            ) as client:
+                first = await _scraper._fetch_page_httpx(client, start=0)
+                _scraper._collect(first.get("positions") or [], seen, all_jobs)
+                count = int(first.get("count") or 0)
+                page_size = _scraper_module_constant(_scraper, "PAGE_SIZE")
+                if count > page_size:
+                    await asyncio.gather(
+                        *(
+                            _collect_eightfold_page(
+                                _scraper, client, offset, seen, all_jobs
+                            )
+                            for offset in range(page_size, count, page_size)
+                        )
+                    )
+                if _scraper.include_descriptions and all_jobs:
+                    sem = asyncio.Semaphore(1000)
+                    await asyncio.gather(
+                        *(
+                            _scraper._enrich_position_details(client, sem, job)
+                            for job in all_jobs
+                        )
+                    )
+
+        async def fetch_page_once(_scraper, client, *, start):
+            response = await client.get(
+                f"{_scraper.base_url}/api/pcsx/search",
+                params={
+                    "domain": _scraper.domain,
+                    "query": "",
+                    "location": "",
+                    "start": start,
+                    "sort_by": "timestamp",
+                },
+                headers={
+                    "User-Agent": "Mozilla/5.0",
+                    "Accept": "application/json, text/plain, */*",
+                },
+            )
+            if response.status_code != 200:
+                raise _StatusError(
+                    response.status_code,
+                    f"Eightfold returned HTTP {response.status_code}",
+                )
+            return response.json().get("data") or {}
+
+        scraper._fetch_via_httpx = MethodType(fetch_via_httpx, scraper)  # type: ignore[attr-defined]
+        scraper._fetch_page_httpx = MethodType(fetch_page_once, scraper)  # type: ignore[attr-defined]
 
     async def _fetch_custom(self, targets: list[SponsorTarget]) -> tuple[CareerJob, ...]:
         from crawl4ai import (
@@ -138,6 +440,8 @@ class CareerProvider:
         config = CrawlerRunConfig(
             cache_mode=CacheMode.ENABLED,
             page_timeout=int(REQUEST_TIMEOUT_SECONDS * 1000),
+            max_retries=0,
+            semaphore_count=1,
             extraction_strategy=JsonCssExtractionStrategy(schema),
             deep_crawl_strategy=BFSDeepCrawlStrategy(
                 max_depth=3,
@@ -259,19 +563,17 @@ async def collect_sources(
         return []
 
     provider_client = client or CareerProvider()
-    global_semaphore = asyncio.Semaphore(concurrency)
-    host_semaphores: dict[str, asyncio.Semaphore] = {}
+    configure_limits = getattr(provider_client, "configure_request_limits", None)
+    if configure_limits is not None:
+        configure_limits(concurrency, per_host)
 
     async def run_source(source_targets: list[SponsorTarget]) -> FetchResult:
         target = source_targets[0]
-        host = urlparse(target.career_url or "").hostname or target.source_key
-        host_semaphore = host_semaphores.setdefault(host, asyncio.Semaphore(per_host))
         started = perf_counter()
         last_result: FetchResult | None = None
         for attempt in range(1, MAX_ATTEMPTS + 1):
             try:
-                async with global_semaphore, host_semaphore:
-                    result = await provider_client.fetch(source_targets)
+                result = await provider_client.fetch(source_targets)
             except asyncio.CancelledError:
                 raise
             except Exception as exc:  # noqa: BLE001 - isolate each source failure
@@ -295,7 +597,26 @@ async def collect_sources(
         assert last_result is not None
         return last_result
 
-    return list(await asyncio.gather(*(run_source(group) for group in grouped.values())))
+    direct_groups = [
+        group for group in grouped.values() if group[0].provider != "custom"
+    ]
+    custom_groups = [
+        group for group in grouped.values() if group[0].provider == "custom"
+    ]
+    direct_results = await asyncio.gather(*(run_source(group) for group in direct_groups))
+    custom_global = asyncio.Semaphore(concurrency)
+    custom_hosts: dict[str, asyncio.Semaphore] = {}
+
+    async def run_custom(group: list[SponsorTarget]) -> FetchResult:
+        host = urlparse(group[0].career_url or "").hostname or group[0].source_key
+        host_semaphore = custom_hosts.setdefault(host, asyncio.Semaphore(per_host))
+        # Crawl4AI is configured for one internal request at a time, so these
+        # source permits are also effective request permits for custom pages.
+        async with host_semaphore, custom_global:
+            return await run_source(group)
+
+    custom_results = await asyncio.gather(*(run_custom(group) for group in custom_groups))
+    return [*direct_results, *custom_results]
 
 
 _RETRYABLE_ERROR_CODES = frozenset(f"http_{status}" for status in RETRYABLE_HTTP_STATUSES)
@@ -316,6 +637,8 @@ def _error_code(exc: Exception) -> str:
         status = int(match.group(1)) if match else None
     if isinstance(status, int):
         return f"http_{status}"
+    if "not found" in message.casefold() or "missing" in message.casefold():
+        return "http_404"
     if isinstance(exc, ValueError) or "registry validation" in message.casefold():
         return "registry_validation"
     return "provider_error"
@@ -335,3 +658,13 @@ def _stable_url_id(url: str) -> str:
 
 def _elapsed_ms(started: float) -> int:
     return max(0, round((perf_counter() - started) * 1000))
+
+
+def _scraper_module_constant(scraper: object, name: str) -> Any:
+    module = __import__(type(scraper).__module__, fromlist=[name])
+    return getattr(module, name)
+
+
+async def _collect_eightfold_page(scraper, client, offset, seen, all_jobs) -> None:
+    page = await scraper._fetch_page_httpx(client, start=offset)
+    scraper._collect(page.get("positions") or [], seen, all_jobs)
