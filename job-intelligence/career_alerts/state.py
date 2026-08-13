@@ -34,8 +34,8 @@ class CareerAlertState:
                     """
                     INSERT INTO jobs (
                         job_key, source_key, provider, provider_job_id, company, sponsor_names,
-                        title, location, description, apply_url, posted_at, is_remote, observed_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        title, location, description, apply_url, posted_at, is_remote, first_seen_at, observed_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(job_key) DO UPDATE SET
                         source_key = excluded.source_key,
                         company = excluded.company,
@@ -62,6 +62,7 @@ class CareerAlertState:
                         _timestamp(job.posted_at) if job.posted_at else None,
                         int(job.is_remote),
                         observed,
+                        observed,
                     ),
                 )
                 for stream in match.streams:
@@ -76,19 +77,34 @@ class CareerAlertState:
                         (job_key, stream, match.location_bucket, observed),
                     )
 
-    def pending(self, stream: Stream) -> list[tuple[str, MatchedJob]]:
+    def pending(self, stream: Stream) -> list[tuple[str, MatchedJob, datetime]]:
+        return self._stream_jobs(stream, include_delivered=False)
+
+    def stream_jobs(
+        self, stream: Stream, *, include_delivered: bool = False
+    ) -> list[tuple[str, MatchedJob, datetime]]:
+        """Return jobs in one stream with their immutable first-seen time."""
+        return self._stream_jobs(stream, include_delivered=include_delivered)
+
+    def _stream_jobs(
+        self, stream: Stream, *, include_delivered: bool
+    ) -> list[tuple[str, MatchedJob, datetime]]:
+        pending_clause = "" if include_delivered else "AND job_streams.delivered_at IS NULL"
         with self._connect() as connection:
             rows = connection.execute(
-                """
+                f"""
                 SELECT jobs.*, job_streams.location_bucket
                 FROM job_streams
                 JOIN jobs USING (job_key)
-                WHERE job_streams.stream = ? AND job_streams.delivered_at IS NULL
-                ORDER BY job_streams.observed_at, jobs.job_key
+                WHERE job_streams.stream = ? {pending_clause}
+                ORDER BY jobs.first_seen_at, jobs.job_key
                 """,
                 (stream,),
             ).fetchall()
-        return [(row["job_key"], _matched_job(row, stream)) for row in rows]
+        return [
+            (row["job_key"], _matched_job(row, stream), datetime.fromisoformat(row["first_seen_at"]))
+            for row in rows
+        ]
 
     def record_delivery(
         self,
@@ -203,7 +219,7 @@ class CareerAlertState:
                 provider_job_id TEXT NOT NULL, company TEXT NOT NULL, sponsor_names TEXT NOT NULL,
                 title TEXT NOT NULL, location TEXT NOT NULL, description TEXT NOT NULL,
                 apply_url TEXT NOT NULL, posted_at TEXT, is_remote INTEGER NOT NULL,
-                observed_at TEXT NOT NULL
+                first_seen_at TEXT NOT NULL, observed_at TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS job_streams (
                 job_key TEXT NOT NULL REFERENCES jobs(job_key), stream TEXT NOT NULL,
@@ -229,6 +245,14 @@ class CareerAlertState:
             );
             """
         )
+        columns = {
+            row["name"] for row in connection.execute("PRAGMA table_info(jobs)").fetchall()
+        }
+        if "first_seen_at" not in columns:
+            connection.execute("ALTER TABLE jobs ADD COLUMN first_seen_at TEXT")
+            connection.execute(
+                "UPDATE jobs SET first_seen_at = observed_at WHERE first_seen_at IS NULL"
+            )
 
 
 class _Transaction:

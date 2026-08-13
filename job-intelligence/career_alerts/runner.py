@@ -34,6 +34,10 @@ class RunSummary:
     delivery_failed: bool
     checkpoint: str
 
+    @classmethod
+    def empty(cls, checkpoint: str) -> RunSummary:
+        return cls(0, 0, 0, 0, 0, 0, {}, False, checkpoint)
+
     def as_dict(self) -> dict[str, object]:
         return {
             "attempted_sources": self.attempted_sources,
@@ -82,7 +86,9 @@ class CareerAlertRunner:
         errors = self.registry_validator(targets)
         if errors:
             raise ValueError("registry invalid: " + "; ".join(errors))
-        active_targets = [target for target in targets if target.mapping_status == "verified"]
+        active_targets = [
+            target for group in _group_shared_sources(targets) for target in group
+        ]
         results = _await(self.collector(active_targets))
         now = self.clock()
         matches: list[MatchedJob] = []
@@ -94,10 +100,10 @@ class CareerAlertRunner:
         delivery_failed = False
         if send_email:
             for stream in ("dotnet", "ai_engineer"):
-                pending = self.state.pending(stream)
-                if not pending:
+                candidates = self.state.stream_jobs(stream, include_delivered=initial)
+                if not candidates:
                     continue
-                jobs = [EmailJob(match, now) for _, match in pending]
+                jobs = [EmailJob(match, first_seen) for _, match, first_seen in candidates]
                 success = True
                 try:
                     for message in self.renderer(stream, _window(now, initial), jobs):
@@ -105,9 +111,11 @@ class CareerAlertRunner:
                 except Exception:  # noqa: BLE001
                     success = False
                     delivery_failed = True
-                self.state.record_delivery(stream, [key for key, _ in pending], now, success=success)
+                self.state.record_delivery(
+                    stream, [key for key, _, _ in candidates], now, success=success
+                )
                 if success:
-                    delivery_counts[stream] = len(pending)
+                    delivery_counts[stream] = len(candidates)
         failed = sum(result.error_code not in {None, "no_open_jobs"} for result in results)
         return RunSummary(
             len(results), len(results) - failed, failed, failed, sum(len(result.jobs) for result in results),
@@ -126,3 +134,12 @@ def _window(now: datetime, initial: bool) -> DeliveryWindow:
     if initial:
         return DeliveryWindow(now, now, "Initial activation", "regular")
     return delivery_window(now)
+
+
+def _group_shared_sources(targets: list[SponsorTarget]) -> list[list[SponsorTarget]]:
+    """Preserve each verified source group for collect_sources' one-fetch grouping."""
+    grouped: dict[str, list[SponsorTarget]] = {}
+    for target in targets:
+        if target.mapping_status == "verified":
+            grouped.setdefault(target.source_key, []).append(target)
+    return list(grouped.values())

@@ -112,3 +112,54 @@ def test_streams_are_delivered_separately(runner, fake_mailer):
     summary = runner.collect(send_email=True, initial=False)
     assert [message.stream for message in fake_mailer.messages] == ["dotnet", "ai_engineer"]
     assert summary.delivery_counts == {"dotnet": 1, "ai_engineer": 1}
+
+
+def test_first_seen_is_immutable_and_is_passed_to_email_renderer(tmp_path):
+    seen = []
+    first = datetime(2026, 8, 12, 18, tzinfo=UTC)
+    later = datetime(2026, 8, 12, 21, tzinfo=UTC)
+    results = [FetchResult("greenhouse:acme", (match("dotnet").job,), 1, 1, None)]
+    runner = make_runner(tmp_path, results)
+    runner.clock = lambda: first
+    runner.collect(send_email=False, initial=False)
+    runner.clock = lambda: later
+    runner.renderer = lambda _stream, _window, jobs: (seen.extend(jobs) or [])
+
+    runner.collect(send_email=True, initial=False)
+
+    assert seen[0].first_seen_at == first
+
+
+def test_initial_send_replays_delivered_matches_without_reopening_normal_pending(runner, fake_mailer):
+    runner.collect(send_email=True, initial=False)
+    summary = runner.collect(send_email=True, initial=True)
+
+    assert summary.delivery_counts == {"dotnet": 1, "ai_engineer": 1}
+    assert runner.state.pending("dotnet") == []
+
+
+def test_shared_source_targets_are_passed_once_to_collector(tmp_path):
+    calls = []
+    shared = target()
+    duplicate = SponsorTarget(
+        2, "Acme Subsidiary", "Acme", 1, shared.career_url, shared.provider, shared.provider_key,
+        "verified", "reviewed source",
+    )
+
+    async def collect(targets):
+        calls.append(targets)
+        return [FetchResult("greenhouse:acme", (), 1, 1, "no_open_jobs")]
+
+    runner = CareerAlertRunner(
+        registry_loader=lambda _path: [shared, duplicate],
+        registry_validator=lambda _targets: [],
+        collector=collect,
+        state=CareerAlertState(tmp_path / "state.sqlite3"),
+        matcher=lambda _job: None,
+        mailer=FakeMailer(),
+        clock=lambda: datetime(2026, 8, 12, 18, tzinfo=UTC),
+    )
+
+    runner.collect(send_email=False, initial=False)
+
+    assert [item.source_key for item in calls[0]] == ["greenhouse:acme", "greenhouse:acme"]

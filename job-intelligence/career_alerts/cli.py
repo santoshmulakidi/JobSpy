@@ -11,7 +11,7 @@ from pathlib import Path
 
 from career_alerts.emailer import SmtpMailer
 from career_alerts.registry import load_registry, validate_registry
-from career_alerts.runner import CareerAlertRunner
+from career_alerts.runner import CareerAlertRunner, RunSummary
 from career_alerts.state import CareerAlertState
 
 DEFAULT_REGISTRY = Path("/home/ubuntu/JobSpy/job-intelligence/data/top250_career_targets.json")
@@ -45,11 +45,15 @@ def main() -> int:
         parser.error("--now is available only when CAREER_ALERTS_TESTING=1")
     if args.command == "validate":
         errors = validate_registry(load_registry(args.registry))
-        print(json.dumps({"registry_valid": not errors, "errors": errors}, sort_keys=True))
+        payload = RunSummary.empty(_checkpoint()).as_dict()
+        payload.update({"registry_valid": not errors, "errors": errors})
+        print(json.dumps(payload, sort_keys=True))
         return 2 if errors else 0
     state = CareerAlertState(args.state)
     if args.command == "status":
-        print(json.dumps(state.status(), sort_keys=True))
+        payload = RunSummary.empty(_checkpoint()).as_dict()
+        payload.update(state.status())
+        print(json.dumps(payload, sort_keys=True))
         return 0
     now = _now(args.now)
     runner = CareerAlertRunner(
@@ -69,6 +73,10 @@ def main() -> int:
 
 def _now(value: str | None) -> datetime:
     return datetime.fromisoformat(value).astimezone(UTC) if value else datetime.now(UTC)
+
+
+def _checkpoint() -> str:
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
 if __name__ == "__main__":

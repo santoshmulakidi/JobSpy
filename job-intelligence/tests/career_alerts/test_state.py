@@ -105,3 +105,12 @@ def test_missed_scheduled_run_keeps_all_unsent_jobs_pending(tmp_path):
     )
 
     assert len(state.pending("dotnet")) == 2
+
+
+def test_pending_exposes_immutable_first_seen_timestamp(tmp_path, matched_dotnet):
+    state = CareerAlertState(tmp_path / "state.sqlite3")
+    first = dt("2026-08-12T10:00:00Z")
+    state.upsert_matches([matched_dotnet], first)
+    state.upsert_matches([matched_dotnet], dt("2026-08-12T12:00:00Z"))
+
+    assert state.pending("dotnet")[0][2] == first
