@@ -21,6 +21,9 @@ from ats_scrapers.scrapers import get_scraper
 from career_alerts.types import CareerJob, SponsorTarget
 
 REQUEST_TIMEOUT_SECONDS = 25.0
+SOURCE_TIMEOUT_SECONDS = 60.0
+MAX_PAGES_PER_SOURCE = 20
+MAX_JOBS_PER_SOURCE = 1000
 MAX_ATTEMPTS = 3
 RETRYABLE_HTTP_STATUSES = frozenset({408, 425, 429, 500, 502, 503, 504})
 # With MAX_ATTEMPTS=3, only the waits before attempts 2 and 3 are reachable.
@@ -168,10 +171,16 @@ class CareerProvider:
         scraper_factory: Callable[..., object] = get_scraper,
         crawler_factory: Callable[[], object] | None = None,
         http_client_factory: Callable[..., object] = httpx.AsyncClient,
+        max_pages_per_source: int = MAX_PAGES_PER_SOURCE,
+        max_jobs_per_source: int = MAX_JOBS_PER_SOURCE,
     ) -> None:
+        if max_pages_per_source < 1 or max_jobs_per_source < 1:
+            raise ValueError("provider page and job caps must be positive")
         self._scraper_factory = scraper_factory
         self._crawler_factory = crawler_factory
         self._http_client_factory = http_client_factory
+        self._max_pages_per_source = max_pages_per_source
+        self._max_jobs_per_source = max_jobs_per_source
         self._request_controller = _RequestController(6, 2, http_client_factory)
 
     def configure_request_limits(self, concurrency: int, per_host: int) -> None:
@@ -224,13 +233,14 @@ class CareerProvider:
             target.provider,
             target.provider_key,
             timeout=REQUEST_TIMEOUT_SECONDS,
+            include_descriptions=False,
         )
         self._bind_controlled_http(scraper, target.provider)
         # ats-scrapers 0.2.0's Workday constructor accepts the provider key,
         # while its fetcher parses the complete reviewed careers URL.
         if target.provider == "workday" and hasattr(scraper, "company_slug"):
             scraper.company_slug = target.career_url  # type: ignore[attr-defined]
-        raw_jobs = await scraper.afetch()  # type: ignore[attr-defined]
+        raw_jobs = (await scraper.afetch())[: self._max_jobs_per_source]  # type: ignore[attr-defined]
         return self.normalize_jobs(targets, raw_jobs)
 
     def _bind_controlled_http(self, scraper: object, provider: str | None) -> None:
@@ -259,6 +269,8 @@ class CareerProvider:
 
     def _bind_workday_http(self, scraper: object) -> None:
         controller = self._request_controller
+        max_jobs = self._max_jobs_per_source
+        max_pages = self._max_pages_per_source
 
         async def fetch_all(_scraper, api, base, company, detail_prefix):
             async with controller.client(
@@ -276,9 +288,31 @@ class CareerProvider:
                             seen.add(key)
                             all_jobs.append(job)
 
-                await _scraper._exhaust_query(
-                    client, api, sem, applied_facets={}, absorb=absorb, depth=0
+                first = await _scraper._request(
+                    client, api, sem, applied_facets={}, offset=0
                 )
+                if first is not None:
+                    absorb((first.get("jobPostings") or [])[:max_jobs])
+                    page_size = 20
+                    total = min(int(first.get("total", 0)), max_jobs)
+                    offsets = list(range(page_size, total, page_size))[: max_pages - 1]
+                    pages = await asyncio.gather(
+                        *(
+                            _scraper._request(
+                                client,
+                                api,
+                                sem,
+                                applied_facets={},
+                                offset=offset,
+                            )
+                            for offset in offsets
+                        )
+                    )
+                    for page in pages:
+                        absorb((page or {}).get("jobPostings") or [])
+                        if len(all_jobs) >= max_jobs:
+                            del all_jobs[max_jobs:]
+                            break
                 if _scraper.include_descriptions:
                     await _scraper._enrich_details(client, sem, detail_prefix, all_jobs)
                 return all_jobs
@@ -313,6 +347,8 @@ class CareerProvider:
 
     def _bind_avature_http(self, scraper: object) -> None:
         controller = self._request_controller
+        max_jobs = self._max_jobs_per_source
+        max_pages = self._max_pages_per_source
 
         async def fetch_direct(_scraper, base, company):
             seen: set[str] = set()
@@ -321,8 +357,8 @@ class CareerProvider:
                 timeout=REQUEST_TIMEOUT_SECONDS, follow_redirects=True
             ) as client:
                 page_size = _scraper_module_constant(_scraper, "_page_size")(base)
-                max_pages = _scraper_module_constant(_scraper, "MAX_PAGES")
-                for page_num in range(max_pages):
+                provider_max_pages = _scraper_module_constant(_scraper, "MAX_PAGES")
+                for page_num in range(min(provider_max_pages, max_pages)):
                     html_text = await _scraper._fetch_page(
                         client, base, page_num * page_size
                     )
@@ -330,18 +366,21 @@ class CareerProvider:
                     new_jobs = [job for job in page_jobs if job.ats_id not in seen]
                     if not new_jobs:
                         break
-                    for job in new_jobs:
+                    remaining = max_jobs - len(all_jobs)
+                    accepted_jobs = new_jobs[:remaining]
+                    for job in accepted_jobs:
                         seen.add(job.ats_id)
-                    all_jobs.extend(new_jobs)
-                    if len(page_jobs) < page_size:
+                    all_jobs.extend(accepted_jobs)
+                    if len(all_jobs) >= max_jobs or len(page_jobs) < page_size:
                         break
-                sem = asyncio.Semaphore(1000)
-                await asyncio.gather(
-                    *(
-                        _scraper._enrich_with_detail(client, sem, job)
-                        for job in all_jobs
+                if _scraper.include_descriptions and all_jobs:
+                    sem = asyncio.Semaphore(1000)
+                    await asyncio.gather(
+                        *(
+                            _scraper._enrich_with_detail(client, sem, job)
+                            for job in all_jobs
+                        )
                     )
-                )
             return all_jobs
 
         async def fetch_page_once(_scraper, client, base, offset):
@@ -364,6 +403,8 @@ class CareerProvider:
 
     def _bind_eightfold_http(self, scraper: object) -> None:
         controller = self._request_controller
+        max_jobs = self._max_jobs_per_source
+        max_pages = self._max_pages_per_source
         scraper.client_kind = "httpx"  # type: ignore[attr-defined]
 
         async def fetch_via_httpx(_scraper, seen, all_jobs):
@@ -372,17 +413,19 @@ class CareerProvider:
             ) as client:
                 first = await _scraper._fetch_page_httpx(client, start=0)
                 _scraper._collect(first.get("positions") or [], seen, all_jobs)
-                count = int(first.get("count") or 0)
+                count = min(int(first.get("count") or 0), max_jobs)
                 page_size = _scraper_module_constant(_scraper, "PAGE_SIZE")
                 if count > page_size:
+                    offsets = list(range(page_size, count, page_size))[: max_pages - 1]
                     await asyncio.gather(
                         *(
                             _collect_eightfold_page(
                                 _scraper, client, offset, seen, all_jobs
                             )
-                            for offset in range(page_size, count, page_size)
+                            for offset in offsets
                         )
                     )
+                del all_jobs[max_jobs:]
                 if _scraper.include_descriptions and all_jobs:
                     sem = asyncio.Semaphore(1000)
                     await asyncio.gather(
@@ -551,10 +594,11 @@ async def collect_sources(
     client: ProviderClient | None = None,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
     jitter: Callable[[], float] = random.random,
+    source_timeout_seconds: float = SOURCE_TIMEOUT_SECONDS,
 ) -> list[FetchResult]:
     """Fetch each verified source once with bounded retries and isolation."""
-    if concurrency < 1 or per_host < 1:
-        raise ValueError("concurrency and per_host must be positive")
+    if concurrency < 1 or per_host < 1 or source_timeout_seconds <= 0:
+        raise ValueError("concurrency, per_host, and source timeout must be positive")
     grouped: dict[str, list[SponsorTarget]] = {}
     for target in targets:
         if target.mapping_status == "verified":
@@ -570,10 +614,16 @@ async def collect_sources(
     async def run_source(source_targets: list[SponsorTarget]) -> FetchResult:
         target = source_targets[0]
         started = perf_counter()
+        deadline = asyncio.get_running_loop().time() + source_timeout_seconds
         last_result: FetchResult | None = None
         for attempt in range(1, MAX_ATTEMPTS + 1):
             try:
-                result = await provider_client.fetch(source_targets)
+                remaining = deadline - asyncio.get_running_loop().time()
+                if remaining <= 0:
+                    raise TimeoutError
+                result = await asyncio.wait_for(
+                    provider_client.fetch(source_targets), timeout=remaining
+                )
             except asyncio.CancelledError:
                 raise
             except Exception as exc:  # noqa: BLE001 - isolate each source failure
@@ -593,7 +643,17 @@ async def collect_sources(
             if last_result.error_code not in _RETRYABLE_ERROR_CODES or attempt == MAX_ATTEMPTS:
                 return last_result
             delay = RETRY_DELAYS[attempt - 1] + min(max(jitter(), 0.0), 1.0) * 0.5
-            await sleep(delay)
+            remaining = deadline - asyncio.get_running_loop().time()
+            if remaining <= 0:
+                return replace(last_result, error_code="timeout")
+            try:
+                await asyncio.wait_for(sleep(delay), timeout=remaining)
+            except TimeoutError:
+                return replace(
+                    last_result,
+                    elapsed_ms=_elapsed_ms(started),
+                    error_code="timeout",
+                )
         assert last_result is not None
         return last_result
 

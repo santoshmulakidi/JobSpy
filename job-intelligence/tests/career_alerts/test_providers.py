@@ -1,6 +1,7 @@
 import asyncio
 from collections import defaultdict
 from datetime import UTC, datetime
+from time import perf_counter
 from types import SimpleNamespace
 from urllib.parse import urlparse
 
@@ -79,7 +80,13 @@ def test_direct_ats_jobs_are_normalized(provider_name, provider_key, job_id, job
     source = target(provider_name, provider_key)
     result = asyncio.run(CareerProvider(scraper_factory=scraper_factory).fetch([source]))
 
-    assert calls == [(provider_name, provider_key, {"timeout": 25.0})]
+    assert calls == [
+        (
+            provider_name,
+            provider_key,
+            {"timeout": 25.0, "include_descriptions": False},
+        )
+    ]
     assert result.error_code is None
     assert result.attempt_count == 1
     assert result.source_key == f"{provider_name}:{provider_key}"
@@ -465,6 +472,79 @@ def test_one_failed_source_does_not_cancel_successful_source():
     failed = next(r for r in results if r.source_key == "workday:bad")
     assert failed.error_code == "http_503"
     assert failed.attempt_count == 3
+
+
+def test_source_deadline_isolates_slow_fanout_without_retrying_timeout():
+    calls = defaultdict(int)
+
+    class Client:
+        async def fetch(self, targets):
+            key = targets[0].provider_key
+            calls[key] += 1
+            if key == "slow":
+                await asyncio.gather(*(asyncio.sleep(60) for _ in range(20)))
+            return FetchResult(targets[0].source_key, (), 1, 1, "no_open_jobs")
+
+    sources = [target(provider_key="fast"), target(provider_key="slow", rank=2)]
+    started = perf_counter()
+    results = asyncio.run(
+        collect_sources(sources, client=Client(), source_timeout_seconds=0.02)
+    )
+    elapsed = perf_counter() - started
+
+    assert elapsed < 0.5
+    assert calls == {"fast": 1, "slow": 1}
+    assert next(r for r in results if r.source_key == "greenhouse:fast").error_code == "no_open_jobs"
+    timed_out = next(r for r in results if r.source_key == "greenhouse:slow")
+    assert timed_out.error_code == "timeout"
+    assert timed_out.attempt_count == 1
+
+
+def test_avature_listing_pages_and_returned_jobs_are_capped():
+    requests = 0
+
+    class Response:
+        status_code = 200
+
+        def __init__(self, page):
+            self.headers = {}
+            self.text = "".join(
+                f'<article class="job"><h2>Engineer {page}-{index}</h2>'
+                f'<a href="/careers/JobDetail/{page}-{index}">View</a></article>'
+                for index in range(12)
+            )
+
+    class RawClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def request(self, _method, _url, **_kwargs):
+            nonlocal requests
+            requests += 1
+            return Response(requests)
+
+        async def aclose(self):
+            return None
+
+    provider = CareerProvider(
+        http_client_factory=lambda **_kwargs: RawClient(),
+        max_pages_per_source=2,
+        max_jobs_per_source=15,
+    )
+    source = target(
+        "avature",
+        "ea",
+        career_url="https://ea.avature.net/careers/SearchJobs",
+    )
+
+    result = asyncio.run(provider.fetch([source]))
+
+    assert requests == 2
+    assert len(result.jobs) == 15
+    assert result.error_code is None
 
 
 @pytest.mark.parametrize("status", [401, 403, 404])
