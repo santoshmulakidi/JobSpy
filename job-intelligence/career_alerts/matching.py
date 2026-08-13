@@ -82,6 +82,11 @@ def match_job(job: CareerJob) -> MatchedJob | None:
     return MatchedJob(job=job, streams=frozenset(streams), location_bucket=location_bucket)
 
 
+def ai_title_needs_supporting_description(title: str) -> bool:
+    """Return whether an AI-role title needs body text to satisfy matching."""
+    return bool(_AI_TITLE.search(title) and not _AI_TECHNOLOGY.search(title))
+
+
 def _is_us_location(location: str) -> bool:
     if _US_MARKER.search(location):
         return True

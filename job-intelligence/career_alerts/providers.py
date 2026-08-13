@@ -18,12 +18,14 @@ import httpx
 from ats_scrapers.exceptions import CompanyNotFoundError
 from ats_scrapers.scrapers import get_scraper
 
+from career_alerts.matching import ai_title_needs_supporting_description
 from career_alerts.types import CareerJob, SponsorTarget
 
 REQUEST_TIMEOUT_SECONDS = 25.0
 SOURCE_TIMEOUT_SECONDS = 60.0
 MAX_PAGES_PER_SOURCE = 20
 MAX_JOBS_PER_SOURCE = 1000
+MAX_DETAIL_CANDIDATES_PER_SOURCE = 25
 MAX_ATTEMPTS = 3
 RETRYABLE_HTTP_STATUSES = frozenset({408, 425, 429, 500, 502, 503, 504})
 # With MAX_ATTEMPTS=3, only the waits before attempts 2 and 3 are reachable.
@@ -173,14 +175,22 @@ class CareerProvider:
         http_client_factory: Callable[..., object] = httpx.AsyncClient,
         max_pages_per_source: int = MAX_PAGES_PER_SOURCE,
         max_jobs_per_source: int = MAX_JOBS_PER_SOURCE,
+        max_detail_candidates_per_source: int = MAX_DETAIL_CANDIDATES_PER_SOURCE,
     ) -> None:
-        if max_pages_per_source < 1 or max_jobs_per_source < 1:
-            raise ValueError("provider page and job caps must be positive")
+        if (
+            max_pages_per_source < 1
+            or max_jobs_per_source < 1
+            or max_detail_candidates_per_source < 0
+        ):
+            raise ValueError(
+                "provider page/job caps must be positive and detail cap non-negative"
+            )
         self._scraper_factory = scraper_factory
         self._crawler_factory = crawler_factory
         self._http_client_factory = http_client_factory
         self._max_pages_per_source = max_pages_per_source
         self._max_jobs_per_source = max_jobs_per_source
+        self._max_detail_candidates_per_source = max_detail_candidates_per_source
         self._request_controller = _RequestController(6, 2, http_client_factory)
 
     def configure_request_limits(self, concurrency: int, per_host: int) -> None:
@@ -240,7 +250,8 @@ class CareerProvider:
         # while its fetcher parses the complete reviewed careers URL.
         if target.provider == "workday" and hasattr(scraper, "company_slug"):
             scraper.company_slug = target.career_url  # type: ignore[attr-defined]
-        raw_jobs = (await scraper.afetch())[: self._max_jobs_per_source]  # type: ignore[attr-defined]
+        raw_jobs = list(await scraper.afetch())[: self._max_jobs_per_source]  # type: ignore[attr-defined]
+        await self._enrich_candidate_details(scraper, target, raw_jobs)
         return self.normalize_jobs(targets, raw_jobs)
 
     def _bind_controlled_http(self, scraper: object, provider: str | None) -> None:
@@ -266,6 +277,88 @@ class CareerProvider:
             self._bind_avature_http(scraper)
         elif provider == "eightfold":
             self._bind_eightfold_http(scraper)
+        elif provider == "smartrecruiters":
+            self._bind_smartrecruiters_http(scraper)
+
+    def _bind_smartrecruiters_http(self, scraper: object) -> None:
+        max_jobs = self._max_jobs_per_source
+        max_pages = self._max_pages_per_source
+
+        async def fetch_bounded(_scraper):
+            url_template = _scraper_module_constant(_scraper, "API_TEMPLATE")
+            page_limit = _scraper_module_constant(_scraper, "PAGE_LIMIT")
+            url = url_template.format(slug=_scraper.company_slug)
+            all_jobs: list[object] = []
+            async with _scraper.make_fetcher() as fetch:
+                for page in range(max_pages):
+                    content = (
+                        await fetch.get_json(
+                            url,
+                            params={"limit": page_limit, "offset": page * page_limit},
+                        )
+                    ).get("content", [])
+                    remaining = max_jobs - len(all_jobs)
+                    all_jobs.extend(
+                        _scraper._parse_job(item) for item in content[:remaining]
+                    )
+                    if len(content) < page_limit or len(all_jobs) >= max_jobs:
+                        break
+            return all_jobs
+
+        scraper.afetch = MethodType(fetch_bounded, scraper)  # type: ignore[attr-defined]
+
+    async def _enrich_candidate_details(
+        self,
+        scraper: object,
+        target: SponsorTarget,
+        raw_jobs: list[object],
+    ) -> None:
+        indices = [
+            index
+            for index, job in enumerate(raw_jobs)
+            if not getattr(job, "description", None)
+            and ai_title_needs_supporting_description(str(getattr(job, "title", "")))
+        ][: self._max_detail_candidates_per_source]
+        if not indices:
+            return
+        candidates = [raw_jobs[index] for index in indices]
+        sem = asyncio.Semaphore(1000)
+        if target.provider in {"smartrecruiters", "workable"}:
+            method_name = (
+                "_enrich_detail"
+                if target.provider == "smartrecruiters"
+                else "_enrich_description"
+            )
+            async with scraper.make_fetcher() as fetch:  # type: ignore[attr-defined]
+                await asyncio.gather(
+                    *(
+                        getattr(scraper, method_name)(fetch, sem, job)
+                        for job in candidates
+                    )
+                )
+            return
+        if target.provider not in {"avature", "eightfold", "workday"}:
+            return
+        async with self._request_controller.client(
+            timeout=REQUEST_TIMEOUT_SECONDS,
+            follow_redirects=True,
+        ) as client:
+            if target.provider == "avature":
+                await asyncio.gather(
+                    *(scraper._enrich_with_detail(client, sem, job) for job in candidates)  # type: ignore[attr-defined]
+                )
+            elif target.provider == "eightfold":
+                await asyncio.gather(
+                    *(
+                        scraper._enrich_position_details(client, sem, job)  # type: ignore[attr-defined]
+                        for job in candidates
+                    )
+                )
+            elif target.provider == "workday":
+                detail_prefix = _workday_detail_prefix(target.career_url or "")
+                await scraper._enrich_details(client, sem, detail_prefix, candidates)  # type: ignore[attr-defined]
+                for index, enriched in zip(indices, candidates, strict=True):
+                    raw_jobs[index] = enriched
 
     def _bind_workday_http(self, scraper: object) -> None:
         controller = self._request_controller
@@ -293,7 +386,7 @@ class CareerProvider:
                 )
                 if first is not None:
                     absorb((first.get("jobPostings") or [])[:max_jobs])
-                    page_size = 20
+                    page_size = _scraper_module_constant(_scraper, "PAGE_LIMIT")
                     total = min(int(first.get("total", 0)), max_jobs)
                     offsets = list(range(page_size, total, page_size))[: max_pages - 1]
                     pages = await asyncio.gather(
@@ -723,6 +816,13 @@ def _elapsed_ms(started: float) -> int:
 def _scraper_module_constant(scraper: object, name: str) -> Any:
     module = __import__(type(scraper).__module__, fromlist=[name])
     return getattr(module, name)
+
+
+def _workday_detail_prefix(career_url: str) -> str:
+    parsed = urlparse(career_url)
+    company = (parsed.hostname or "").split(".", 1)[0]
+    site = parsed.path.strip("/").split("/", 1)[0]
+    return f"{parsed.scheme}://{parsed.netloc}/wday/cxs/{company}/{site}"
 
 
 async def _collect_eightfold_page(scraper, client, offset, seen, all_jobs) -> None:

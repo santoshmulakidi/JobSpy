@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 
 import pytest
 
+from career_alerts.matching import match_job
 from career_alerts.providers import CareerProvider, FetchResult, collect_sources
 from career_alerts.types import SponsorTarget
 
@@ -544,6 +545,149 @@ def test_avature_listing_pages_and_returned_jobs_are_capped():
 
     assert requests == 2
     assert len(result.jobs) == 15
+    assert result.error_code is None
+
+
+def test_ambiguous_ai_title_gets_one_bounded_detail_and_matches_end_to_end():
+    requested_urls = []
+
+    class Response:
+        status_code = 200
+        text = ""
+
+        def __init__(self, payload):
+            self.headers = {}
+            self.payload = payload
+
+        def json(self):
+            return self.payload
+
+    class RawClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def request(self, _method, url, **_kwargs):
+            requested_urls.append(url)
+            if url.endswith("/postings"):
+                return Response(
+                    {
+                        "content": [
+                            {
+                                "id": "ai-1",
+                                "name": "Applied AI Engineer",
+                                "location": {"city": "Dallas", "region": "TX"},
+                            },
+                            {
+                                "id": "llm-1",
+                                "name": "LLM Engineer",
+                                "location": {"city": "Dallas", "region": "TX"},
+                            },
+                            {
+                                "id": "ai-2",
+                                "name": "AI Engineer",
+                                "location": {"city": "Dallas", "region": "TX"},
+                            },
+                        ]
+                    }
+                )
+            assert url.endswith("/postings/ai-1")
+            return Response(
+                {
+                    "jobAd": {
+                        "sections": {
+                            "jobDescription": {
+                                "text": "Build Python APIs for a cloud RAG platform"
+                            }
+                        }
+                    }
+                }
+            )
+
+        async def aclose(self):
+            return None
+
+    provider = CareerProvider(
+        http_client_factory=lambda **_kwargs: RawClient(),
+        max_detail_candidates_per_source=1,
+    )
+    source = target(
+        "smartrecruiters",
+        "acme",
+        career_url="https://careers.smartrecruiters.com/acme",
+    )
+
+    result = asyncio.run(provider.fetch([source]))
+    matches = [match_job(job) for job in result.jobs]
+
+    assert len(requested_urls) == 2
+    assert requested_urls[-1].endswith("/postings/ai-1")
+    assert matches[0] is not None
+    assert "ai_engineer" in matches[0].streams
+    assert matches[1] is not None
+    assert "ai_engineer" in matches[1].streams
+    assert matches[2] is None
+
+
+def test_smartrecruiters_listing_pagination_and_jobs_are_capped():
+    requests = 0
+
+    class Response:
+        status_code = 200
+        text = ""
+
+        def __init__(self, payload):
+            self.headers = {}
+            self.payload = payload
+
+        def json(self):
+            return self.payload
+
+    class RawClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def request(self, _method, _url, **_kwargs):
+            nonlocal requests
+            requests += 1
+            page = requests
+            content = (
+                [
+                    {
+                        "id": f"{page}-{index}",
+                        "name": f"Sales Manager {page}-{index}",
+                        "location": {"city": "Dallas", "region": "TX"},
+                    }
+                    for index in range(100)
+                ]
+                if page < 3
+                else []
+            )
+            return Response({"content": content})
+
+        async def aclose(self):
+            return None
+
+    provider = CareerProvider(
+        http_client_factory=lambda **_kwargs: RawClient(),
+        max_pages_per_source=2,
+        max_jobs_per_source=150,
+    )
+    source = target(
+        "smartrecruiters",
+        "acme",
+        career_url="https://careers.smartrecruiters.com/acme",
+    )
+
+    result = asyncio.run(provider.fetch([source]))
+
+    assert requests == 2
+    assert len(result.jobs) == 150
     assert result.error_code is None
 
 
