@@ -6,10 +6,12 @@ import importlib.metadata
 import json
 import re
 from concurrent.futures import ThreadPoolExecutor
+from io import BytesIO
 from pathlib import Path
 from urllib.parse import urlparse, urlunsplit
 
 import httpx
+import pandas as pd
 import tldextract
 from ats_scrapers import find_company
 
@@ -101,6 +103,7 @@ def _directory_record_sha256(record: dict[str, str]) -> str:
 
 
 def ats_directory_match(
+    directory: pd.DataFrame,
     sponsor_name: str,
     canonical_company: str,
     provider: str,
@@ -108,18 +111,21 @@ def ats_directory_match(
     career_url: str,
 ) -> dict[str, str] | None:
     """Return the exact pinned find_company record that activates a tenant."""
-    if importlib.metadata.version(ATS_DIRECTORY_PACKAGE) != ATS_DIRECTORY_VERSION:
-        raise RuntimeError(
-            f"{ATS_DIRECTORY_PACKAGE}=={ATS_DIRECTORY_VERSION} is required for review"
-        )
     queries = list(
         dict.fromkeys(search_names(sponsor_name) + search_names(canonical_company))
     )
     for query in queries:
-        try:
-            matches = find_company(query, limit=10)
-        except (httpx.HTTPError, OSError, ValueError):
-            continue
+        needle = query.strip().casefold()
+        names = directory["name"].fillna("").astype(str).str.casefold()
+        slugs = directory["slug"].fillna("").astype(str).str.casefold()
+        matches = directory[
+            names.str.contains(needle, regex=False)
+            | slugs.str.contains(needle, regex=False)
+        ].copy()
+        rank = (slugs.loc[matches.index] != needle).astype(int) * 2 + (
+            names.loc[matches.index] != needle
+        ).astype(int)
+        matches = matches.loc[rank.sort_values(kind="stable").index].head(10)
         for raw in matches.to_dict(orient="records"):
             record = {
                 "ats": str(raw.get("ats") or "").strip(),
@@ -145,9 +151,15 @@ def ats_directory_match(
     return None
 
 
-def ats_directory_source(client: httpx.Client) -> dict[str, str]:
-    """Capture the exact hosted inventory artifact searched by ats-scrapers 0.2.0."""
-    response = client.get(ATS_MANIFEST_URL)
+def load_pinned_ats_directory(
+    client: httpx.Client, manifest_url: str = ATS_MANIFEST_URL
+) -> tuple[pd.DataFrame, dict[str, str]]:
+    """Fetch, hash, parse, and return the exact CSV recorded as review evidence."""
+    if importlib.metadata.version(ATS_DIRECTORY_PACKAGE) != ATS_DIRECTORY_VERSION:
+        raise RuntimeError(
+            f"{ATS_DIRECTORY_PACKAGE}=={ATS_DIRECTORY_VERSION} is required for review"
+        )
+    response = client.get(manifest_url)
     response.raise_for_status()
     manifest = response.json()
     companies = manifest.get("companies", {})
@@ -160,9 +172,17 @@ def ats_directory_source(client: httpx.Client) -> dict[str, str]:
         or not re.fullmatch(r"[0-9a-f]{64}", source_sha256)
     ):
         raise ValueError("ATS manifest does not identify the pinned companies inventory")
-    return {
+    csv_response = client.get(source_url)
+    csv_response.raise_for_status()
+    actual_sha256 = hashlib.sha256(csv_response.content).hexdigest()
+    if actual_sha256 != source_sha256:
+        raise ValueError("downloaded ATS companies CSV does not match manifest SHA-256")
+    directory = pd.read_csv(BytesIO(csv_response.content))
+    if not {"ats", "name", "slug", "url"} <= set(directory.columns):
+        raise ValueError("ATS companies CSV lacks required identity columns")
+    return directory, {
         "directory_source_url": source_url,
-        "directory_source_sha256": source_sha256,
+        "directory_source_sha256": actual_sha256,
     }
 
 
@@ -277,6 +297,28 @@ def validate_http(
             "final_url": None,
             "error": str(exc),
         }
+
+
+def verified_validation_notes(
+    canonical_company: str,
+    provider: str,
+    provider_key: str,
+    http_validation: dict[str, object],
+) -> str:
+    """Derive verified notes solely from current structured review evidence."""
+    status = http_validation.get("status_code")
+    identity = f"{provider}/{provider_key}"
+    if status in {403, 406}:
+        return (
+            f"Pinned ats-scrapers==0.2.0 directory record matched {canonical_company} "
+            f"to {identity}; official ATS tenant returned HTTP {status} automation block "
+            "during review on 2026-08-12."
+        )
+    return (
+        f"Pinned ats-scrapers==0.2.0 directory record matched {canonical_company} "
+        f"to {identity}; official ATS tenant returned HTTP {status} during review on "
+        "2026-08-12."
+    )
 
 
 def apply_review_decisions(
@@ -524,7 +566,7 @@ def main() -> int:
             timeout=12,
             headers={"User-Agent": "JobIntelligence career-source review/1.0"},
         ) as client:
-            directory_source = ats_directory_source(client)
+            directory, directory_source = load_pinned_ats_directory(client)
             urls = {
                 str(row["career_url"]) for row in output_rows if row["career_url"]
             }
@@ -555,6 +597,7 @@ def main() -> int:
             directory_match = None
             if isinstance(provider, str) and provider != "html":
                 directory_match = ats_directory_match(
+                    directory,
                     str(row["sponsor_name"]),
                     str(row["canonical_company"]),
                     provider,
@@ -563,12 +606,6 @@ def main() -> int:
                 )
             if directory_match is not None:
                 directory_matches[int(row["rank"])] = directory_match
-                if activated_status in {403, 406}:
-                    row["validation_notes"] = (
-                        f"Pinned ats-scrapers company-directory identity matched; official ATS "
-                        f"tenant returned HTTP {activated_status} automation block during review "
-                        "on 2026-08-12."
-                    )
             identity_failed = directory_match is None
             activated_failed = (
                 not activated_outcome.get("http_success")
@@ -605,6 +642,13 @@ def main() -> int:
                         "on 2026-08-12; source remains inactive until a working official endpoint "
                         "is confirmed."
                     )
+            else:
+                row["validation_notes"] = verified_validation_notes(
+                    str(row["canonical_company"]),
+                    str(row["provider"]),
+                    str(row["provider_key"]),
+                    activated_outcome,
+                )
         review_rows = []
         for row in output_rows:
             url = row["career_url"]

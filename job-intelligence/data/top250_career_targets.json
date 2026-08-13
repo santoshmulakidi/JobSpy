@@ -316,7 +316,7 @@
     "provider": "smartrecruiters",
     "provider_key": "servicenow",
     "mapping_status": "verified",
-    "validation_notes": "Official ServiceNow careers page and ATS directory entry reviewed 2026-08-12; HTTP 403 indicated automation blocking, overridden by independent ATS directory evidence."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched ServiceNow to smartrecruiters/servicenow; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 30,
@@ -470,7 +470,7 @@
     "provider": "smartrecruiters",
     "provider_key": "virtusapolaris",
     "mapping_status": "verified",
-    "validation_notes": "Official Virtusa careers page and ATS entry reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Virtusa to smartrecruiters/virtusapolaris; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 44,
@@ -591,7 +591,7 @@
     "provider": "ashby",
     "provider_key": "snowflake",
     "mapping_status": "verified",
-    "validation_notes": "Official Snowflake careers page and ATS directory entry reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Snowflake to ashby/snowflake; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 55,
@@ -635,7 +635,7 @@
     "provider": "smartrecruiters",
     "provider_key": "citiustech",
     "mapping_status": "verified",
-    "validation_notes": "Official CitiusTech openings page and ATS entry reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched CitiusTech to smartrecruiters/citiustech; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 59,
@@ -679,7 +679,7 @@
     "provider": "smartrecruiters",
     "provider_key": "aristanetworks",
     "mapping_status": "verified",
-    "validation_notes": "Official Arista careers page and ATS entry reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Arista Networks to smartrecruiters/aristanetworks; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 63,
@@ -723,7 +723,7 @@
     "provider": "eightfold",
     "provider_key": "nttdata",
     "mapping_status": "verified",
-    "validation_notes": "Official NTT DATA careers source reviewed 2026-08-12; both sponsor entities share it."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched NTT DATA to eightfold/nttdata; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 67,
@@ -756,7 +756,7 @@
     "provider": "workday",
     "provider_key": "workday/workday",
     "mapping_status": "verified",
-    "validation_notes": "Official Workday careers tenant reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Workday to workday/workday/workday; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 70,
@@ -789,7 +789,7 @@
     "provider": "ashby",
     "provider_key": "openai",
     "mapping_status": "verified",
-    "validation_notes": "Official OpenAI careers search and Ashby tenant reviewed 2026-08-12; HTTP 403 indicated automation blocking, overridden by independent ATS directory evidence."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched OpenAI to ashby/openai; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 73,
@@ -877,7 +877,7 @@
     "provider": "greenhouse",
     "provider_key": "databricks",
     "mapping_status": "verified",
-    "validation_notes": "Official Databricks openings page and Greenhouse tenant reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Databricks to greenhouse/databricks; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 81,
@@ -1031,7 +1031,7 @@
     "provider": "greenhouse",
     "provider_key": "pinterest",
     "mapping_status": "verified",
-    "validation_notes": "Pinned ats-scrapers company-directory identity matched; official ATS tenant returned HTTP 403 automation block during review on 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Pinterest to greenhouse/pinterest; official ATS tenant returned HTTP 403 automation block during review on 2026-08-12."
   },
   {
     "rank": 95,
@@ -1108,7 +1108,7 @@
     "provider": "workable",
     "provider_key": "tiger-analytics",
     "mapping_status": "verified",
-    "validation_notes": "Official Tiger Analytics openings page and ATS entry reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Tiger Analytics to workable/tiger-analytics; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 102,
@@ -1251,7 +1251,7 @@
     "provider": "workday",
     "provider_key": "cohesity/cohesity_careers",
     "mapping_status": "verified",
-    "validation_notes": "Official Cohesity Workday tenant reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Cohesity to workday/cohesity/cohesity_careers; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 115,
@@ -1350,7 +1350,7 @@
     "provider": "eightfold",
     "provider_key": "nttdata",
     "mapping_status": "verified",
-    "validation_notes": "Official NTT DATA careers source reviewed 2026-08-12; both sponsor entities share it."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched NTT DATA to eightfold/nttdata; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 124,
@@ -1526,7 +1526,7 @@
     "provider": "lever",
     "provider_key": "palantir",
     "mapping_status": "verified",
-    "validation_notes": "Official Palantir careers page and Lever tenant reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Palantir to lever/palantir; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 140,
@@ -1724,7 +1724,7 @@
     "provider": "smartrecruiters",
     "provider_key": "mckesson4",
     "mapping_status": "verified",
-    "validation_notes": "Official McKesson careers page and ATS entry reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched McKesson to smartrecruiters/mckesson4; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 158,
@@ -1878,7 +1878,7 @@
     "provider": "greenhouse",
     "provider_key": "c3iot",
     "mapping_status": "verified",
-    "validation_notes": "Official C3 AI careers page and Greenhouse tenant reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched C3 AI to greenhouse/c3iot; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 172,
@@ -1889,7 +1889,7 @@
     "provider": "avature",
     "provider_key": "ea",
     "mapping_status": "verified",
-    "validation_notes": "Official EA careers board and ATS entry reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Electronic Arts to avature/ea; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 173,
@@ -1988,7 +1988,7 @@
     "provider": "greenhouse",
     "provider_key": "zscaler",
     "mapping_status": "verified",
-    "validation_notes": "Official Zscaler careers search and Greenhouse tenant reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Zscaler to greenhouse/zscaler; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 182,
@@ -2098,7 +2098,7 @@
     "provider": "smartrecruiters",
     "provider_key": "nagarro1",
     "mapping_status": "verified",
-    "validation_notes": "Official Nagarro careers page and ATS entry reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Nagarro to smartrecruiters/nagarro1; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 192,
@@ -2175,7 +2175,7 @@
     "provider": "workday",
     "provider_key": "redhat/jobs",
     "mapping_status": "verified",
-    "validation_notes": "Official Red Hat Workday tenant reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Red Hat to workday/redhat/jobs; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 199,
@@ -2252,7 +2252,7 @@
     "provider": "greenhouse",
     "provider_key": "mongodb",
     "mapping_status": "verified",
-    "validation_notes": "Official MongoDB careers page and Greenhouse tenant reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched MongoDB to greenhouse/mongodb; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 206,
@@ -2285,7 +2285,7 @@
     "provider": "greenhouse",
     "provider_key": "verkada",
     "mapping_status": "verified",
-    "validation_notes": "Official Verkada careers page and Greenhouse tenant reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Verkada to greenhouse/verkada; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 209,
@@ -2307,7 +2307,7 @@
     "provider": "workable",
     "provider_key": "bahwan-cybertek-group",
     "mapping_status": "verified",
-    "validation_notes": "Official Bahwan CyberTek careers page and ATS entry reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Bahwan CyberTek to workable/bahwan-cybertek-group; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 211,
@@ -2406,7 +2406,7 @@
     "provider": "greenhouse",
     "provider_key": "lyft",
     "mapping_status": "verified",
-    "validation_notes": "Official Lyft careers page and Greenhouse tenant reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Lyft to greenhouse/lyft; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 220,
@@ -2461,7 +2461,7 @@
     "provider": "greenhouse",
     "provider_key": "block",
     "mapping_status": "verified",
-    "validation_notes": "Official Block careers page and Greenhouse tenant reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Block to greenhouse/block; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 225,
@@ -2538,7 +2538,7 @@
     "provider": "eightfold",
     "provider_key": "twilio",
     "mapping_status": "verified",
-    "validation_notes": "Official Twilio jobs page and ATS entry reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Twilio to eightfold/twilio; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 232,
@@ -2703,7 +2703,7 @@
     "provider": "smartrecruiters",
     "provider_key": "endava",
     "mapping_status": "verified",
-    "validation_notes": "Official Endava jobs page and ATS entry reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Endava to smartrecruiters/endava; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 247,
@@ -2736,7 +2736,7 @@
     "provider": "greenhouse",
     "provider_key": "okta",
     "mapping_status": "verified",
-    "validation_notes": "Official Okta careers page and Greenhouse tenant reviewed 2026-08-12."
+    "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Okta to greenhouse/okta; official ATS tenant returned HTTP 200 during review on 2026-08-12."
   },
   {
     "rank": 250,

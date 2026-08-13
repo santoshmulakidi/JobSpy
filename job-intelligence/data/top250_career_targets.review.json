@@ -1554,7 +1554,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official ServiceNow careers page and ATS directory entry reviewed 2026-08-12; HTTP 403 indicated automation blocking, overridden by independent ATS directory evidence.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched ServiceNow to smartrecruiters/servicenow; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -2310,7 +2310,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Virtusa careers page and ATS entry reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Virtusa to smartrecruiters/virtusapolaris; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -2896,7 +2896,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Snowflake careers page and ATS directory entry reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Snowflake to ashby/snowflake; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -3112,7 +3112,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official CitiusTech openings page and ATS entry reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched CitiusTech to smartrecruiters/citiustech; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -3328,7 +3328,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Arista careers page and ATS entry reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Arista Networks to smartrecruiters/aristanetworks; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -3544,7 +3544,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official NTT DATA careers source reviewed 2026-08-12; both sponsor entities share it.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched NTT DATA to eightfold/nttdata; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -3706,7 +3706,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Workday careers tenant reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Workday to workday/workday/workday; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -3868,7 +3868,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official OpenAI careers search and Ashby tenant reviewed 2026-08-12; HTTP 403 indicated automation blocking, overridden by independent ATS directory evidence.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched OpenAI to ashby/openai; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -4300,7 +4300,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Databricks openings page and Greenhouse tenant reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Databricks to greenhouse/databricks; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -5048,7 +5048,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Pinned ats-scrapers company-directory identity matched; official ATS tenant returned HTTP 403 automation block during review on 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Pinterest to greenhouse/pinterest; official ATS tenant returned HTTP 403 automation block during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -5418,7 +5418,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Tiger Analytics openings page and ATS entry reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Tiger Analytics to workable/tiger-analytics; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -6112,7 +6112,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Cohesity Workday tenant reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Cohesity to workday/cohesity/cohesity_careers; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -6598,7 +6598,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official NTT DATA careers source reviewed 2026-08-12; both sponsor entities share it.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched NTT DATA to eightfold/nttdata; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -7454,7 +7454,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Palantir careers page and Lever tenant reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Palantir to lever/palantir; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -8418,7 +8418,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official McKesson careers page and ATS entry reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched McKesson to smartrecruiters/mckesson4; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -9150,7 +9150,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official C3 AI careers page and Greenhouse tenant reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched C3 AI to greenhouse/c3iot; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -9204,7 +9204,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official EA careers board and ATS entry reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Electronic Arts to avature/ea; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -9690,7 +9690,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Zscaler careers search and Greenhouse tenant reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Zscaler to greenhouse/zscaler; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -10222,7 +10222,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Nagarro careers page and ATS entry reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Nagarro to smartrecruiters/nagarro1; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -10584,7 +10584,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Red Hat Workday tenant reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Red Hat to workday/redhat/jobs; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -10954,7 +10954,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official MongoDB careers page and Greenhouse tenant reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched MongoDB to greenhouse/mongodb; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -11108,7 +11108,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Verkada careers page and Greenhouse tenant reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Verkada to greenhouse/verkada; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -11208,7 +11208,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Bahwan CyberTek careers page and ATS entry reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Bahwan CyberTek to workable/bahwan-cybertek-group; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -11686,7 +11686,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Lyft careers page and Greenhouse tenant reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Lyft to greenhouse/lyft; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -11948,7 +11948,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Block careers page and Greenhouse tenant reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Block to greenhouse/block; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -12302,7 +12302,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Twilio jobs page and ATS entry reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Twilio to eightfold/twilio; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -13080,7 +13080,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Endava jobs page and ATS entry reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Endava to smartrecruiters/endava; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {
@@ -13234,7 +13234,7 @@
     "selected_matching_link": null,
     "allowed_final_hosts": [],
     "decision": "verified",
-    "decision_reason": "Official Okta careers page and Greenhouse tenant reviewed 2026-08-12.",
+    "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Okta to greenhouse/okta; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     "reviewed_at": "2026-08-12"
   },
   {

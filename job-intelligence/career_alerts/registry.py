@@ -258,11 +258,23 @@ def _directory_record_sha256(row: dict[str, object]) -> str | None:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _expected_ats_validation_notes(target: SponsorTarget, status: object) -> str:
+    prefix = (
+        f"Pinned ats-scrapers==0.2.0 directory record matched {target.canonical_company} "
+        f"to {target.provider}/{target.provider_key}; official ATS tenant returned HTTP {status}"
+    )
+    if status in {403, 406}:
+        return f"{prefix} automation block during review on 2026-08-12."
+    return f"{prefix} during review on 2026-08-12."
+
+
 def _http_evidence_errors(
     label: str,
-    target: SponsorTarget,
+    expected_url: str | None,
     http_validation: object,
     allowed_final_hosts: list[str],
+    *,
+    require_verifiable: bool = False,
 ) -> list[str]:
     errors: list[str] = []
     if not isinstance(http_validation, dict):
@@ -305,8 +317,8 @@ def _http_evidence_errors(
     if http_success != expected_success:
         errors.append(f"{label}: HTTP success flag is inconsistent with status")
     expected_redirect = False
-    if isinstance(final_url, str) and target.career_url:
-        target_host = urlparse(target.career_url).hostname or ""
+    if isinstance(final_url, str) and expected_url:
+        target_host = urlparse(expected_url).hostname or ""
         final_host = urlparse(final_url).hostname or ""
         same_domain = bool(
             final_host and _registrable_domain(target_host) == _registrable_domain(final_host)
@@ -323,9 +335,14 @@ def _http_evidence_errors(
         errors.append(f"{label}: redirect identity flag is inconsistent with evidence")
     if ok != (expected_success and expected_redirect):
         errors.append(f"{label}: HTTP ok flag is inconsistent with success and redirect identity")
-    if status == 404:
+    if require_verifiable and status == 404:
         errors.append(f"{label}: HTTP 404 evidence cannot be verified")
-    elif isinstance(status, int) and not 200 <= status < 400 and status not in {403, 406}:
+    elif (
+        require_verifiable
+        and isinstance(status, int)
+        and not 200 <= status < 400
+        and status not in {403, 406}
+    ):
         errors.append(f"{label}: HTTP {status} evidence cannot be verified")
     return errors
 
@@ -461,6 +478,29 @@ def _evidence_errors(targets: list[SponsorTarget]) -> list[str]:
             allowed_final_hosts = row["allowed_final_hosts"]  # type: ignore[assignment]
             if not all(isinstance(host, str) and host.strip() for host in allowed_final_hosts):
                 errors.append(f"{label}: allowed_final_hosts entries must be non-empty strings")
+        selected_expected_url = target.career_url or (
+            row.get("candidate_url") if isinstance(row.get("candidate_url"), str) else None
+        )
+        if row.get("http_validation") is not None:
+            errors.extend(
+                _http_evidence_errors(
+                    f"{label}: selected HTTP",
+                    selected_expected_url,
+                    row.get("http_validation"),
+                    allowed_final_hosts,
+                    require_verifiable=target.mapping_status == "verified",
+                )
+            )
+        if row.get("candidate_http_validation") is not None:
+            candidate_url = row.get("candidate_url")
+            errors.extend(
+                _http_evidence_errors(
+                    f"{label}: candidate HTTP",
+                    candidate_url if isinstance(candidate_url, str) else None,
+                    row.get("candidate_http_validation"),
+                    allowed_final_hosts,
+                )
+            )
         if target.mapping_status == "verified":
             method = row.get("identity_method")
             source_url = row.get("identity_source_url")
@@ -480,6 +520,17 @@ def _evidence_errors(targets: list[SponsorTarget]) -> list[str]:
                 errors.append(f"{label}: identity evidence requires an independent identity source")
             if method == "official_ats_directory":
                 errors.extend(_ats_identity_errors(label, target, row))
+                http_validation = row.get("http_validation")
+                if not isinstance(http_validation, dict):
+                    errors.append(f"{label}: missing structured HTTP validation evidence")
+                else:
+                    expected_notes = _expected_ats_validation_notes(
+                        target, http_validation.get("status_code")
+                    )
+                    if target.validation_notes != expected_notes:
+                        errors.append(
+                            f"{label}: validation notes do not match current structured HTTP evidence"
+                        )
             elif method in {
                 "official_company_careers_link",
                 "official_parent_careers_link",
@@ -495,11 +546,6 @@ def _evidence_errors(targets: list[SponsorTarget]) -> list[str]:
                     target_host
                 ):
                     errors.append(f"{label}: independent identity source does not match company domain")
-            errors.extend(
-                _http_evidence_errors(
-                    label, target, row.get("http_validation"), allowed_final_hosts
-                )
-            )
             http_validation = row.get("http_validation")
             if isinstance(http_validation, dict):
                 status = http_validation.get("status_code")
@@ -528,9 +574,12 @@ def _evidence_errors(targets: list[SponsorTarget]) -> list[str]:
         ):
             candidate_provider = str(row["candidate_provider"])
             candidate_key = str(row["candidate_provider_key"])
-            if provider_matches_url(
-                candidate_provider, candidate_key, target.career_url or ""
-            ) and (target.provider, target.provider_key) != (candidate_provider, candidate_key):
+            candidate_url = str(row["candidate_url"])
+            if provider_matches_url(candidate_provider, candidate_key, candidate_url) and (
+                target.provider,
+                target.provider_key,
+                target.career_url,
+            ) != (candidate_provider, candidate_key, candidate_url):
                 errors.append(f"{label}: supported direct ATS candidate must remain direct")
     return errors
 

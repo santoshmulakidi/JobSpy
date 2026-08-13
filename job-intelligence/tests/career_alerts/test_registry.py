@@ -1,3 +1,4 @@
+import hashlib
 import json
 from copy import deepcopy
 
@@ -9,6 +10,7 @@ from career_alerts.registry import load_registry, validate_registry
 from tools.discover_career_sources import (
     apply_review_decisions,
     ats_directory_match,
+    load_pinned_ats_directory,
     registrable_domain,
     validate_http,
 )
@@ -24,7 +26,7 @@ def _row(**overrides):
         "provider": "ashby",
         "provider_key": "acme",
         "mapping_status": "verified",
-        "validation_notes": "official ATS tenant reviewed",
+        "validation_notes": "Pinned ats-scrapers==0.2.0 directory record matched Acme to ashby/acme; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
     }
     row.update(overrides)
     return row
@@ -88,7 +90,7 @@ def _ats_evidence(**overrides):
         "selected_matching_link": None,
         "allowed_final_hosts": [],
         "decision": "verified",
-        "decision_reason": "official ATS tenant reviewed",
+        "decision_reason": "Pinned ats-scrapers==0.2.0 directory record matched Acme to ashby/acme; official ATS tenant returned HTTP 200 during review on 2026-08-12.",
         "reviewed_at": "2026-08-12",
     }
     row.update(overrides)
@@ -455,22 +457,15 @@ def test_ats_directory_evidence_is_bound_to_real_shaped_record(
     assert any("ATS directory" in error for error in errors)
 
 
-def test_ats_directory_match_preserves_actual_find_company_record(monkeypatch):
+def test_ats_directory_match_preserves_actual_find_company_record():
     record = {
         "ats": "ashby",
         "name": "OpenAI",
         "slug": "openai",
         "url": "https://jobs.ashbyhq.com/openai",
     }
-    calls = []
-
-    def shaped_find_company(query, *, limit=10):
-        calls.append((query, limit))
-        return pd.DataFrame([record])
-
-    monkeypatch.setattr("tools.discover_career_sources.find_company", shaped_find_company)
-
     evidence = ats_directory_match(
+        pd.DataFrame([record]),
         "OPENAI OPCO, LLC",
         "OpenAI",
         "ashby",
@@ -479,12 +474,80 @@ def test_ats_directory_match_preserves_actual_find_company_record(monkeypatch):
     )
 
     assert evidence is not None
-    assert evidence["matched_query"] in {query for query, _ in calls}
+    assert evidence["matched_query"] in {"OPENAI OPCO, LLC", "openai opco", "OpenAI", "openai"}
     assert evidence["matched_company"] == "OpenAI"
     assert evidence["matched_provider"] == "ashby"
     assert evidence["matched_provider_key"] == "openai"
     assert evidence["matched_url"] == "https://jobs.ashbyhq.com/openai"
     assert len(evidence["directory_record_sha256"]) == 64
+
+
+def test_pinned_directory_hashes_and_searches_the_same_csv_bytes():
+    body = b"ats,name,slug,url\nashby,OpenAI,openai,https://jobs.ashbyhq.com/openai\n"
+    digest = hashlib.sha256(body).hexdigest()
+
+    def respond(request):
+        if request.url.path.endswith("manifest.json"):
+            return httpx.Response(
+                200,
+                json={
+                    "generator": "ats-scrapers/0.2.0",
+                    "companies": {
+                        "csv": "https://storage.example/companies.csv",
+                        "parquet": "https://storage.example/companies.parquet",
+                        "sha256": digest,
+                    },
+                },
+                request=request,
+            )
+        if request.url.path.endswith("companies.csv"):
+            return httpx.Response(200, content=body, request=request)
+        raise AssertionError(f"unexpected environment-sensitive artifact: {request.url}")
+
+    with httpx.Client(transport=httpx.MockTransport(respond)) as client:
+        directory, source = load_pinned_ats_directory(
+            client, "https://storage.example/manifest.json"
+        )
+
+    evidence = ats_directory_match(
+        directory,
+        "OPENAI OPCO LLC",
+        "OpenAI",
+        "ashby",
+        "openai",
+        "https://jobs.ashbyhq.com/openai",
+    )
+    assert source["directory_source_sha256"] == digest
+    assert evidence["matched_company"] == "OpenAI"
+
+
+def test_materialized_verified_notes_follow_current_http_outcome():
+    from tools.discover_career_sources import verified_validation_notes
+
+    success = verified_validation_notes(
+        "OpenAI", "ashby", "openai", {"status_code": 200}
+    )
+    blocked = verified_validation_notes(
+        "OpenAI", "ashby", "openai", {"status_code": 403}
+    )
+
+    assert "block" not in success.casefold()
+    assert "HTTP 200" in success
+    assert "HTTP 403 automation block" in blocked
+
+
+def test_registry_rejects_stale_blocking_notes_after_http_200(tmp_path, monkeypatch):
+    stale = (
+        "Pinned ats-scrapers==0.2.0 directory record matched Acme to ashby/acme; "
+        "official ATS tenant returned HTTP 403 automation block during review on 2026-08-12."
+    )
+    targets = _load(tmp_path, [_row(validation_notes=stale)])
+    evidence = _ats_evidence(decision_reason=stale)
+    monkeypatch.setattr("career_alerts.registry._review_evidence", lambda: (evidence,))
+
+    errors = validate_registry(targets, require_complete=False)
+
+    assert any("notes do not match current structured HTTP" in error for error in errors)
 
 
 @pytest.mark.parametrize(
@@ -520,6 +583,104 @@ def test_http_200_evidence_requires_consistent_flags_and_final_url(
     errors = validate_registry(targets, require_complete=False)
 
     assert any("HTTP" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("reachable", False),
+        ("ok", False),
+        ("error", "fabricated error"),
+        ("final_url", None),
+        ("status_code", 404),
+    ],
+)
+def test_unsupported_candidate_http_evidence_is_semantically_validated(
+    tmp_path, monkeypatch, field, value
+):
+    target = _row(
+        career_url=None,
+        provider=None,
+        provider_key=None,
+        mapping_status="unsupported",
+        validation_notes="Exact candidate remained unsupported after official review.",
+    )
+    targets = _load(tmp_path, [target])
+    candidate_http = deepcopy(_ats_evidence()["http_validation"])
+    candidate_http[field] = value
+    evidence = _ats_evidence(
+        career_url=None,
+        provider=None,
+        provider_key=None,
+        decision="unsupported",
+        decision_reason=target["validation_notes"],
+        identity_evidence=None,
+        identity_method=None,
+        identity_source_url=None,
+        identity_source_final_url=None,
+        identity_source_status=None,
+        identity_observation=None,
+        http_validation=deepcopy(candidate_http),
+        candidate_http_validation=deepcopy(candidate_http),
+    )
+    monkeypatch.setattr("career_alerts.registry._review_evidence", lambda: (evidence,))
+
+    errors = validate_registry(targets, require_complete=False)
+
+    assert any("candidate HTTP" in error or "selected HTTP" in error for error in errors)
+
+
+def test_valid_direct_ats_candidate_cannot_be_replaced_by_html_selection(
+    tmp_path, monkeypatch
+):
+    targets = _load(
+        tmp_path,
+        [
+            _row(
+                career_url="https://acme.example/careers",
+                provider="html",
+                provider_key="acme.example",
+                validation_notes="official HTML selection",
+            )
+        ],
+    )
+    evidence = _ats_evidence(
+        career_url="https://acme.example/careers",
+        provider="html",
+        provider_key="acme.example",
+        decision_reason="official HTML selection",
+        identity_method="official_company_careers_link",
+        identity_source_url="https://acme.example/about",
+        identity_source_final_url="https://acme.example/about",
+        directory_package=None,
+        directory_version=None,
+        directory_source_url=None,
+        directory_source_sha256=None,
+        directory_record_sha256=None,
+        matched_query=None,
+        matched_company=None,
+        matched_provider=None,
+        matched_provider_key=None,
+        matched_url=None,
+        observed_title="Acme careers",
+        observed_company_tokens=["acme"],
+        observed_careers_links=["https://acme.example/careers"],
+        selected_matching_link="https://acme.example/careers",
+        http_validation={
+            "reachable": True,
+            "http_success": True,
+            "redirect_identity_ok": True,
+            "ok": True,
+            "status_code": 200,
+            "final_url": "https://acme.example/careers",
+            "error": None,
+        },
+    )
+    monkeypatch.setattr("career_alerts.registry._review_evidence", lambda: (evidence,))
+
+    errors = validate_registry(targets, require_complete=False)
+
+    assert any("supported direct ATS candidate must remain direct" in error for error in errors)
 
 
 def test_oracle_provider_key_must_match_site_path(tmp_path):
