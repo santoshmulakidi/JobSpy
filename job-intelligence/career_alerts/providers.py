@@ -626,7 +626,10 @@ class CareerProvider:
         sponsor_names = tuple(dict.fromkeys(item.sponsor_name for item in targets))
         jobs: list[CareerJob] = []
         for raw in raw_jobs:
-            apply_url = str(getattr(raw, "apply_url", None) or raw.url)  # type: ignore[attr-defined]
+            apply_url = _approved_apply_url(
+                target,
+                str(getattr(raw, "apply_url", None) or raw.url),  # type: ignore[attr-defined]
+            )
             provider_job_id = str(
                 getattr(raw, "ats_id", None)
                 or getattr(raw, "global_id", None)
@@ -803,6 +806,21 @@ def _looks_like_job_link(title: str, url: str) -> bool:
         return False
     candidate = f"{title} {parsed.path}".casefold()
     return any(token in candidate for token in ("job", "career", "position", "opening", "role"))
+
+
+def _approved_apply_url(target: SponsorTarget, apply_url: str) -> str:
+    """Upgrade same-host HTTP job links under a reviewed HTTPS career source."""
+    career = urlparse(target.career_url or "")
+    job = urlparse(apply_url)
+    if (
+        career.scheme == "https"
+        and job.scheme == "http"
+        and career.hostname
+        and job.hostname
+        and career.hostname.casefold() == job.hostname.casefold()
+    ):
+        return job._replace(scheme="https").geturl()
+    return apply_url
 
 
 def _stable_url_id(url: str) -> str:

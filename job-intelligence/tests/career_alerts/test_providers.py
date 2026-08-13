@@ -7,9 +7,11 @@ from urllib.parse import urlparse
 
 import pytest
 
+from career_alerts.emailer import EmailJob, render_email
 from career_alerts.matching import match_job
 from career_alerts.providers import CareerProvider, FetchResult, collect_sources
-from career_alerts.types import SponsorTarget
+from career_alerts.types import MatchedJob, SponsorTarget
+from career_alerts.windows import DeliveryWindow
 
 
 def target(
@@ -689,6 +691,47 @@ def test_smartrecruiters_listing_pagination_and_jobs_are_capped():
     assert requests == 2
     assert len(result.jobs) == 150
     assert result.error_code is None
+
+
+def test_same_host_http_apply_url_is_upgraded_under_reviewed_https_source():
+    source = target(career_url="https://block.xyz/careers/jobs")
+    raw = ats_job(
+        "greenhouse",
+        "block-ai-1",
+        "http://block.xyz/careers/jobs/456789",
+    )
+    normalized = CareerProvider.normalize_jobs([source], [raw])[0]
+    match = MatchedJob(normalized, frozenset({"ai_engineer"}), "DFW Metro")
+    now = datetime(2026, 8, 13, 18, tzinfo=UTC)
+
+    messages = render_email(
+        "ai_engineer",
+        DeliveryWindow(now, now, "Initial activation", "regular"),
+        [EmailJob(match, now)],
+    )
+
+    assert normalized.apply_url == "https://block.xyz/careers/jobs/456789"
+    assert len(messages) == 1
+
+
+def test_cross_host_http_apply_url_remains_rejected_by_email_renderer():
+    source = target(career_url="https://block.xyz/careers/jobs")
+    raw = ats_job(
+        "greenhouse",
+        "block-ai-2",
+        "http://redirect.example.test/careers/jobs/456790",
+    )
+    normalized = CareerProvider.normalize_jobs([source], [raw])[0]
+    match = MatchedJob(normalized, frozenset({"ai_engineer"}), "DFW Metro")
+    now = datetime(2026, 8, 13, 18, tzinfo=UTC)
+
+    assert normalized.apply_url.startswith("http://redirect.example.test/")
+    with pytest.raises(ValueError, match="HTTPS application URL"):
+        render_email(
+            "ai_engineer",
+            DeliveryWindow(now, now, "Initial activation", "regular"),
+            [EmailJob(match, now)],
+        )
 
 
 @pytest.mark.parametrize("status", [401, 403, 404])
