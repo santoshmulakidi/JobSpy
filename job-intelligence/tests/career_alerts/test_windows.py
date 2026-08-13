@@ -64,3 +64,9 @@ def test_naive_delivery_time_is_rejected():
 def test_time_outside_delivery_slots_is_rejected():
     with pytest.raises(ValueError, match="delivery slot"):
         delivery_window(datetime(2026, 8, 12, 11, 0, tzinfo=CENTRAL))
+
+
+@pytest.mark.parametrize("weekday", [15, 16])
+def test_weekend_invocation_is_rejected(weekday):
+    with pytest.raises(ValueError, match="weekend"):
+        delivery_window(datetime(2026, 8, weekday, 7, 0, tzinfo=CENTRAL))

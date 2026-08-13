@@ -71,8 +71,12 @@ def test_weekend_and_overnight_subject_prefixes():
     weekend = delivery_window(datetime(2026, 8, 17, 7, 0, tzinfo=CENTRAL))
     overnight = delivery_window(datetime(2026, 8, 18, 7, 0, tzinfo=CENTRAL))
 
-    assert subject("dotnet", weekend, 2).startswith("[Weekend Jobs]")
-    assert subject("ai_engineer", overnight, 3).startswith("[Overnight Jobs]")
+    assert subject("dotnet", weekend, 2) == (
+        "[Weekend Jobs Fri 7 PM–Mon 7 AM][.NET Developer] — 2 New Jobs"
+    )
+    assert subject("ai_engineer", overnight, 3) == (
+        "[Overnight Jobs 7 PM–7 AM][AI Engineer] — 3 New Jobs"
+    )
 
 
 def test_rendering_sorts_buckets_then_company_and_title():
@@ -115,10 +119,28 @@ def test_rendering_escapes_content_and_includes_dates_times_and_https_link():
     html = html_body(render_email("dotnet", REGULAR_WINDOW, [item])[0])
 
     assert "A&amp;B — R&amp;D &lt;Engineer&gt;" in html
+    assert "Area: Remote" in html
     assert "Remote &lt;USA&gt;" in html
     assert "Posted: Aug 10, 2026" in html
     assert "First seen: Aug 12, 2026 10:15 AM CT" in html
     assert 'href="https://careers.acme.test/jobs/1"' in html
+
+
+@pytest.mark.parametrize("bucket", ["Remote", "DFW Metro", "Other USA"])
+def test_rendering_visibly_labels_each_location_bucket(bucket):
+    message = render_email("dotnet", REGULAR_WINDOW, [email_job(bucket=bucket)])[0]
+
+    assert f"Area: {bucket}" in message.get_body(preferencelist=("plain",)).get_content()
+    assert f"Area: {bucket}" in html_body(message)
+
+
+def test_rendering_rejects_naive_posted_timestamp():
+    with pytest.raises(ValueError, match="posted_at must be timezone-aware"):
+        render_email(
+            "dotnet",
+            REGULAR_WINDOW,
+            [email_job(posted_at=datetime(2026, 8, 10, 23, 0))],  # noqa: DTZ001
+        )
 
 
 @pytest.mark.parametrize(
@@ -188,6 +210,43 @@ def test_smtp_mailer_loads_config_and_sends_with_required_transport(tmp_path):
     assert observed["message"]["From"] == "career-alerts@example.com"
     assert observed["message"]["To"] == "recipient@example.com"
     assert observed["closed"] is True
+
+
+def test_smtp_mailer_accepts_existing_sender_password_key(tmp_path):
+    config_path = tmp_path / "email_config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "sender": "career-alerts@example.com",
+                "recipient": "recipient@example.com",
+                "sender_password": "legacy-config-value",
+            }
+        )
+    )
+    observed = {}
+
+    class FakeSmtp:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            pass
+
+        def login(self, sender, password):
+            observed["login"] = (sender, password)
+
+        def send_message(self, _message):
+            pass
+
+    SmtpMailer(config_path=config_path, smtp_factory=FakeSmtp).send(EmailMessage())
+
+    assert observed["login"] == (
+        "career-alerts@example.com",
+        "legacy-config-value",
+    )
 
 
 @pytest.mark.parametrize(

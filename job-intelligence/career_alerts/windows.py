@@ -24,6 +24,8 @@ def delivery_window(now: datetime) -> DeliveryWindow:
     if now.tzinfo is None or now.utcoffset() is None:
         raise ValueError("delivery time must be timezone-aware")
     end = now.astimezone(CENTRAL)
+    if end.weekday() >= 5:
+        raise ValueError("weekend invocation is not a configured delivery slot")
     if any((end.minute, end.second, end.microsecond)) or end.hour not in {
         7,
         *_DAYTIME_STARTS,

@@ -43,15 +43,21 @@ def subject(
     """Build the stable role-specific subject for one delivery message."""
     if count < 0:
         raise ValueError("job count cannot be negative")
-    prefix = {
-        "regular": "3-Hour Jobs",
-        "overnight": "Overnight Jobs",
-        "weekend": "Weekend Jobs",
-    }[window.kind]
-    result = (
-        f"[{prefix}][{_STREAM_NAMES[stream]}] "
-        f"{_hour_label(window.end)} CT - {count} New Jobs"
-    )
+    if window.kind == "regular":
+        result = (
+            f"[3-Hour Jobs][{_STREAM_NAMES[stream]}] "
+            f"{_hour_label(window.end)} CT - {count} New Jobs"
+        )
+    elif window.kind == "overnight":
+        result = (
+            f"[Overnight Jobs 7 PM–7 AM][{_STREAM_NAMES[stream]}] "
+            f"— {count} New Jobs"
+        )
+    else:
+        result = (
+            f"[Weekend Jobs Fri 7 PM–Mon 7 AM][{_STREAM_NAMES[stream]}] "
+            f"— {count} New Jobs"
+        )
     if part is not None:
         current, total = part
         if not (1 <= current <= total):
@@ -69,6 +75,9 @@ def render_email(
     ordered = sorted(jobs, key=_sort_key)
     for item in ordered:
         _validated_application_url(item.match.job.apply_url)
+        _require_aware(item.first_seen_at, "first_seen_at")
+        if item.match.job.posted_at is not None:
+            _require_aware(item.match.job.posted_at, "posted_at")
 
     chunks = [ordered[index : index + MAX_JOBS_PER_MESSAGE] for index in range(0, len(ordered), MAX_JOBS_PER_MESSAGE)]
     if not chunks:
@@ -124,9 +133,9 @@ class SmtpMailer:
             raise TypeError("email config must be an object")
         sender = _config_text(payload, "sender", "sender_email")
         recipient = _config_text(payload, "recipient", "recipient_email")
-        password = _config_text(payload, "app_password")
+        password = _config_text(payload, "app_password", "sender_password")
         if not sender or not recipient or not password:
-            raise ValueError("email config requires sender, recipient, and app_password")
+            raise ValueError("email config requires sender, recipient, and sender password")
         return sender, recipient, password
 
 
@@ -166,6 +175,7 @@ def _plain_body(
         lines.extend(
             [
                 f"{job.company} — {job.title}",
+                f"Area: {item.match.location_bucket}",
                 f"Location: {job.location}",
                 *([f"Posted: {_date_label(job.posted_at)}"] if job.posted_at else []),
                 f"First seen: {_datetime_label(item.first_seen_at)}",
@@ -197,6 +207,7 @@ def _html_body(
         rendered_jobs.append(
             '<article class="job">'
             f"<h2>{escape(job.company)} — {escape(job.title)}</h2>"
+            f"<div>Area: {escape(item.match.location_bucket)}</div>"
             f"<div>Location: {escape(job.location)}</div>"
             f"{posted}"
             f"<div>First seen: {escape(_datetime_label(item.first_seen_at))}</div>"
@@ -223,10 +234,14 @@ def _date_label(value: datetime) -> str:
 
 
 def _datetime_label(value: datetime) -> str:
-    if value.tzinfo is None or value.utcoffset() is None:
-        raise ValueError("first_seen_at must be timezone-aware")
+    _require_aware(value, "first_seen_at")
     local = value.astimezone(CENTRAL)
     return f"{_date_label(local)} {_hour_minute_label(local)} CT"
+
+
+def _require_aware(value: datetime, field: str) -> None:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError(f"{field} must be timezone-aware")
 
 
 def _hour_label(value: datetime) -> str:
