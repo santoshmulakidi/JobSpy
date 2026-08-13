@@ -162,4 +162,4 @@ def test_shared_source_targets_are_passed_once_to_collector(tmp_path):
 
     runner.collect(send_email=False, initial=False)
 
-    assert [item.source_key for item in calls[0]] == ["greenhouse:acme", "greenhouse:acme"]
+    assert [item.source_key for item in calls[0]] == ["greenhouse:acme"]

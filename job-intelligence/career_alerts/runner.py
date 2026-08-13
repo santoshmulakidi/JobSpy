@@ -86,9 +86,7 @@ class CareerAlertRunner:
         errors = self.registry_validator(targets)
         if errors:
             raise ValueError("registry invalid: " + "; ".join(errors))
-        active_targets = [
-            target for group in _group_shared_sources(targets) for target in group
-        ]
+        active_targets = _source_representatives(targets)
         results = _await(self.collector(active_targets))
         now = self.clock()
         matches: list[MatchedJob] = []
@@ -136,10 +134,10 @@ def _window(now: datetime, initial: bool) -> DeliveryWindow:
     return delivery_window(now)
 
 
-def _group_shared_sources(targets: list[SponsorTarget]) -> list[list[SponsorTarget]]:
-    """Preserve each verified source group for collect_sources' one-fetch grouping."""
-    grouped: dict[str, list[SponsorTarget]] = {}
+def _source_representatives(targets: list[SponsorTarget]) -> list[SponsorTarget]:
+    """Select one reviewed target for each distinct verified provider source."""
+    grouped: dict[str, SponsorTarget] = {}
     for target in targets:
         if target.mapping_status == "verified":
-            grouped.setdefault(target.source_key, []).append(target)
+            grouped.setdefault(target.source_key, target)
     return list(grouped.values())
