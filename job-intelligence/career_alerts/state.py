@@ -65,6 +65,7 @@ class CareerAlertState:
                         observed,
                     ),
                 )
+                _reconcile_http_identity(connection, job, job_key)
                 for stream in match.streams:
                     connection.execute(
                         """
@@ -290,6 +291,70 @@ def _canonical_url(url: str) -> str:
     parsed = urlsplit(url.strip())
     path = parsed.path.rstrip("/") or "/"
     return urlunsplit((parsed.scheme.lower(), parsed.netloc.lower(), path, "", ""))
+
+
+def _reconcile_http_identity(
+    connection: sqlite3.Connection,
+    job: CareerJob,
+    new_job_key: str,
+) -> None:
+    """Merge the exact HTTP predecessor of a normalized same-host HTTPS job."""
+    new_url = _canonical_url(job.apply_url)
+    parsed_new = urlsplit(new_url)
+    if parsed_new.scheme != "https" or not parsed_new.hostname:
+        return
+    candidates = connection.execute(
+        """
+        SELECT job_key, apply_url, first_seen_at
+        FROM jobs
+        WHERE source_key = ? AND provider = ? AND provider_job_id = ?
+          AND job_key != ?
+        """,
+        (job.source_key, job.provider, job.provider_job_id, new_job_key),
+    ).fetchall()
+    for old in candidates:
+        old_url = _canonical_url(old["apply_url"])
+        parsed_old = urlsplit(old_url)
+        if (
+            parsed_old.scheme != "http"
+            or parsed_old.hostname != parsed_new.hostname
+            or parsed_old._replace(scheme="https").geturl() != new_url
+        ):
+            continue
+        old_job_key = old["job_key"]
+        connection.execute(
+            """
+            UPDATE jobs
+            SET first_seen_at = CASE
+                WHEN first_seen_at > ? THEN ? ELSE first_seen_at END
+            WHERE job_key = ?
+            """,
+            (old["first_seen_at"], old["first_seen_at"], new_job_key),
+        )
+        connection.execute(
+            """
+            INSERT INTO job_streams (
+                job_key, stream, location_bucket, observed_at, delivered_at
+            )
+            SELECT ?, stream, location_bucket, observed_at, delivered_at
+            FROM job_streams WHERE job_key = ?
+            ON CONFLICT(job_key, stream) DO UPDATE SET
+                delivered_at = COALESCE(
+                    job_streams.delivered_at, excluded.delivered_at
+                )
+            """,
+            (new_job_key, old_job_key),
+        )
+        connection.execute(
+            """
+            INSERT OR IGNORE INTO delivery_jobs (delivery_run_id, job_key)
+            SELECT delivery_run_id, ? FROM delivery_jobs WHERE job_key = ?
+            """,
+            (new_job_key, old_job_key),
+        )
+        connection.execute("DELETE FROM delivery_jobs WHERE job_key = ?", (old_job_key,))
+        connection.execute("DELETE FROM job_streams WHERE job_key = ?", (old_job_key,))
+        connection.execute("DELETE FROM jobs WHERE job_key = ?", (old_job_key,))
 
 
 def _timestamp(value: datetime) -> str:

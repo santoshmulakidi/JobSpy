@@ -1,19 +1,27 @@
+import sqlite3
 from datetime import UTC, datetime
 
 import pytest
 
+from career_alerts.emailer import EmailJob, render_email
 from career_alerts.providers import FetchResult
 from career_alerts.state import CareerAlertState
 from career_alerts.types import CareerJob, MatchedJob
+from career_alerts.windows import DeliveryWindow
 
 
 def dt(value: str) -> datetime:
     return datetime.fromisoformat(value).astimezone(UTC)
 
 
-def matched(*streams: str, provider_job_id: str = "123") -> MatchedJob:
+def matched(
+    *streams: str,
+    provider_job_id: str = "123",
+    source_key: str = "greenhouse:acme",
+    apply_url: str = "https://acme.test/jobs/123?source=board#details",
+) -> MatchedJob:
     job = CareerJob(
-        source_key="greenhouse:acme",
+        source_key=source_key,
         provider="greenhouse",
         provider_job_id=provider_job_id,
         company="Acme",
@@ -21,7 +29,7 @@ def matched(*streams: str, provider_job_id: str = "123") -> MatchedJob:
         title="Senior .NET Developer",
         location="Dallas, TX",
         description="Build APIs",
-        apply_url="https://acme.test/jobs/123?source=board#details",
+        apply_url=apply_url,
         posted_at=None,
         is_remote=False,
     )
@@ -114,3 +122,91 @@ def test_pending_exposes_immutable_first_seen_timestamp(tmp_path, matched_dotnet
     state.upsert_matches([matched_dotnet], dt("2026-08-12T12:00:00Z"))
 
     assert state.pending("dotnet")[0][2] == first
+
+
+def test_http_to_same_host_https_reconciles_to_one_pending_job(tmp_path):
+    state = CareerAlertState(tmp_path / "state.sqlite3")
+    old = matched(
+        "ai_engineer",
+        provider_job_id="block-1",
+        source_key="greenhouse:block",
+        apply_url="http://block.xyz/careers/jobs/block-1",
+    )
+    current = matched(
+        "ai_engineer",
+        provider_job_id="block-1",
+        source_key="greenhouse:block",
+        apply_url="https://block.xyz/careers/jobs/block-1",
+    )
+    state.upsert_matches([old], dt("2026-08-12T10:00:00Z"))
+
+    state.upsert_matches([current], dt("2026-08-12T12:00:00Z"))
+
+    pending = state.pending("ai_engineer")
+    assert len(pending) == 1
+    assert pending[0][1].job.apply_url == "https://block.xyz/careers/jobs/block-1"
+    assert pending[0][2] == dt("2026-08-12T10:00:00Z")
+    window_time = dt("2026-08-12T12:00:00Z")
+    messages = render_email(
+        "ai_engineer",
+        DeliveryWindow(window_time, window_time, "Initial activation", "regular"),
+        [EmailJob(pending[0][1], pending[0][2])],
+    )
+    assert len(messages) == 1
+
+
+def test_delivered_http_job_migrates_history_and_stays_delivered(tmp_path):
+    state = CareerAlertState(tmp_path / "state.sqlite3")
+    old = matched(
+        "ai_engineer",
+        provider_job_id="block-2",
+        source_key="greenhouse:block",
+        apply_url="http://block.xyz/careers/jobs/block-2",
+    )
+    current = matched(
+        "ai_engineer",
+        provider_job_id="block-2",
+        source_key="greenhouse:block",
+        apply_url="https://block.xyz/careers/jobs/block-2",
+    )
+    state.upsert_matches([old], dt("2026-08-12T10:00:00Z"))
+    old_key = state.pending("ai_engineer")[0][0]
+    state.record_delivery(
+        "ai_engineer", [old_key], dt("2026-08-12T11:00:00Z"), success=True
+    )
+
+    state.upsert_matches([current], dt("2026-08-12T12:00:00Z"))
+
+    assert state.pending("ai_engineer") == []
+    with sqlite3.connect(state.path) as connection:
+        migrated_key = connection.execute(
+            "SELECT job_key FROM jobs WHERE apply_url LIKE 'https://block.xyz/%'"
+        ).fetchone()[0]
+        assert connection.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] == 1
+        assert connection.execute(
+            "SELECT job_key FROM delivery_jobs"
+        ).fetchone()[0] == migrated_key
+
+
+def test_http_job_is_not_reconciled_to_different_https_host(tmp_path):
+    state = CareerAlertState(tmp_path / "state.sqlite3")
+    old = matched(
+        "ai_engineer",
+        provider_job_id="block-3",
+        source_key="greenhouse:block",
+        apply_url="http://redirect.example.test/careers/jobs/block-3",
+    )
+    current = matched(
+        "ai_engineer",
+        provider_job_id="block-3",
+        source_key="greenhouse:block",
+        apply_url="https://block.xyz/careers/jobs/block-3",
+    )
+    state.upsert_matches([old], dt("2026-08-12T10:00:00Z"))
+
+    state.upsert_matches([current], dt("2026-08-12T12:00:00Z"))
+
+    assert {row[1].job.apply_url for row in state.pending("ai_engineer")} == {
+        "http://redirect.example.test/careers/jobs/block-3",
+        "https://block.xyz/careers/jobs/block-3",
+    }
