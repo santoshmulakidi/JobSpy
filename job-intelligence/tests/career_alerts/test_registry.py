@@ -630,6 +630,137 @@ def test_unsupported_candidate_http_evidence_is_semantically_validated(
     assert any("candidate HTTP" in error or "selected HTTP" in error for error in errors)
 
 
+@pytest.mark.parametrize("missing_field", ["http_validation", "candidate_http_validation"])
+def test_discovered_unsupported_candidate_requires_both_http_objects(
+    tmp_path, monkeypatch, missing_field
+):
+    reason = (
+        "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page "
+        "identity evidence linked Acme to the reviewed HTML source on 2026-08-12."
+    )
+    targets = _load(
+        tmp_path,
+        [
+            _row(
+                career_url=None,
+                provider=None,
+                provider_key=None,
+                mapping_status="unsupported",
+                validation_notes=reason,
+            )
+        ],
+    )
+    evidence = _ats_evidence(
+        candidate_provider="html",
+        candidate_provider_key="acme.example",
+        candidate_url="https://acme.example/careers",
+        career_url=None,
+        provider=None,
+        provider_key=None,
+        decision="unsupported",
+        decision_reason=reason,
+        unsupported_reason_category="html_identity_unverified",
+        evidence_method="reviewed_candidate",
+        evidence_status="identity_unverified",
+        identity_evidence=None,
+        identity_method=None,
+        identity_source_url=None,
+        identity_source_final_url=None,
+        identity_source_status=None,
+        identity_observation=None,
+        http_validation=deepcopy(_ats_evidence()["http_validation"]),
+        candidate_http_validation=deepcopy(_ats_evidence()["http_validation"]),
+    )
+    evidence[missing_field] = None
+    monkeypatch.setattr("career_alerts.registry._review_evidence", lambda: (evidence,))
+
+    errors = validate_registry(targets, require_complete=False)
+
+    assert any(f"requires {missing_field}" in error for error in errors)
+
+
+def test_stale_unsupported_http_reason_is_rejected(tmp_path, monkeypatch):
+    stale = "Candidate returned HTTP 500 during review and remains unsupported."
+    targets = _load(
+        tmp_path,
+        [
+            _row(
+                career_url=None,
+                provider=None,
+                provider_key=None,
+                mapping_status="unsupported",
+                validation_notes=stale,
+            )
+        ],
+    )
+    evidence = _ats_evidence(
+        candidate_provider="html",
+        candidate_provider_key="acme.example",
+        candidate_url="https://acme.example/careers",
+        career_url=None,
+        provider=None,
+        provider_key=None,
+        decision="unsupported",
+        decision_reason=stale,
+        unsupported_reason_category="html_identity_unverified",
+        evidence_method="reviewed_candidate",
+        evidence_status="identity_unverified",
+        identity_evidence=None,
+        identity_method=None,
+        identity_source_url=None,
+        identity_source_final_url=None,
+        identity_source_status=None,
+        identity_observation=None,
+        http_validation=deepcopy(_ats_evidence()["http_validation"]),
+        candidate_http_validation=deepcopy(_ats_evidence()["http_validation"]),
+    )
+    monkeypatch.setattr("career_alerts.registry._review_evidence", lambda: (evidence,))
+
+    errors = validate_registry(targets, require_complete=False)
+
+    assert any("unsupported reason does not match current evidence" in error for error in errors)
+
+
+def test_not_discovered_evidence_allows_no_http_objects(tmp_path, monkeypatch):
+    reason = "No career source candidate was discovered for Acme during review on 2026-08-12."
+    targets = _load(
+        tmp_path,
+        [
+            _row(
+                career_url=None,
+                provider=None,
+                provider_key=None,
+                mapping_status="unsupported",
+                validation_notes=reason,
+            )
+        ],
+    )
+    evidence = _ats_evidence(
+        candidate_url=None,
+        candidate_provider=None,
+        candidate_provider_key=None,
+        candidate_http_validation=None,
+        career_url=None,
+        provider=None,
+        provider_key=None,
+        http_validation=None,
+        decision="unsupported",
+        decision_reason=reason,
+        unsupported_reason_category="not_discovered",
+        evidence_method="not_discovered",
+        evidence_status="not_discovered",
+        identity_evidence=None,
+        identity_method=None,
+        identity_source_url=None,
+        identity_source_final_url=None,
+        identity_source_status=None,
+        identity_observation=None,
+    )
+    monkeypatch.setattr("career_alerts.registry._review_evidence", lambda: (evidence,))
+
+    assert validate_registry(targets, require_complete=False) == []
+
+
 def test_valid_direct_ats_candidate_cannot_be_replaced_by_html_selection(
     tmp_path, monkeypatch
 ):
@@ -845,6 +976,9 @@ def test_review_artifact_reproduces_registry_and_preserves_evidence():
             "observed_company_tokens",
             "observed_careers_links",
             "selected_matching_link",
+            "unsupported_reason_category",
+            "evidence_method",
+            "evidence_status",
             "decision",
             "decision_reason",
         }
@@ -854,7 +988,8 @@ def test_review_artifact_reproduces_registry_and_preserves_evidence():
     assert all(
         not row["http_validation"]["http_success"]
         for row in evidence
-        if row["http_validation"]["status_code"] in {403, 404, 406}
+        if row["http_validation"] is not None
+        and row["http_validation"]["status_code"] in {403, 404, 406}
     )
     rejected = next(row for row in evidence if row["rank"] == 201)
     assert rejected["decision"] == "unsupported"

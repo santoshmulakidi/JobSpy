@@ -8,7 +8,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Amazon to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 2,
@@ -19,7 +19,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Tata Consultancy Services to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 3,
@@ -30,7 +30,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "ats-scrapers==0.2.0 find_company returned no exact sponsor/company record matching this provider, key, and URL during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Google to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 4,
@@ -41,7 +41,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Infosys to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 5,
@@ -52,7 +52,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Walmart to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 6,
@@ -63,7 +63,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Amazon to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 7,
@@ -74,7 +74,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Microsoft to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 8,
@@ -85,7 +85,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "ats-scrapers==0.2.0 find_company returned no exact sponsor/company record matching this provider, key, and URL during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Oracle to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 9,
@@ -96,7 +96,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate returned HTTP 403 and no captured independent official-page identity evidence linked Cognizant to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 10,
@@ -107,7 +107,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Amazon to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 11,
@@ -118,7 +118,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked IBM to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 12,
@@ -129,7 +129,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked HCLTech to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 13,
@@ -140,7 +140,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked EY to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 14,
@@ -151,7 +151,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Salesforce to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 15,
@@ -162,7 +162,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Wipro to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 16,
@@ -173,7 +173,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Capgemini to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 17,
@@ -184,7 +184,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Accenture to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 18,
@@ -195,7 +195,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate returned HTTP 404 and no exact ats-scrapers==0.2.0 directory record linked Bloomberg to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 19,
@@ -206,7 +206,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked McKinsey & Company to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 20,
@@ -217,7 +217,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Tech Mahindra to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 21,
@@ -228,7 +228,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Deloitte to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 22,
@@ -239,7 +239,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official careers source is hosted on linkedin.com, a domain forbidden by registry policy; no separate approved source was confirmed on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for LinkedIn during review on 2026-08-12."
   },
   {
     "rank": 23,
@@ -250,7 +250,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate returned HTTP 406 and no captured independent official-page identity evidence linked LTIMindtree to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 24,
@@ -261,7 +261,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Intuit to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 25,
@@ -272,7 +272,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Amazon to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 26,
@@ -283,7 +283,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked CGI to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 27,
@@ -294,7 +294,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Adobe to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 28,
@@ -305,7 +305,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "ats-scrapers==0.2.0 find_company returned no exact sponsor/company record matching this provider, key, and URL during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked ByteDance / TikTok to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 29,
@@ -327,7 +327,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Optum to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 31,
@@ -338,7 +338,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked eBay to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 32,
@@ -349,7 +349,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate returned HTTP 403 and no captured independent official-page identity evidence linked UST to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 33,
@@ -360,7 +360,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Hewlett Packard Enterprise to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 34,
@@ -371,7 +371,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Palo Alto Networks to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 35,
@@ -382,7 +382,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate returned HTTP 404 and no captured independent official-page identity evidence linked KPMG to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 36,
@@ -393,7 +393,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Compunnel to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 37,
@@ -404,7 +404,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Boston Consulting Group to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 38,
@@ -415,7 +415,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "ats-scrapers==0.2.0 find_company returned no exact sponsor/company record matching this provider, key, and URL during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate returned HTTP 406 and no exact ats-scrapers==0.2.0 directory record linked Uber to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 39,
@@ -426,7 +426,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 429 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate returned HTTP 429 and no captured independent official-page identity evidence linked Meta to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 40,
@@ -437,7 +437,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Expedia Group to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 41,
@@ -448,7 +448,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Mphasis to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 42,
@@ -459,7 +459,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "ats-scrapers==0.2.0 find_company returned no exact sponsor/company record matching this provider, key, and URL during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked ByteDance / TikTok to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 43,
@@ -481,7 +481,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked SAP to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 45,
@@ -492,7 +492,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked EXL to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 46,
@@ -503,7 +503,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No official careers domain or first-party ATS tenant could be confidently confirmed during review on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for TT COMMERCE AND GLOBAL SERVICES LLC during review on 2026-08-12."
   },
   {
     "rank": 47,
@@ -514,7 +514,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate returned HTTP 403 and no captured independent official-page identity evidence linked ADP to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 48,
@@ -525,7 +525,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Nokia to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 49,
@@ -536,7 +536,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Charter Communications / Spectrum to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 50,
@@ -547,7 +547,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Randstad Digital to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 51,
@@ -558,7 +558,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked MathWorks to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 52,
@@ -569,7 +569,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked The Home Depot to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 53,
@@ -580,7 +580,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked PwC to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 54,
@@ -602,7 +602,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Deloitte to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 56,
@@ -613,7 +613,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Capgemini to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 57,
@@ -624,7 +624,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate returned HTTP 403 and no captured independent official-page identity evidence linked DoorDash to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 58,
@@ -646,7 +646,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate returned HTTP 404 and no captured independent official-page identity evidence linked T-Mobile to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 60,
@@ -657,7 +657,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Autodesk to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 61,
@@ -668,7 +668,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked L&T Technology Services to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 62,
@@ -690,7 +690,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate returned HTTP 403 and no captured independent official-page identity evidence linked WSP to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 64,
@@ -701,7 +701,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Oak Ridge National Laboratory to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 65,
@@ -712,7 +712,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Amgen to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 66,
@@ -734,7 +734,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Siemens Digital Industries Software to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 68,
@@ -745,7 +745,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Bain & Company to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 69,
@@ -767,7 +767,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Deloitte to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 71,
@@ -778,7 +778,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "The discovered inflightcloud tenant could not be confidently tied to Akamai by auditable official-domain evidence during re-review on 2026-08-12."
+    "validation_notes": "Candidate returned HTTP 403 and no captured independent official-page identity evidence linked Akamai to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 72,
@@ -800,7 +800,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Thermo Fisher Scientific to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 74,
@@ -811,7 +811,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked VMware / Broadcom to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 75,
@@ -822,7 +822,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked AECOM to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 76,
@@ -833,7 +833,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked CVS Health to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 77,
@@ -844,7 +844,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate returned HTTP 403 and no captured independent official-page identity evidence linked Nutanix to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 78,
@@ -855,7 +855,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Chewy to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 79,
@@ -866,7 +866,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked GlobalLogic to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 80,
@@ -888,7 +888,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate returned HTTP 403 and no captured independent official-page identity evidence linked Verizon to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 82,
@@ -899,7 +899,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Dana-Farber Cancer Institute to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 83,
@@ -910,7 +910,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Honeywell to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 84,
@@ -921,7 +921,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Esri to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 85,
@@ -932,7 +932,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Staples to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 86,
@@ -943,7 +943,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Synopsys to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 87,
@@ -954,7 +954,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Wayfair to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 88,
@@ -965,7 +965,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate returned HTTP 404 and no exact ats-scrapers==0.2.0 directory record linked Genpact to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 89,
@@ -976,7 +976,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Slalom to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 90,
@@ -987,7 +987,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official SLK career board did not expose a stable public company-wide source that could be confidently validated on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for SLK AMERICA INC during review on 2026-08-12."
   },
   {
     "rank": 91,
@@ -998,7 +998,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Atos to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 92,
@@ -1009,7 +1009,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Arm to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 93,
@@ -1020,7 +1020,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Comcast to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 94,
@@ -1042,7 +1042,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Grant Thornton to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 96,
@@ -1053,7 +1053,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate returned HTTP 404 and no exact ats-scrapers==0.2.0 directory record linked Netflix to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 97,
@@ -1064,7 +1064,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Docusign to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 98,
@@ -1075,7 +1075,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Lawrence Berkeley National Laboratory to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 99,
@@ -1086,7 +1086,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Coforge to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 100,
@@ -1097,7 +1097,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Sponsor identity could not be confidently tied to a single official Mankind careers source during review on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for MANKIND AMERICA LLC during review on 2026-08-12."
   },
   {
     "rank": 101,
@@ -1119,7 +1119,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "ats-scrapers==0.2.0 find_company returned no exact sponsor/company record matching this provider, key, and URL during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked ByteDance / TikTok to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 103,
@@ -1130,7 +1130,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked F5 to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 104,
@@ -1141,7 +1141,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Gilead Sciences to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 105,
@@ -1152,7 +1152,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked ZS Associates to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 106,
@@ -1163,7 +1163,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked DISH to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 107,
@@ -1174,7 +1174,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked DISH to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 108,
@@ -1185,7 +1185,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Howard Hughes Medical Institute to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 109,
@@ -1196,7 +1196,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Genentech to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 110,
@@ -1207,7 +1207,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Infinite Computer Solutions to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 111,
@@ -1218,7 +1218,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Ascendion to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 112,
@@ -1229,7 +1229,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked AT&T to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 113,
@@ -1240,7 +1240,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No stable public official careers board for this sponsor was confirmed during review on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for MSR TECHNOLOGY GROUP LLC during review on 2026-08-12."
   },
   {
     "rank": 114,
@@ -1262,7 +1262,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "ats-scrapers==0.2.0 find_company returned no exact sponsor/company record matching this provider, key, and URL during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Cotiviti to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 116,
@@ -1273,7 +1273,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked RELX / LexisNexis to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 117,
@@ -1284,7 +1284,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked ValueMomentum to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 118,
@@ -1295,7 +1295,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Yahoo to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 119,
@@ -1306,7 +1306,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Atlassian to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 120,
@@ -1317,7 +1317,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Birlasoft to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 121,
@@ -1328,7 +1328,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "ats-scrapers==0.2.0 find_company returned no exact sponsor/company record matching this provider, key, and URL during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Safeway / Albertsons to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 122,
@@ -1339,7 +1339,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Brookhaven National Laboratory to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 123,
@@ -1361,7 +1361,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Fiserv to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 125,
@@ -1372,7 +1372,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate returned HTTP 404 and no captured independent official-page identity evidence linked Kforce to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 126,
@@ -1383,7 +1383,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Spotify to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 127,
@@ -1394,7 +1394,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate returned HTTP 404 and no exact ats-scrapers==0.2.0 directory record linked Waymo to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 128,
@@ -1405,7 +1405,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Ansys to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 129,
@@ -1416,7 +1416,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked FIS to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 130,
@@ -1427,7 +1427,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked IQVIA to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 131,
@@ -1438,7 +1438,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Target to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 132,
@@ -1449,7 +1449,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Fortinet to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 133,
@@ -1460,7 +1460,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Insight Global to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 134,
@@ -1471,7 +1471,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Publicis Groupe to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 135,
@@ -1482,7 +1482,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate returned HTTP 403 and no captured independent official-page identity evidence linked National Institutes of Health to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 136,
@@ -1493,7 +1493,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "ats-scrapers==0.2.0 find_company returned no exact sponsor/company record matching this provider, key, and URL during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Macy's to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 137,
@@ -1504,7 +1504,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No stable public official careers board for this sponsor was confirmed during review on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for QUADRANT TECHNOLOGIES LLC during review on 2026-08-12."
   },
   {
     "rank": 138,
@@ -1515,7 +1515,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Battelle to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 139,
@@ -1537,7 +1537,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Snap to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 141,
@@ -1548,7 +1548,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Anthropic to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 142,
@@ -1559,7 +1559,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Dassault Systemes to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 143,
@@ -1570,7 +1570,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Lowe's to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 144,
@@ -1581,7 +1581,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Stantec to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 145,
@@ -1592,7 +1592,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Birlasoft to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 146,
@@ -1603,7 +1603,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Equinix to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 147,
@@ -1614,7 +1614,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate returned HTTP 404 and no captured independent official-page identity evidence linked Vertex Pharmaceuticals to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 148,
@@ -1625,7 +1625,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No stable public official careers board for this sponsor was confirmed during review on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for ZIFO TECHNOLOGIES INC during review on 2026-08-12."
   },
   {
     "rank": 149,
@@ -1636,7 +1636,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Cyient to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 150,
@@ -1647,7 +1647,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Innova Solutions to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 151,
@@ -1658,7 +1658,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Instacart to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 152,
@@ -1669,7 +1669,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Nordstrom to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 153,
@@ -1680,7 +1680,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Thermo Fisher Scientific to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 154,
@@ -1691,7 +1691,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Audible to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 155,
@@ -1702,7 +1702,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Credit Karma to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 156,
@@ -1713,7 +1713,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate returned HTTP 403 and no captured independent official-page identity evidence linked Kingston Technology to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 157,
@@ -1735,7 +1735,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Visionet to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 159,
@@ -1746,7 +1746,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Xoriant to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 160,
@@ -1757,7 +1757,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked 7-Eleven to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 161,
@@ -1768,7 +1768,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Akkodis to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 162,
@@ -1779,7 +1779,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official careers source is hosted on indeed.com, a domain forbidden by registry policy; no separate approved source was confirmed on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for Indeed during review on 2026-08-12."
   },
   {
     "rank": 163,
@@ -1790,7 +1790,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Sponsor name is ambiguous and no exact official employer careers source was confidently confirmed on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for STRATEGIC SYSTEMS INC during review on 2026-08-12."
   },
   {
     "rank": 164,
@@ -1801,7 +1801,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate returned HTTP 403 and no captured independent official-page identity evidence linked Regeneron to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 165,
@@ -1812,7 +1812,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Siemens Energy to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 166,
@@ -1823,7 +1823,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Comcast to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 167,
@@ -1834,7 +1834,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Datadog to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 168,
@@ -1845,7 +1845,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate returned HTTP 403 and no captured independent official-page identity evidence linked EPAM to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 169,
@@ -1856,7 +1856,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Infinite Computer Solutions to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 170,
@@ -1867,7 +1867,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No stable public official careers board for this sponsor was confirmed during review on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for AMARTHY IT SOLUTIONS LLC during review on 2026-08-12."
   },
   {
     "rank": 171,
@@ -1900,7 +1900,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Miracle Software Systems to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 174,
@@ -1911,7 +1911,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "ats-scrapers==0.2.0 find_company returned no exact sponsor/company record matching this provider, key, and URL during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Oracle to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 175,
@@ -1922,7 +1922,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Arcadis to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 176,
@@ -1933,7 +1933,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Guidewire to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 177,
@@ -1944,7 +1944,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate returned HTTP 403 and no captured independent official-page identity evidence linked Hexaware to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 178,
@@ -1955,7 +1955,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked HubSpot to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 179,
@@ -1966,7 +1966,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Tata Elxsi to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 180,
@@ -1977,7 +1977,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked V-Soft Consulting to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 181,
@@ -1999,7 +1999,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate returned HTTP 404 and no captured independent official-page identity evidence linked BILL to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 183,
@@ -2010,7 +2010,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Coforge to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 184,
@@ -2021,7 +2021,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate returned HTTP 404 and no captured independent official-page identity evidence linked ITC Infotech to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 185,
@@ -2032,7 +2032,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Perficient to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 186,
@@ -2043,7 +2043,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Quest Global to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 187,
@@ -2054,7 +2054,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Riot Games to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 188,
@@ -2065,7 +2065,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate returned HTTP 404 and no exact ats-scrapers==0.2.0 directory record linked Analysis Group to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 189,
@@ -2076,7 +2076,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate returned HTTP 404 and no captured independent official-page identity evidence linked Charles River Associates to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 190,
@@ -2087,7 +2087,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Sponsor identity could not be confidently distinguished from similarly named HCL entities during source review on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for HCL GLOBAL SYSTEMS INC during review on 2026-08-12."
   },
   {
     "rank": 191,
@@ -2109,7 +2109,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Publicis Groupe to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 193,
@@ -2120,7 +2120,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate returned HTTP 403 and no captured independent official-page identity evidence linked Tata Technologies to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 194,
@@ -2131,7 +2131,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Zensar Technologies to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 195,
@@ -2142,7 +2142,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Sponsor name is ambiguous and no exact official employer careers source was confidently confirmed on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for AMALGAM TECHNOLOGIES INC during review on 2026-08-12."
   },
   {
     "rank": 196,
@@ -2153,7 +2153,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Sponsor name is ambiguous and no exact official employer careers source was confidently confirmed on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for DATAFLAKE LLC during review on 2026-08-12."
   },
   {
     "rank": 197,
@@ -2164,7 +2164,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked NetApp to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 198,
@@ -2186,7 +2186,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official organization site did not expose a stable public jobs source that could be validated on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for THE SPHERE INSTITUTE during review on 2026-08-12."
   },
   {
     "rank": 200,
@@ -2197,7 +2197,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Activision to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 201,
@@ -2208,7 +2208,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "The previously reviewed careers URL now redirects to a generic SAP recruiting product page, so no current official Qualitest job source could be confidently evidenced on 2026-08-12."
+    "validation_notes": "Candidate returned HTTP 403 and no captured independent official-page identity evidence linked Qualitest to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 202,
@@ -2219,7 +2219,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate returned HTTP 404 and no captured independent official-page identity evidence linked IntraEdge to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 203,
@@ -2230,7 +2230,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 500 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked RELX / LexisNexis to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 204,
@@ -2241,7 +2241,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Merck to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 205,
@@ -2263,7 +2263,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked STV to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 207,
@@ -2274,7 +2274,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official career content did not expose a stable public machine-readable job source that could be validated on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for USACS MEDICAL GROUP LTD during review on 2026-08-12."
   },
   {
     "rank": 208,
@@ -2296,7 +2296,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No stable public official careers board for this exact sponsor was confirmed during review on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for ANTRA INC during review on 2026-08-12."
   },
   {
     "rank": 210,
@@ -2318,7 +2318,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Blizzard Entertainment to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 212,
@@ -2329,7 +2329,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Epitec to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 213,
@@ -2340,7 +2340,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked HTC Global Services to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 214,
@@ -2351,7 +2351,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Informatica to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 215,
@@ -2362,7 +2362,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Sponsor name is ambiguous and no exact official employer careers source was confidently confirmed on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for SAI BUSINESS SOLUTIONS LLC during review on 2026-08-12."
   },
   {
     "rank": 216,
@@ -2373,7 +2373,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate returned HTTP 403 and no captured independent official-page identity evidence linked Argonne National Laboratory to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 217,
@@ -2384,7 +2384,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Burns & McDonnell to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 218,
@@ -2395,7 +2395,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "The previously reviewed Infogain careers URL redirects to an unrelated successor brand without sufficient auditable sponsor identity evidence, so it was not activated on 2026-08-12."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Infogain to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 219,
@@ -2417,7 +2417,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Sponsor name is ambiguous and no exact official employer careers source was confidently confirmed on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for SQUAD SOFTWARE INC during review on 2026-08-12."
   },
   {
     "rank": 221,
@@ -2428,7 +2428,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate returned HTTP 404 and no captured independent official-page identity evidence linked SS&C Technologies to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 222,
@@ -2439,7 +2439,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Veeva Systems to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 223,
@@ -2450,7 +2450,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Black & Veatch to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 224,
@@ -2472,7 +2472,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No stable public official careers board for this sponsor was confirmed during review on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for COGNIER INC during review on 2026-08-12."
   },
   {
     "rank": 226,
@@ -2483,7 +2483,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Novartis to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 227,
@@ -2494,7 +2494,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Sony Interactive Entertainment to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 228,
@@ -2505,7 +2505,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Sponsor name is ambiguous and no exact official employer careers source was confidently confirmed on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for SPARK TECHNOLOGIES INC during review on 2026-08-12."
   },
   {
     "rank": 229,
@@ -2516,7 +2516,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Tavant to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 230,
@@ -2527,7 +2527,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No stable public official careers board for this exact research-institute sponsor was confirmed during review on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for THE METHODIST HOSPITAL RESEARCH INSTITUTE during review on 2026-08-12."
   },
   {
     "rank": 231,
@@ -2549,7 +2549,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked 3i Infotech to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 233,
@@ -2560,7 +2560,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Amazon to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 234,
@@ -2571,7 +2571,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked SAP to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 235,
@@ -2582,7 +2582,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Independent identity source was not HTTP-successful during review on 2026-08-12, so the candidate remains inactive."
+    "validation_notes": "Candidate returned HTTP 403 and no captured independent official-page identity evidence linked Cirrus Logic to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 236,
@@ -2593,7 +2593,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No stable public official careers board for this sponsor was confirmed during review on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for DIGIPULSE TECHNOLOGIES INC during review on 2026-08-12."
   },
   {
     "rank": 237,
@@ -2604,7 +2604,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Official-looking root career candidate lacked an independent company-page careers-link relationship during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Experian to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 238,
@@ -2615,7 +2615,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Mastech Digital to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 239,
@@ -2626,7 +2626,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no exact ats-scrapers==0.2.0 directory record linked Paycom to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 240,
@@ -2637,7 +2637,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "The company careers URL redirected to a third-party hosted board whose tenant identity could not be confidently evidenced as official during review on 2026-08-12."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Pyramid Consulting to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 241,
@@ -2648,7 +2648,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Samsung Research America to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 242,
@@ -2659,7 +2659,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No stable public official careers board for this sponsor was confirmed during review on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for ADVITHRI TECHNOLOGIES LLC during review on 2026-08-12."
   },
   {
     "rank": 243,
@@ -2670,7 +2670,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No stable public official careers board for this sponsor was confirmed during review on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for APPLABS TECH SOLUTIONS INC during review on 2026-08-12."
   },
   {
     "rank": 244,
@@ -2681,7 +2681,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked Blue Yonder to the reviewed HTML source on 2026-08-12."
   },
   {
     "rank": 245,
@@ -2692,7 +2692,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Sponsor name is ambiguous and no exact official employer careers source was confidently confirmed on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for COGNITECH TECHNOLOGIES INC. during review on 2026-08-12."
   },
   {
     "rank": 246,
@@ -2714,7 +2714,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "Known official candidate returned HTTP 404 during review on 2026-08-12; source remains inactive until a working official endpoint is confirmed."
+    "validation_notes": "Candidate returned HTTP 404 and no exact ats-scrapers==0.2.0 directory record linked Genpact to the reviewed ATS tenant on 2026-08-12."
   },
   {
     "rank": 248,
@@ -2725,7 +2725,7 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No stable public official careers board for this sponsor was confirmed during review on 2026-08-12."
+    "validation_notes": "No career source candidate was discovered for INTELI PLATFORMS INC during review on 2026-08-12."
   },
   {
     "rank": 249,
@@ -2747,6 +2747,6 @@
     "provider": null,
     "provider_key": null,
     "mapping_status": "unsupported",
-    "validation_notes": "No captured independent official page content and outbound careers link proved this HTML candidate during review on 2026-08-12, so it remains inactive."
+    "validation_notes": "Candidate was HTTP-reachable (HTTP 200) but no captured independent official-page identity evidence linked The Research Foundation for SUNY to the reviewed HTML source on 2026-08-12."
   }
 ]

@@ -268,6 +268,63 @@ def _expected_ats_validation_notes(target: SponsorTarget, status: object) -> str
     return f"{prefix} during review on 2026-08-12."
 
 
+def _expected_unsupported_evidence(
+    target: SponsorTarget, row: dict[str, object]
+) -> dict[str, str]:
+    candidate_url = row.get("candidate_url")
+    if not isinstance(candidate_url, str):
+        return {
+            "unsupported_reason_category": "not_discovered",
+            "evidence_method": "not_discovered",
+            "evidence_status": "not_discovered",
+            "reason": (
+                f"No career source candidate was discovered for {target.canonical_company} "
+                "during review on 2026-08-12."
+            ),
+        }
+    candidate_http = row.get("candidate_http_validation")
+    status = candidate_http.get("status_code") if isinstance(candidate_http, dict) else None
+    success = bool(candidate_http and candidate_http.get("http_success"))
+    if _is_forbidden_url(candidate_url):
+        return {
+            "unsupported_reason_category": "forbidden_aggregator",
+            "evidence_method": "reviewed_candidate",
+            "evidence_status": "forbidden_aggregator",
+            "reason": (
+                "The discovered candidate uses a forbidden aggregator domain and no separate "
+                f"official source identity was verified for {target.canonical_company} on "
+                "2026-08-12."
+            ),
+        }
+    if row.get("candidate_provider") == "html":
+        category = "html_identity_unverified"
+        gap = (
+            "no captured independent official-page identity evidence linked "
+            f"{target.canonical_company} to the reviewed HTML source"
+        )
+    else:
+        category = "ats_identity_unverified"
+        gap = (
+            f"no exact ats-scrapers==0.2.0 directory record linked {target.canonical_company} "
+            "to the reviewed ATS tenant"
+        )
+    if success:
+        reason = f"Candidate was HTTP-reachable (HTTP {status}) but {gap} on 2026-08-12."
+        evidence_status = "identity_unverified"
+    elif status is not None:
+        reason = f"Candidate returned HTTP {status} and {gap} on 2026-08-12."
+        evidence_status = "http_failure_and_identity_unverified"
+    else:
+        reason = f"Candidate was unreachable and {gap} on 2026-08-12."
+        evidence_status = "unreachable_and_identity_unverified"
+    return {
+        "unsupported_reason_category": category,
+        "evidence_method": "reviewed_candidate",
+        "evidence_status": evidence_status,
+        "reason": reason,
+    }
+
+
 def _http_evidence_errors(
     label: str,
     expected_url: str | None,
@@ -481,7 +538,10 @@ def _evidence_errors(targets: list[SponsorTarget]) -> list[str]:
         selected_expected_url = target.career_url or (
             row.get("candidate_url") if isinstance(row.get("candidate_url"), str) else None
         )
-        if row.get("http_validation") is not None:
+        candidate_url_present = isinstance(row.get("candidate_url"), str)
+        if selected_expected_url and row.get("http_validation") is None:
+            errors.append(f"{label}: discovered source requires http_validation")
+        elif row.get("http_validation") is not None:
             errors.extend(
                 _http_evidence_errors(
                     f"{label}: selected HTTP",
@@ -491,7 +551,9 @@ def _evidence_errors(targets: list[SponsorTarget]) -> list[str]:
                     require_verifiable=target.mapping_status == "verified",
                 )
             )
-        if row.get("candidate_http_validation") is not None:
+        if candidate_url_present and row.get("candidate_http_validation") is None:
+            errors.append(f"{label}: discovered candidate requires candidate_http_validation")
+        elif row.get("candidate_http_validation") is not None:
             candidate_url = row.get("candidate_url")
             errors.extend(
                 _http_evidence_errors(
@@ -501,6 +563,28 @@ def _evidence_errors(targets: list[SponsorTarget]) -> list[str]:
                     allowed_final_hosts,
                 )
             )
+        if target.mapping_status == "unsupported":
+            expected_unsupported = _expected_unsupported_evidence(target, row)
+            comparisons = {
+                "unsupported_reason_category": expected_unsupported[
+                    "unsupported_reason_category"
+                ],
+                "evidence_method": expected_unsupported["evidence_method"],
+                "evidence_status": expected_unsupported["evidence_status"],
+                "decision_reason": expected_unsupported["reason"],
+            }
+            for field, expected in comparisons.items():
+                if row.get(field) != expected:
+                    errors.append(
+                        f"{label}: unsupported reason does not match current evidence ({field})"
+                    )
+            if not candidate_url_present and (
+                row.get("http_validation") is not None
+                or row.get("candidate_http_validation") is not None
+            ):
+                errors.append(
+                    f"{label}: not_discovered evidence must not contain HTTP objects"
+                )
         if target.mapping_status == "verified":
             method = row.get("identity_method")
             source_url = row.get("identity_source_url")

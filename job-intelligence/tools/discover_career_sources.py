@@ -321,6 +321,66 @@ def verified_validation_notes(
     )
 
 
+def unsupported_evidence(
+    canonical_company: str,
+    candidate_url: str | None,
+    candidate_provider: str | None,
+    http_validation: dict[str, object] | None,
+) -> dict[str, str]:
+    """Derive an unsupported reason/category solely from current review evidence."""
+    if candidate_url is None:
+        return {
+            "unsupported_reason_category": "not_discovered",
+            "evidence_method": "not_discovered",
+            "evidence_status": "not_discovered",
+            "reason": (
+                f"No career source candidate was discovered for {canonical_company} during "
+                "review on 2026-08-12."
+            ),
+        }
+    status = http_validation.get("status_code") if isinstance(http_validation, dict) else None
+    success = bool(http_validation and http_validation.get("http_success"))
+    if is_aggregator(candidate_url):
+        return {
+            "unsupported_reason_category": "forbidden_aggregator",
+            "evidence_method": "reviewed_candidate",
+            "evidence_status": "forbidden_aggregator",
+            "reason": (
+                f"The discovered candidate uses a forbidden aggregator domain and no separate "
+                f"official source identity was verified for {canonical_company} on 2026-08-12."
+            ),
+        }
+    if candidate_provider == "html":
+        category = "html_identity_unverified"
+        gap = (
+            "no captured independent official-page identity evidence linked "
+            f"{canonical_company} to the reviewed HTML source"
+        )
+    else:
+        category = "ats_identity_unverified"
+        gap = (
+            f"no exact ats-scrapers==0.2.0 directory record linked {canonical_company} "
+            "to the reviewed ATS tenant"
+        )
+    if success:
+        reason = (
+            f"Candidate was HTTP-reachable (HTTP {status}) but {gap} on 2026-08-12."
+        )
+        evidence_status = "identity_unverified"
+    elif status is not None:
+        reason = f"Candidate returned HTTP {status} and {gap} on 2026-08-12."
+        evidence_status = "http_failure_and_identity_unverified"
+    else:
+        reason = f"Candidate was unreachable and {gap} on 2026-08-12."
+        evidence_status = "unreachable_and_identity_unverified"
+    return {
+        "unsupported_reason_category": category,
+        "evidence_method": "reviewed_candidate",
+        "evidence_status": evidence_status,
+        "reason": reason,
+    }
+
+
 def apply_review_decisions(
     sponsors: list[dict[str, object]], decisions_path: Path
 ) -> list[dict[str, object]]:
@@ -696,19 +756,23 @@ def main() -> int:
                 }
             evidence_url = candidate_url or url
             http_url = url if row["mapping_status"] == "verified" else evidence_url
-            http_validation = (
-                outcomes[str(http_url)]
-                if http_url
-                else {
-                    "reachable": False,
-                    "http_success": False,
-                    "redirect_identity_ok": False,
-                    "ok": False,
-                    "status_code": None,
-                    "final_url": None,
-                    "error": row["validation_notes"],
+            http_validation = outcomes[str(http_url)] if http_url else None
+            if row["mapping_status"] == "unsupported":
+                unsupported = unsupported_evidence(
+                    str(row["canonical_company"]),
+                    str(candidate_url) if candidate_url else None,
+                    str(candidate.get("candidate_provider"))
+                    if candidate.get("candidate_provider")
+                    else None,
+                    outcomes.get(str(candidate_url)) if candidate_url else None,
+                )
+                row["validation_notes"] = unsupported["reason"]
+            else:
+                unsupported = {
+                    "unsupported_reason_category": None,
+                    "evidence_method": "verified_source",
+                    "evidence_status": "verified",
                 }
-            )
             review_rows.append(
                 {
                     "rank": row["rank"],
@@ -725,6 +789,11 @@ def main() -> int:
                     "provider": row["provider"],
                     "provider_key": row["provider_key"],
                     "http_validation": http_validation,
+                    "unsupported_reason_category": unsupported.get(
+                        "unsupported_reason_category"
+                    ),
+                    "evidence_method": unsupported["evidence_method"],
+                    "evidence_status": unsupported["evidence_status"],
                     "identity_evidence": identity_evidence,
                     "identity_method": identity_method,
                     "identity_source_url": identity_source_url,
