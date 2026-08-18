@@ -17,6 +17,7 @@ import type {
   Stats,
   ResumeModelChoice,
   ResumeGenerationMode,
+  ResumeGenerationSpeed,
   ResumeLabProfile,
   ResumeLabRunResult,
 } from "@/types/job";
@@ -184,6 +185,7 @@ export function removeResumeLabResume(profileId: number, sourceVersion: number) 
 
 export function generateResumeLabResume(payload: {
   profile_id: number; source_version: number; mode: ResumeGenerationMode;
+  speed?: ResumeGenerationSpeed;
   job_description: string; target_title?: string | null;
   company_name?: string | null; idempotency_key: string;
 }) {

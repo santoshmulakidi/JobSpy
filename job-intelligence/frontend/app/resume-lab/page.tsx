@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { createResumeLabProfile, exportCoverLetterDocx, exportResumeDocx, generateResumeLabCoverLetter, generateResumeLabResume, getJob, getJobs, getResumeLabProfiles, parseResume, rebuildResume, removeResumeLabResume, saveResumeLabResume } from "@/lib/api";
 import { loadProfiles } from "@/lib/job-profiles";
-import type { ResumeGenerationMode, ResumeLabProfile, ResumeLabRunResult, ResumeRebuildResult } from "@/types/job";
+import type { ResumeGenerationMode, ResumeGenerationSpeed, ResumeLabProfile, ResumeLabRunResult, ResumeRebuildResult } from "@/types/job";
 
 interface AtsResult {
   score: number;
@@ -470,7 +470,8 @@ export default function ResumeLabPage() {
   const [returnTo, setReturnTo] = useState<string | null>(null);
   const [rebuildLoading, setRebuildLoading] = useState(false);
   const [rebuildResult, setRebuildResult] = useState<ResumeRebuildResult | null>(null);
-  const [generationMode, setGenerationMode] = useState<ResumeGenerationMode>("HYBRID");
+  const [generationSpeed, setGenerationSpeed] = useState<ResumeGenerationSpeed>("balanced");
+  const generationMode: ResumeGenerationMode = generationSpeed === "best" ? "IMPORTANT" : "HYBRID";
   const [generationRun, setGenerationRun] = useState<ResumeLabRunResult | null>(null);
   const [generatedSnapshot, setGeneratedSnapshot] = useState<string | null>(null);
   const [refineInstruction, setRefineInstruction] = useState("");
@@ -499,9 +500,11 @@ export default function ResumeLabPage() {
   const [coverLetterProvider, setCoverLetterProvider] = useState("");
   const [coverLetterLoading, setCoverLetterLoading] = useState(false);
   const [coverLetterDocxLoading, setCoverLetterDocxLoading] = useState(false);
-  const selectedModel = generationMode === "HYBRID"
-    ? "nvidia|nvidia/nemotron-3-ultra-550b-a55b"
-    : "openrouter|deepseek/deepseek-v4-pro";
+  const selectedModel = generationSpeed === "fast"
+    ? "nvidia|z-ai/glm-5.2"
+    : generationSpeed === "best"
+      ? "openrouter|deepseek/deepseek-v4-pro"
+      : "nvidia|nvidia/nemotron-3-ultra-550b-a55b";
 
   async function downloadWord() {
     if (!rebuildResult) return;
@@ -533,7 +536,7 @@ export default function ResumeLabPage() {
   const activeProfile = profiles.find((profile) => profile.id === profileId) ?? profiles[0];
   const currentSnapshot = JSON.stringify([
     activeProfile?.id ?? null, activeProfile?.source_version ?? null,
-    jobDescription, jobTitle, jobCompany, generationMode,
+    jobDescription, jobTitle, jobCompany, generationMode, generationSpeed,
   ]);
   const coverLetterEnabled = Boolean(
     generationRun?.status === "REVIEWED" && generationRun.resume_text
@@ -762,6 +765,7 @@ export default function ResumeLabPage() {
         profile_id: activeProfile.id,
         source_version: activeProfile.source_version,
         mode: generationMode,
+        speed: generationSpeed,
         job_description: jobDescription,
         target_title: jobTitle || null,
         company_name: jobCompany || null,
@@ -771,8 +775,9 @@ export default function ResumeLabPage() {
       if (run.status !== "REVIEWED" || !run.resume_text) {
         throw new Error("Resume generation did not complete review. See the model events below.");
       }
+      const speedLabel = generationSpeed === "fast" ? "Fast" : generationSpeed === "best" ? "Best Quality" : "Balanced";
       const result: ResumeRebuildResult = {
-        provider: generationMode === "HYBRID" ? "NVIDIA-First Hybrid" : "OpenRouter Important",
+        provider: `${speedLabel} (${generationMode === "HYBRID" ? "NVIDIA-First Hybrid" : "OpenRouter Important"})`,
         model: run.events.filter((event) => event.model).at(-1)?.model ?? null,
         rebuilt_resume: run.resume_text,
         change_summary: [`ATS ${run.ats_score ?? "not available"}% after ${run.attempts} attempt(s)`],
@@ -780,7 +785,7 @@ export default function ResumeLabPage() {
         prompt: "",
       };
       setRebuildResult(result);
-      setGeneratedSnapshot(JSON.stringify([activeProfile.id, activeProfile.source_version, jobDescription, jobTitle, jobCompany, generationMode]));
+      setGeneratedSnapshot(JSON.stringify([activeProfile.id, activeProfile.source_version, jobDescription, jobTitle, jobCompany, generationMode, generationSpeed]));
       setAtsBefore(before);
       const after = computeAts(result.rebuilt_resume, jobDescription);
       setAtsAfter(after);
@@ -1075,14 +1080,18 @@ export default function ResumeLabPage() {
               className="min-h-80"
             />
             <div className="flex flex-wrap gap-2">
-              <div className="grid w-full gap-2 md:grid-cols-2">
-                <button type="button" onClick={() => setGenerationMode("HYBRID")} className={`rounded-lg border p-3 text-left ${generationMode === "HYBRID" ? "border-primary bg-primary/5" : ""}`}>
-                  <span className="font-medium">NVIDIA-First Hybrid</span> <span className="text-xs text-primary">Default</span>
+              <div className="grid w-full gap-2 md:grid-cols-3">
+                <button type="button" onClick={() => setGenerationSpeed("fast")} className={`rounded-lg border p-3 text-left ${generationSpeed === "fast" ? "border-primary bg-primary/5" : ""}`}>
+                  <span className="font-medium">Fast</span> <span className="text-xs text-muted-foreground">Free</span>
+                  <p className="mt-1 text-xs text-muted-foreground">Free NVIDIA GLM-5.2 writer, single Claude Haiku review pass, no ATS repair loop. Quickest turnaround.</p>
+                </button>
+                <button type="button" onClick={() => setGenerationSpeed("balanced")} className={`rounded-lg border p-3 text-left ${generationSpeed === "balanced" ? "border-primary bg-primary/5" : ""}`}>
+                  <span className="font-medium">Balanced</span> <span className="text-xs text-primary">Default</span>
                   <p className="mt-1 text-xs text-muted-foreground">Nemotron Ultra writes first, then free GLM-5.2. Paid OpenRouter starts only if both fail.</p>
                 </button>
-                <button type="button" onClick={() => setGenerationMode("IMPORTANT")} className={`rounded-lg border p-3 text-left ${generationMode === "IMPORTANT" ? "border-primary bg-primary/5" : ""}`}>
-                  <span className="font-medium">Final Resume - Important Application</span> <span className="text-xs text-muted-foreground">Paid</span>
-                  <p className="mt-1 text-xs text-muted-foreground">OpenRouter writes and reviews immediately.</p>
+                <button type="button" onClick={() => setGenerationSpeed("best")} className={`rounded-lg border p-3 text-left ${generationSpeed === "best" ? "border-primary bg-primary/5" : ""}`}>
+                  <span className="font-medium">Best Quality</span> <span className="text-xs text-muted-foreground">Paid</span>
+                  <p className="mt-1 text-xs text-muted-foreground">Paid OpenRouter writer, Claude Sonnet review fallback, up to 2 ATS repair passes. Slowest, highest quality.</p>
                 </button>
               </div>
               <Button onClick={rebuildTailoredResume} disabled={rebuildLoading}>

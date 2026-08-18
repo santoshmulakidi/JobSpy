@@ -43,8 +43,8 @@ class Settings(BaseSettings):
     nvidia_resume_writer_model: str = "nvidia/nemotron-3-ultra-550b-a55b"
     nvidia_resume_writer_fallback_model: str = "z-ai/glm-5.2"
     openrouter_resume_writer_model: str = "deepseek/deepseek-v4-pro"
-    openrouter_resume_reviewer_model: str = "qwen/qwen3.7-plus"
-    openrouter_resume_reviewer_fallback_model: str = "moonshotai/kimi-k2.5"
+    omniroute_resume_reviewer_model: str = "no-think/claude/claude-haiku-4-5-20251001"
+    omniroute_resume_reviewer_fallback_model: str = "no-think/claude/claude-sonnet-5"
     resume_ats_target: int = 85
     resume_max_repairs: int = 2
     groq_api_key: str | None = Field(

@@ -744,12 +744,16 @@ def _resume_lab_run_response(run: ResumeLabRun, *, cache_hit: bool = False):
 
 @app.post("/resume-lab/generate", response_model=ResumeLabGenerateResponse)
 def generate_resume_lab_resume(
-    payload: ResumeLabGenerateRequest, session: Session = Depends(get_session)
+    payload: ResumeLabGenerateRequest,
+    force_refresh: bool = False,
+    session: Session = Depends(get_session),
 ):
     repository = JobRepository(session)
-    existing = repository.find_resume_lab_run_by_idempotency(payload.idempotency_key)
-    if existing:
-        return _resume_lab_run_response(existing)
+    force = force_refresh or getattr(payload, "force_refresh", False)
+    if not force:
+        existing = repository.find_resume_lab_run_by_idempotency(payload.idempotency_key)
+        if existing:
+            return _resume_lab_run_response(existing)
     profile = repository.get_resume_lab_profile(payload.profile_id)
     if profile is None:
         raise HTTPException(status_code=404, detail="Resume Lab profile not found")
@@ -764,15 +768,16 @@ def generate_resume_lab_resume(
         payload.company_name or "", payload.mode,
     )
     cache_key = normalized_hash(
-        input_hash, settings.resume_orchestration_version,
+        input_hash, settings.resume_orchestration_version, payload.speed,
         settings.nvidia_resume_writer_model, settings.nvidia_resume_writer_fallback_model,
         settings.openrouter_resume_writer_model,
-        settings.openrouter_resume_reviewer_model,
-        settings.openrouter_resume_reviewer_fallback_model,
+        settings.omniroute_resume_reviewer_model,
+        settings.omniroute_resume_reviewer_fallback_model,
     )
-    cached = repository.find_reviewed_resume_lab_run(cache_key)
-    if cached:
-        return _resume_lab_run_response(cached, cache_hit=True)
+    if not force:
+        cached = repository.find_reviewed_resume_lab_run(cache_key)
+        if cached:
+            return _resume_lab_run_response(cached, cache_hit=True)
 
     result = orchestrate_resume(
         OrchestrationRequest(
@@ -781,11 +786,13 @@ def generate_resume_lab_resume(
             target_title=title,
             company_name=payload.company_name,
             mode=GenerationMode(payload.mode),
+            speed=payload.speed,
         ),
         settings,
     )
     run = ResumeLabRun(
-        id=str(uuid.uuid4()), idempotency_key=payload.idempotency_key,
+        id=str(uuid.uuid4()),
+        idempotency_key=(payload.idempotency_key if not force else f"{payload.idempotency_key[:96]}:force:{uuid.uuid4().hex[:12]}"),
         cache_key=cache_key, profile_id=profile.id, mode=payload.mode,
         status=result.status, source_hash=profile.resume_sha256,
         input_hash=input_hash, job_description_hash=jd_hash,

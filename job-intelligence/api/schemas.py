@@ -169,10 +169,12 @@ class ResumeLabGenerateRequest(BaseModel):
     profile_id: int
     source_version: int = Field(ge=0)
     mode: Literal["HYBRID", "IMPORTANT"]
+    speed: Literal["fast", "balanced", "best"] = "balanced"
     job_description: str = Field(min_length=50)
     target_title: str | None = Field(default=None, max_length=500)
     company_name: str | None = Field(default=None, max_length=255)
     idempotency_key: str = Field(min_length=16, max_length=128)
+    force_refresh: bool = False
 
 
 class ResumeLabGenerateResponse(BaseModel):

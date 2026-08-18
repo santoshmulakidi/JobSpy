@@ -46,8 +46,9 @@ def settings(*, repairs=0):
         nvidia_resume_writer_model="nvidia/nemotron-3-ultra-550b-a55b",
         nvidia_resume_writer_fallback_model="z-ai/glm-5.2",
         openrouter_resume_writer_model="deepseek/deepseek-v4-pro",
-        openrouter_resume_reviewer_model="qwen/qwen3.7-plus",
-        openrouter_resume_reviewer_fallback_model="moonshotai/kimi-k2.5",
+        omniroute_api_key="om",
+        omniroute_resume_reviewer_model="no-think/claude/claude-haiku-4-5-20251001",
+        omniroute_resume_reviewer_fallback_model="no-think/claude/claude-sonnet-5",
         resume_max_repairs=repairs,
     )
 
@@ -78,12 +79,11 @@ class FakeCompletion:
         return BASE_RESUME
 
 
-def test_hybrid_uses_direct_nvidia_then_openrouter_qwen():
+def test_hybrid_uses_direct_nvidia_then_omniroute_claude_haiku():
     fake = FakeCompletion()
     result = orchestrate_resume(request(), settings(), completion=fake)
-    assert fake.models == ["nvidia/nemotron-3-ultra-550b-a55b", "qwen/qwen3.7-plus"]
+    assert fake.models == ["nvidia/nemotron-3-ultra-550b-a55b", "no-think/claude/claude-haiku-4-5-20251001"]
     assert result.status == "REVIEWED"
-    assert "omniroute" not in " ".join(fake.prompts).lower()
     assert "LangChain" in fake.prompts[0]  # explicitly marked unsupported
 
 
@@ -93,7 +93,7 @@ def test_nvidia_primary_failure_uses_glm_before_paid_openrouter():
     assert fake.models == [
         "nvidia/nemotron-3-ultra-550b-a55b",
         "z-ai/glm-5.2",
-        "qwen/qwen3.7-plus",
+        "no-think/claude/claude-haiku-4-5-20251001",
     ]
     assert result.status == "REVIEWED"
     assert "NVIDIA_PRIMARY_FAILURE" in result.event_codes
@@ -111,27 +111,27 @@ def test_both_nvidia_writers_failing_restarts_from_original_on_openrouter():
         "nvidia/nemotron-3-ultra-550b-a55b",
         "z-ai/glm-5.2",
         "deepseek/deepseek-v4-pro",
-        "qwen/qwen3.7-plus",
+        "no-think/claude/claude-haiku-4-5-20251001",
     ]
     assert BASE_RESUME in fake.prompts[2]
     assert "NVIDIA_FALLBACK_FAILURE" in result.event_codes
     assert "PAID_FALLBACK_ACTIVATED" in result.event_codes
 
 
-def test_important_skips_nvidia_and_kimi_reuses_writer_draft():
-    fake = FakeCompletion(failures=("qwen/qwen3.7-plus",))
+def test_important_skips_nvidia_and_claude_sonnet_reuses_writer_draft():
+    fake = FakeCompletion(failures=("no-think/claude/claude-haiku-4-5-20251001",))
     result = orchestrate_resume(request(GenerationMode.IMPORTANT), settings(), completion=fake)
     assert fake.models == [
         "deepseek/deepseek-v4-pro",
-        "qwen/qwen3.7-plus",
-        "moonshotai/kimi-k2.5",
+        "no-think/claude/claude-haiku-4-5-20251001",
+        "no-think/claude/claude-sonnet-5",
     ]
     assert BASE_RESUME in fake.prompts[-1]
     assert "REVIEWER_FALLBACK" in result.event_codes
 
 
 def test_both_reviewers_failing_is_not_success():
-    fake = FakeCompletion(failures=("qwen/qwen3.7-plus", "moonshotai/kimi-k2.5"))
+    fake = FakeCompletion(failures=("no-think/claude/claude-haiku-4-5-20251001", "no-think/claude/claude-sonnet-5"))
     result = orchestrate_resume(request(GenerationMode.IMPORTANT), settings(), completion=fake)
     assert result.status == "WRITER_ONLY"
     assert result.resume_text is None
@@ -157,8 +157,8 @@ def test_below_85_uses_targeted_repair_and_stops_when_target_reached():
     )
     assert fake.models == [
         "deepseek/deepseek-v4-pro",
-        "qwen/qwen3.7-plus",
-        "qwen/qwen3.7-plus",
+        "no-think/claude/claude-haiku-4-5-20251001",
+        "no-think/claude/claude-haiku-4-5-20251001",
     ]
     assert result.ats_score == 86
     assert result.attempts == 2

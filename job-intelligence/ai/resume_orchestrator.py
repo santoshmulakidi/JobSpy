@@ -34,6 +34,7 @@ class OrchestrationRequest:
     target_title: str
     company_name: str | None
     mode: GenerationMode
+    speed: str = "balanced"
 
 
 @dataclass
@@ -154,15 +155,23 @@ def orchestrate_resume(
         settings.nvidia_resume_writer_fallback_model,
     )
     paid_writer = _provider("openrouter", settings.openrouter_base_url, settings.openrouter_api_key, settings.openrouter_resume_writer_model)
-    qwen = _provider("openrouter", settings.openrouter_base_url, settings.openrouter_api_key, settings.openrouter_resume_reviewer_model)
-    kimi = _provider("openrouter", settings.openrouter_base_url, settings.openrouter_api_key, settings.openrouter_resume_reviewer_fallback_model)
-    writer = nvidia if request.mode is GenerationMode.HYBRID else paid_writer
+    reviewer_primary = _provider("omniroute", settings.omniroute_base_url, settings.omniroute_api_key, settings.omniroute_resume_reviewer_model)
+    reviewer_fallback = _provider("omniroute", settings.omniroute_base_url, settings.omniroute_api_key, settings.omniroute_resume_reviewer_fallback_model)
+    if request.speed == "fast":
+        writer = nvidia_fallback
+        single_attempt_writer = True
+    elif request.speed == "best":
+        writer = paid_writer
+        single_attempt_writer = True
+    else:
+        writer = nvidia if request.mode is GenerationMode.HYBRID else paid_writer
+        single_attempt_writer = request.mode is not GenerationMode.HYBRID
     emit("WRITER_STARTED", "info", "writer", writer, "Resume writer started")
     try:
         draft = call(writer, _messages(request))
     except Exception:
-        if request.mode is not GenerationMode.HYBRID:
-            emit("FINAL_FAILURE", "error", "writer", writer, "Paid resume writer failed")
+        if single_attempt_writer:
+            emit("FINAL_FAILURE", "error", "writer", writer, "Resume writer failed")
             return OrchestrationResult(status="FAILED", resume_text=None, events=events)
         emit("NVIDIA_PRIMARY_FAILURE", "warning", "writer", nvidia, "Nemotron Ultra writer failed")
         emit("NVIDIA_FALLBACK_ACTIVATED", "warning", "writer", nvidia_fallback, "Trying free NVIDIA GLM-5.2")
@@ -180,17 +189,17 @@ def orchestrate_resume(
             writer = paid_writer
     emit("WRITER_SUCCEEDED", "info", "writer", writer, "Resume writer completed")
 
-    emit("REVIEWER_STARTED", "info", "reviewer", qwen, "Qwen review started")
+    emit("REVIEWER_STARTED", "info", "reviewer", reviewer_primary, "Claude Haiku review started")
     try:
-        reviewed = call(qwen, _messages(request, draft=draft))
-        successful_reviewer = qwen
+        reviewed = call(reviewer_primary, _messages(request, draft=draft))
+        successful_reviewer = reviewer_primary
     except Exception:
-        emit("REVIEWER_FALLBACK", "warning", "reviewer", kimi, "Qwen failed; Kimi review started")
+        emit("REVIEWER_FALLBACK", "warning", "reviewer", reviewer_fallback, "Claude Haiku failed; Claude Sonnet review started")
         try:
-            reviewed = call(kimi, _messages(request, draft=draft))
-            successful_reviewer = kimi
+            reviewed = call(reviewer_fallback, _messages(request, draft=draft))
+            successful_reviewer = reviewer_fallback
         except Exception:
-            emit("FINAL_FAILURE", "error", "reviewer", kimi, "All resume reviewers failed")
+            emit("FINAL_FAILURE", "error", "reviewer", reviewer_fallback, "All resume reviewers failed")
             return OrchestrationResult(
                 status="WRITER_ONLY", resume_text=None, diagnostic_draft=draft, events=events
             )
@@ -209,7 +218,13 @@ def orchestrate_resume(
     plan = build_keyword_plan(
         request.source_resume, request.job_description, target_title=request.target_title
     )
-    for repair_number in range(1, settings.resume_max_repairs + 1):
+    if request.speed == "fast":
+        max_repairs = 0
+    elif request.speed == "best":
+        max_repairs = max(settings.resume_max_repairs, 2)
+    else:
+        max_repairs = settings.resume_max_repairs
+    for repair_number in range(1, max_repairs + 1):
         if best_score >= settings.resume_ats_target:
             break
         attempts += 1

@@ -189,6 +189,7 @@ export type ResumeModelChoice = {
 };
 
 export type ResumeGenerationMode = "HYBRID" | "IMPORTANT";
+export type ResumeGenerationSpeed = "fast" | "balanced" | "best";
 
 export type ResumeLabProfile = {
   id: number;
