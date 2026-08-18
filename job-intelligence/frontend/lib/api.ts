@@ -263,6 +263,16 @@ export function resumeLabModelChoices(): ResumeLabModelChoice[] {
       note: "Quickest. Single review pass, no ATS repair.",
     },
     {
+      id: "gemini3-flash", provider: "omniroute", model: "gemini/gemini-3-flash-preview",
+      label: "Gemini 3 Flash", cost: "Free", pace: "Fast", speed: "fast",
+      note: "Fastest full-length draft (~10s). No ATS repair pass.",
+    },
+    {
+      id: "gemini31-flash-lite", provider: "omniroute", model: "gemini/gemini-3.1-flash-lite",
+      label: "Gemini 3.1 Flash Lite", cost: "Free", pace: "Fast", speed: "fast",
+      note: "Very fast, shorter output. No ATS repair pass.",
+    },
+    {
       id: "glm-fast", provider: "nvidia", model: "z-ai/glm-5.2",
       label: "NVIDIA GLM-5.2", cost: "Free", pace: "Fast", speed: "fast",
       note: "Free NVIDIA writer. No ATS repair pass.",
