@@ -6,6 +6,8 @@ services:
       context: .
       dockerfile: docker/Dockerfile.api
     restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     env_file: .env
     environment:
       JOB_INTELLIGENCE_DATABASE_URL: sqlite:////data/job_intelligence.db
