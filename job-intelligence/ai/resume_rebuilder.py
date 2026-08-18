@@ -335,7 +335,16 @@ def _provider_order(
         primary = selected_provider.strip().lower()
         preferred = [primary] + [n for n in default_order if n != primary]
     else:
+        primary = None
         preferred = default_order
+
+    def _model(name: str, default: str) -> str:
+        # A hand-picked model only belongs to the provider it was picked for;
+        # passing it down the fallback chain asks other providers for a model
+        # they do not serve, so every fallback fails.
+        if selected_model and name == primary:
+            return selected_model
+        return default
     for name in preferred:
         if name == "omniroute" and settings.omniroute_model:
             providers.append(
@@ -343,7 +352,7 @@ def _provider_order(
                     "name": "omniroute",
                     "base_url": settings.omniroute_base_url.rstrip("/"),
                     "api_key": settings.omniroute_api_key or "",
-                    "model": selected_model or settings.omniroute_model,
+                    "model": _model("omniroute", settings.omniroute_model),
                 }
             )
         elif (
@@ -356,7 +365,7 @@ def _provider_order(
                     "name": "openrouter",
                     "base_url": settings.openrouter_base_url.rstrip("/"),
                     "api_key": settings.openrouter_api_key,
-                    "model": selected_model or settings.openrouter_model,
+                    "model": _model("openrouter", settings.openrouter_model),
                 }
             )
         elif name == "nvidia" and settings.nvidia_api_key:
@@ -365,7 +374,7 @@ def _provider_order(
                     "name": "nvidia",
                     "base_url": settings.nvidia_base_url.rstrip("/"),
                     "api_key": settings.nvidia_api_key,
-                    "model": selected_model or settings.nvidia_model,
+                    "model": _model("nvidia", settings.nvidia_model),
                 }
             )
         elif name == "groq" and settings.groq_api_key:
@@ -374,7 +383,7 @@ def _provider_order(
                     "name": "groq",
                     "base_url": settings.groq_base_url.rstrip("/"),
                     "api_key": settings.groq_api_key,
-                    "model": selected_model or settings.groq_model,
+                    "model": _model("groq", settings.groq_model),
                 }
             )
         elif name == "gemini":
@@ -384,7 +393,7 @@ def _provider_order(
                         "name": "gemini",
                         "base_url": settings.gemini_base_url.rstrip("/"),
                         "api_key": key,
-                        "model": selected_model or settings.gemini_model,
+                        "model": _model("gemini", settings.gemini_model),
                         "key_index": str(idx + 1),
                     }
                 )

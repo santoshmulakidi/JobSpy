@@ -500,11 +500,14 @@ export default function ResumeLabPage() {
   const [coverLetterProvider, setCoverLetterProvider] = useState("");
   const [coverLetterLoading, setCoverLetterLoading] = useState(false);
   const [coverLetterDocxLoading, setCoverLetterDocxLoading] = useState(false);
+  // Refinement runs through /resume/rebuild, so keep its model in step with the
+  // tier's generation writer. Nemotron Ultra is deliberately absent here too —
+  // it exhausts the per-call timeout before returning.
   const selectedModel = generationSpeed === "fast"
-    ? "nvidia|z-ai/glm-5.2"
+    ? "omniroute|no-think/claude/claude-haiku-4-5-20251001"
     : generationSpeed === "best"
-      ? "openrouter|deepseek/deepseek-v4-pro"
-      : "nvidia|nvidia/nemotron-3-ultra-550b-a55b";
+      ? "omniroute|claude/claude-sonnet-5"
+      : "omniroute|no-think/claude/claude-sonnet-5";
 
   async function downloadWord() {
     if (!rebuildResult) return;
