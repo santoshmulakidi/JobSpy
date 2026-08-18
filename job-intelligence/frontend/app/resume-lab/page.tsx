@@ -187,6 +187,7 @@ interface WritingReport {
   weakVerbCount: number;
   repeatedVerbs: { verb: string; count: number }[];
   buzzwords: string[];
+  aiTells: string[];              // patterns AI detectors weight most
   issues: WritingIssue[];
 }
 
@@ -201,6 +202,17 @@ const BUZZWORDS = [
   "seamless", "seamlessly", "pivotal", "transformative", "synergy", "synergies", "go-getter",
   "team player", "results-driven", "detail-oriented", "self-starter", "think outside the box",
   "best of breed", "value-add", "dynamic", "passionate", "hardworking", "go-to person",
+  "foster", "fostered", "showcase", "showcased", "vibrant", "testament", "underscore",
+  "groundbreaking", "revolutionize", "innovative", "adept", "proficient in", "ecosystem",
+  "best-in-class", "cutting-edge", "meticulous", "spearheading",
+];
+
+// Verb pairs that AI detectors flag hardest — the generation prompt bans these
+// outright, so their presence means the model ignored its instructions.
+const AI_PHRASES = [
+  "designed and implemented", "developed and maintained", "designed and developed",
+  "built and maintained", "implemented and optimized", "created and managed",
+  "responsible for designing", "played a key role", "successfully delivered",
 ];
 
 // Strong verbs worth not flagging even if repeated a little
@@ -277,17 +289,50 @@ function analyzeWriting(resumeText: string): WritingReport {
     });
   }
 
+  // --- AI tells: the specific patterns the generation prompt forbids ---
+  const aiTells: string[] = [];
+
+  const emDashes = (resumeText.match(/—|--/g) ?? []).length;
+  if (emDashes > 0) {
+    aiTells.push(`${emDashes} em dash${emDashes > 1 ? "es" : ""} — a strong AI signal, replace with a comma or new sentence`);
+  }
+
+  const phraseHits = AI_PHRASES.filter((phrase) => resumeText.toLowerCase().includes(phrase));
+  for (const phrase of phraseHits) {
+    aiTells.push(`Phrase "${phrase}" is among the most-flagged AI patterns`);
+  }
+
+  // Uniform bullet length is the single biggest tell. Human resumes vary; AI
+  // output clusters tightly around one length.
+  if (bullets.length >= 6) {
+    const lengths = bullets.map((b) => b.split(/\s+/).length);
+    const mean = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+    const stdev = Math.sqrt(
+      lengths.reduce((sum, n) => sum + (n - mean) ** 2, 0) / lengths.length
+    );
+    if (mean > 0 && stdev / mean < 0.28) {
+      aiTells.push(
+        `Bullet lengths are uniform (${Math.round(mean)} words ± ${stdev.toFixed(1)}) — vary short and long bullets`
+      );
+    }
+  }
+
+  for (const tell of aiTells) {
+    issues.push({ severity: "high", bullet: "", problem: tell });
+  }
+
   // Content quality score
   const total = bullets.length || 1;
   const metricRatio = Math.min((withMetrics / total) / 0.25, 1); // target roughly 25% metric/scope bullets, not every bullet
   const weakRatio = weakVerbCount / total;          // want low
   const repeatPenalty = Math.min(repeatedVerbs.reduce((s, r) => s + (r.count - 2), 0) * 2, 20);
   const buzzPenalty = Math.min(buzzwords.length * 4, 20);
+  const aiPenalty = Math.min(aiTells.length * 5, 20);
   let score = Math.round(
     metricRatio * 55 +
     (1 - Math.min(weakRatio * 2, 1)) * 25 +
     20
-  ) - repeatPenalty - buzzPenalty;
+  ) - repeatPenalty - buzzPenalty - aiPenalty;
   score = Math.max(0, Math.min(100, score));
 
   // sort issues by severity
@@ -301,6 +346,7 @@ function analyzeWriting(resumeText: string): WritingReport {
     weakVerbCount,
     repeatedVerbs,
     buzzwords,
+    aiTells,
     issues: issues.slice(0, 30),
   };
 }
@@ -884,6 +930,14 @@ export default function ResumeLabPage() {
     // Content-quality driven chips — only appear when the analyzer finds the issue.
     const wr = resume ? analyzeWriting(resume) : null;
     if (wr && wr.totalBullets) {
+      if (wr.aiTells.length > 0) {
+        out.push({
+          id: "quality-ai-tells",
+          label: `Remove ${wr.aiTells.length} AI tell${wr.aiTells.length > 1 ? "s" : ""}`,
+          instruction:
+            "Make the writing read as human-authored: remove every em dash and replace it with a comma, colon, or new sentence. Rewrite paired-verb phrases such as \"Designed and implemented\" or \"Developed and maintained\" into a single specific verb. Deliberately vary bullet length, mixing short 8 to 12 word bullets with longer 18 to 25 word ones, and vary the opening structure so bullets do not all follow [Verb] [technology] [outcome]. Keep every fact, employer, date, and section identical.",
+        });
+      }
       if (wr.weakVerbCount > 0) {
         out.push({
           id: "quality-weak-openers",
@@ -1238,6 +1292,12 @@ export default function ResumeLabPage() {
                         <span className={`rounded px-2 py-0.5 ${wr.withMetrics / wr.totalBullets >= 0.5 ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400"}`}>
                           {wr.withMetrics}/{wr.totalBullets} with metrics
                         </span>
+                        {wr.aiTells.length > 0 && (
+                          <span className="rounded bg-red-100 px-2 py-0.5 font-medium text-red-800 dark:bg-red-900/30 dark:text-red-400">{wr.aiTells.length} AI tell{wr.aiTells.length > 1 ? "s" : ""}</span>
+                        )}
+                        {wr.aiTells.length === 0 && wr.totalBullets > 0 && (
+                          <span className="rounded bg-green-100 px-2 py-0.5 text-green-800 dark:bg-green-900/30 dark:text-green-400">No AI tells</span>
+                        )}
                         {wr.weakVerbCount > 0 && (
                           <span className="rounded bg-red-100 px-2 py-0.5 text-red-800 dark:bg-red-900/30 dark:text-red-400">{wr.weakVerbCount} weak openers</span>
                         )}
