@@ -191,7 +191,7 @@ export function generateResumeLabResume(payload: {
 }) {
   return request<ResumeLabRunResult>("/resume-lab/generate", {
     method: "POST", body: JSON.stringify(payload),
-  }, 480_000);
+  }, 300_000);
 }
 
 export function generateResumeLabCoverLetter(payload: {

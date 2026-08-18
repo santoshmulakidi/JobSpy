@@ -149,7 +149,6 @@ def orchestrate_resume(
             timestamp=datetime.now(UTC).isoformat(), message=message,
         ))
 
-    nvidia = _provider("nvidia", settings.nvidia_base_url, settings.nvidia_api_key, settings.nvidia_resume_writer_model)
     nvidia_fallback = _provider(
         "nvidia", settings.nvidia_base_url, settings.nvidia_api_key,
         settings.nvidia_resume_writer_fallback_model,
@@ -157,36 +156,39 @@ def orchestrate_resume(
     paid_writer = _provider("openrouter", settings.openrouter_base_url, settings.openrouter_api_key, settings.openrouter_resume_writer_model)
     reviewer_primary = _provider("omniroute", settings.omniroute_base_url, settings.omniroute_api_key, settings.omniroute_resume_reviewer_model)
     reviewer_fallback = _provider("omniroute", settings.omniroute_base_url, settings.omniroute_api_key, settings.omniroute_resume_reviewer_fallback_model)
+    omniroute_writer = _provider(
+        "omniroute", settings.omniroute_base_url, settings.omniroute_api_key,
+        settings.omniroute_resume_writer_model,
+    )
+    omniroute_writer_best = _provider(
+        "omniroute", settings.omniroute_base_url, settings.omniroute_api_key,
+        settings.omniroute_resume_writer_best_model,
+    )
+    # Each tier gets its own writer chain, tried in order. Nemotron Ultra is
+    # deliberately absent: it burns the full per-call timeout before failing,
+    # which pushed total generation past the client's abort window.
     if request.speed == "fast":
-        writer = nvidia_fallback
-        single_attempt_writer = True
+        writer_chain = [nvidia_fallback, omniroute_writer]
     elif request.speed == "best":
-        writer = paid_writer
-        single_attempt_writer = True
+        writer_chain = [omniroute_writer_best, omniroute_writer, paid_writer]
     else:
-        writer = nvidia if request.mode is GenerationMode.HYBRID else paid_writer
-        single_attempt_writer = request.mode is not GenerationMode.HYBRID
-    emit("WRITER_STARTED", "info", "writer", writer, "Resume writer started")
-    try:
-        draft = call(writer, _messages(request))
-    except Exception:
-        if single_attempt_writer:
-            emit("FINAL_FAILURE", "error", "writer", writer, "Resume writer failed")
-            return OrchestrationResult(status="FAILED", resume_text=None, events=events)
-        emit("NVIDIA_PRIMARY_FAILURE", "warning", "writer", nvidia, "Nemotron Ultra writer failed")
-        emit("NVIDIA_FALLBACK_ACTIVATED", "warning", "writer", nvidia_fallback, "Trying free NVIDIA GLM-5.2")
+        writer_chain = [omniroute_writer, nvidia_fallback]
+    draft = None
+    writer = writer_chain[0]
+    for attempt, candidate in enumerate(writer_chain):
+        if attempt == 0:
+            emit("WRITER_STARTED", "info", "writer", candidate, "Resume writer started")
+        else:
+            emit("WRITER_FALLBACK", "warning", "writer", candidate, "Previous writer failed; trying fallback")
         try:
-            draft = call(nvidia_fallback, _messages(request))
-            writer = nvidia_fallback
+            draft = call(candidate, _messages(request))
+            writer = candidate
+            break
         except Exception:
-            emit("NVIDIA_FALLBACK_FAILURE", "warning", "writer", nvidia_fallback, "GLM-5.2 writer failed")
-            emit("PAID_FALLBACK_ACTIVATED", "warning", "writer", paid_writer, "Restarting on paid OpenRouter")
-            try:
-                draft = call(paid_writer, _messages(request))
-            except Exception:
-                emit("FINAL_FAILURE", "error", "writer", paid_writer, "Paid fallback writer failed")
-                return OrchestrationResult(status="FAILED", resume_text=None, events=events)
-            writer = paid_writer
+            continue
+    if draft is None:
+        emit("FINAL_FAILURE", "error", "writer", writer_chain[-1], "All resume writers failed")
+        return OrchestrationResult(status="FAILED", resume_text=None, events=events)
     emit("WRITER_SUCCEEDED", "info", "writer", writer, "Resume writer completed")
 
     emit("REVIEWER_STARTED", "info", "reviewer", reviewer_primary, "Claude Haiku review started")
@@ -223,7 +225,7 @@ def orchestrate_resume(
     elif request.speed == "best":
         max_repairs = max(settings.resume_max_repairs, 2)
     else:
-        max_repairs = settings.resume_max_repairs
+        max_repairs = min(settings.resume_max_repairs, 1)
     for repair_number in range(1, max_repairs + 1):
         if best_score >= settings.resume_ats_target:
             break

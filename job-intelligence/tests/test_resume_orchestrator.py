@@ -47,19 +47,22 @@ def settings(*, repairs=0):
         nvidia_resume_writer_fallback_model="z-ai/glm-5.2",
         openrouter_resume_writer_model="deepseek/deepseek-v4-pro",
         omniroute_api_key="om",
+        omniroute_resume_writer_model="no-think/claude/claude-sonnet-5",
+        omniroute_resume_writer_best_model="claude/claude-sonnet-5",
         omniroute_resume_reviewer_model="no-think/claude/claude-haiku-4-5-20251001",
         omniroute_resume_reviewer_fallback_model="no-think/claude/claude-sonnet-5",
         resume_max_repairs=repairs,
     )
 
 
-def request(mode=GenerationMode.HYBRID):
+def request(mode=GenerationMode.HYBRID, speed="balanced"):
     return OrchestrationRequest(
         source_resume=BASE_RESUME,
         job_description=JD,
         target_title="AI Engineer",
         company_name="Example",
         mode=mode,
+        speed=speed,
     )
 
 
@@ -79,69 +82,80 @@ class FakeCompletion:
         return BASE_RESUME
 
 
-def test_hybrid_uses_direct_nvidia_then_omniroute_claude_haiku():
+def test_balanced_writes_on_omniroute_then_reviews_with_claude_haiku():
     fake = FakeCompletion()
     result = orchestrate_resume(request(), settings(), completion=fake)
-    assert fake.models == ["nvidia/nemotron-3-ultra-550b-a55b", "no-think/claude/claude-haiku-4-5-20251001"]
+    assert fake.models == [
+        "no-think/claude/claude-sonnet-5",
+        "no-think/claude/claude-haiku-4-5-20251001",
+    ]
     assert result.status == "REVIEWED"
     assert "LangChain" in fake.prompts[0]  # explicitly marked unsupported
 
 
-def test_nvidia_primary_failure_uses_glm_before_paid_openrouter():
-    fake = FakeCompletion(failures=("nvidia/nemotron-3-ultra-550b-a55b",))
+def test_balanced_never_calls_nemotron_ultra():
+    fake = FakeCompletion()
+    orchestrate_resume(request(), settings(), completion=fake)
+    assert "nvidia/nemotron-3-ultra-550b-a55b" not in fake.models
+
+
+def test_balanced_writer_failure_falls_back_to_free_nvidia():
+    fake = FakeCompletion(failures=("no-think/claude/claude-sonnet-5",))
     result = orchestrate_resume(request(), settings(), completion=fake)
     assert fake.models == [
-        "nvidia/nemotron-3-ultra-550b-a55b",
+        "no-think/claude/claude-sonnet-5",
         "z-ai/glm-5.2",
         "no-think/claude/claude-haiku-4-5-20251001",
     ]
     assert result.status == "REVIEWED"
-    assert "NVIDIA_PRIMARY_FAILURE" in result.event_codes
-    assert "NVIDIA_FALLBACK_ACTIVATED" in result.event_codes
-    assert "PAID_FALLBACK_ACTIVATED" not in result.event_codes
+    assert "WRITER_FALLBACK" in result.event_codes
 
 
-def test_both_nvidia_writers_failing_restarts_from_original_on_openrouter():
-    fake = FakeCompletion(failures=(
-        "nvidia/nemotron-3-ultra-550b-a55b",
-        "z-ai/glm-5.2",
-    ))
-    result = orchestrate_resume(request(), settings(), completion=fake)
-    assert fake.models == [
-        "nvidia/nemotron-3-ultra-550b-a55b",
-        "z-ai/glm-5.2",
-        "deepseek/deepseek-v4-pro",
-        "no-think/claude/claude-haiku-4-5-20251001",
-    ]
-    assert BASE_RESUME in fake.prompts[2]
-    assert "NVIDIA_FALLBACK_FAILURE" in result.event_codes
-    assert "PAID_FALLBACK_ACTIVATED" in result.event_codes
+def test_fast_uses_free_nvidia_writer_and_skips_repairs():
+    fake = FakeCompletion()
+    result = orchestrate_resume(
+        request(speed="fast"), settings(repairs=2), completion=fake,
+        score_fn=lambda _resume, _jd: 40,
+    )
+    assert fake.models == ["z-ai/glm-5.2", "no-think/claude/claude-haiku-4-5-20251001"]
+    assert result.attempts == 1
+    assert "ATS_REPAIR_STARTED" not in result.event_codes
 
 
-def test_important_skips_nvidia_and_claude_sonnet_reuses_writer_draft():
-    fake = FakeCompletion(failures=("no-think/claude/claude-haiku-4-5-20251001",))
-    result = orchestrate_resume(request(GenerationMode.IMPORTANT), settings(), completion=fake)
-    assert fake.models == [
-        "deepseek/deepseek-v4-pro",
-        "no-think/claude/claude-haiku-4-5-20251001",
-        "no-think/claude/claude-sonnet-5",
-    ]
-    assert BASE_RESUME in fake.prompts[-1]
-    assert "REVIEWER_FALLBACK" in result.event_codes
+def test_best_uses_thinking_writer_and_allows_two_repairs():
+    fake = FakeCompletion()
+    scores = iter((40, 50, 60))
+    result = orchestrate_resume(
+        request(speed="best"), settings(repairs=2), completion=fake,
+        score_fn=lambda _resume, _jd: next(scores),
+    )
+    assert fake.models[0] == "claude/claude-sonnet-5"
+    assert result.attempts == 3
+    assert "ATS_TARGET_NOT_REACHED" in result.event_codes
 
 
-def test_both_reviewers_failing_is_not_success():
-    fake = FakeCompletion(failures=("no-think/claude/claude-haiku-4-5-20251001", "no-think/claude/claude-sonnet-5"))
-    result = orchestrate_resume(request(GenerationMode.IMPORTANT), settings(), completion=fake)
-    assert result.status == "WRITER_ONLY"
+def test_all_writers_failing_is_a_visible_final_failure():
+    fake = FakeCompletion(failures=("z-ai/glm-5.2", "no-think/claude/claude-sonnet-5"))
+    result = orchestrate_resume(request(speed="fast"), settings(), completion=fake)
+    assert result.status == "FAILED"
     assert result.resume_text is None
     assert "FINAL_FAILURE" in result.event_codes
 
 
-def test_paid_writer_failure_returns_a_visible_final_failure():
-    fake = FakeCompletion(failures=("deepseek/deepseek-v4-pro",))
-    result = orchestrate_resume(request(GenerationMode.IMPORTANT), settings(), completion=fake)
-    assert result.status == "FAILED"
+def test_reviewer_falls_back_before_giving_up():
+    fake = FakeCompletion(failures=("no-think/claude/claude-haiku-4-5-20251001",))
+    result = orchestrate_resume(request(), settings(), completion=fake)
+    assert result.status == "REVIEWED"
+    assert "REVIEWER_FALLBACK" in result.event_codes
+
+
+def test_both_reviewers_failing_is_not_success():
+    fake = FakeCompletion(failures=(
+        "no-think/claude/claude-haiku-4-5-20251001",
+        "no-think/claude/claude-sonnet-5",
+    ))
+    result = orchestrate_resume(request(speed="fast"), settings(), completion=fake)
+    assert result.status == "WRITER_ONLY"
     assert result.resume_text is None
     assert "FINAL_FAILURE" in result.event_codes
 
@@ -150,16 +164,9 @@ def test_below_85_uses_targeted_repair_and_stops_when_target_reached():
     fake = FakeCompletion()
     scores = iter((72, 86))
     result = orchestrate_resume(
-        request(GenerationMode.IMPORTANT),
-        settings(repairs=2),
-        completion=fake,
+        request(), settings(repairs=2), completion=fake,
         score_fn=lambda _resume, _jd: next(scores),
     )
-    assert fake.models == [
-        "deepseek/deepseek-v4-pro",
-        "no-think/claude/claude-haiku-4-5-20251001",
-        "no-think/claude/claude-haiku-4-5-20251001",
-    ]
     assert result.ats_score == 86
     assert result.attempts == 2
     assert "ATS_REPAIR_STARTED" in result.event_codes
