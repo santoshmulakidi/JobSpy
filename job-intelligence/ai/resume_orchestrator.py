@@ -176,6 +176,87 @@ def _messages(request: OrchestrationRequest, *, draft: str | None = None) -> lis
     ]
 
 
+@dataclass(frozen=True)
+class RefineRequest:
+    source_resume: str          # the truth baseline, never shown to the user
+    current_resume: str         # what is on screen now
+    job_description: str
+    target_title: str
+    instruction: str
+    speed: str = "balanced"
+    writer_provider: str | None = None
+    writer_model: str | None = None
+    target_pages: int | None = None
+
+
+def _refine_messages(request: RefineRequest) -> list[dict[str, str]]:
+    return [
+        {"role": "system", "content": (
+            "You are a truthful ATS resume specialist. Output plain resume text only. "
+            "The source resume is the sole source of truth: never add an employer, date, "
+            "credential, metric, or technology that does not appear in it."
+        )},
+        {"role": "user", "content": (
+            f"TARGET TITLE: {request.target_title}\n\nSOURCE RESUME (truth baseline):\n"
+            f"{request.source_resume}\n\nJOB DESCRIPTION:\n{request.job_description}\n\n"
+            f"CURRENT RESUME:\n{request.current_resume}\n\n"
+            f"Apply this change and return the complete resume:\n{request.instruction}"
+            + _length_instruction(request.target_pages)
+        )},
+    ]
+
+
+def refine_resume(
+    request: RefineRequest,
+    settings: Settings,
+    *,
+    completion: CompletionFn = _default_completion,
+) -> OrchestrationResult:
+    """Refine an already-generated resume through the same chain and validation
+    that generation uses. Kept separate from orchestrate_resume because a refine
+    has no writer stage and no ATS repair loop."""
+    events: list[GenerationEvent] = []
+    call = completion
+    if completion is _default_completion:
+        call = lambda provider, messages: _completion_with_settings(provider, messages, settings)
+
+    def emit(code, severity, provider, message):
+        events.append(GenerationEvent(
+            code=code, severity=severity, stage="refine", provider=provider["name"],
+            model=provider["model"], attempt=1,
+            timestamp=datetime.now(UTC).isoformat(), message=message,
+        ))
+
+    chain: list[dict[str, str]] = []
+    if request.writer_model:
+        chain.append(_provider_for(request.writer_provider or "omniroute", request.writer_model, settings))
+    for model in (settings.omniroute_resume_reviewer_model,
+                  settings.omniroute_resume_reviewer_fallback_model):
+        candidate = _provider("omniroute", settings.omniroute_base_url,
+                              settings.omniroute_api_key, model)
+        if all(candidate["model"] != existing["model"] for existing in chain):
+            chain.append(candidate)
+
+    for attempt, provider in enumerate(chain):
+        emit("REFINE_STARTED" if attempt == 0 else "REFINE_FALLBACK",
+             "info" if attempt == 0 else "warning", provider, "Refinement started")
+        try:
+            raw = call(provider, _refine_messages(request))
+        except Exception:
+            continue
+        try:
+            validated = _validate_generated_resume(raw, base_resume=request.source_resume)
+        except ValueError as exc:
+            # Same factual gate generation uses: a refinement that invents a
+            # number is rejected rather than shown to the user.
+            emit("REFINE_REJECTED", "warning", provider, f"Refined output failed validation: {exc}")
+            continue
+        emit("REFINE_SUCCEEDED", "info", provider, "Refinement completed")
+        return OrchestrationResult(status="REVIEWED", resume_text=validated, events=events)
+
+    return OrchestrationResult(status="FAILED", resume_text=None, events=events)
+
+
 def orchestrate_resume(
     request: OrchestrationRequest,
     settings: Settings,

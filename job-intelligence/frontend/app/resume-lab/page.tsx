@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { createResumeLabProfile, exportCoverLetterDocx, exportResumeDocx, generateResumeLabCoverLetter, generateResumeLabResume, getJob, getJobs, getResumeLabProfiles, parseResume, rebuildResume, resumeLabModelChoices, removeResumeLabResume, saveResumeLabResume } from "@/lib/api";
+import { createResumeLabProfile, exportCoverLetterDocx, exportResumeDocx, generateResumeLabCoverLetter, generateResumeLabResume, getJob, getJobs, getResumeLabProfiles, parseResume, rebuildResume, refineResumeLabResume, resumeLabModelChoices, removeResumeLabResume, saveResumeLabResume } from "@/lib/api";
 import { loadProfiles } from "@/lib/job-profiles";
 import type { ResumeGenerationMode, ResumeGenerationSpeed, ResumeLabProfile, ResumeLabRunResult, ResumeRebuildResult } from "@/types/job";
 
@@ -860,15 +860,24 @@ export default function ResumeLabPage() {
     setRefineLoading(true);
     if (chipLabel) setActiveChipLabel(chipLabel);
     try {
-      const result = await rebuildResume({
-        base_resume: rebuildResult.rebuilt_resume,
+      if (!activeProfile) throw new Error("Select a profile first");
+      const run = await refineResumeLabResume({
+        profile_id: activeProfile.id,
+        current_resume: rebuildResult.rebuilt_resume,
         job_description: jobDescription,
-        profile_name: activeProfile?.name ?? null,
-        target_title: jobContext,
-        provider: selectedModel.slice(0, selectedModel.indexOf("|")),
-        model: selectedModel.slice(selectedModel.indexOf("|") + 1),
-        refine_instruction: instruction,
+        target_title: jobTitle || jobContext,
+        instruction,
+        speed: generationSpeed,
+        writer_provider: modelChoice.provider,
+        writer_model: modelChoice.model,
+        target_pages: targetPages === "full" ? null : Number(targetPages),
       });
+      if (!run.resume_text) throw new Error("Refinement did not return a resume.");
+      const result: ResumeRebuildResult = {
+        ...rebuildResult,
+        model: run.events.filter((e) => e.model).at(-1)?.model ?? rebuildResult.model,
+        rebuilt_resume: run.resume_text,
+      };
       setRebuildResult(result);
       setAtsAfter(computeAts(result.rebuilt_resume, jobDescription));
       setRefineInstruction("");

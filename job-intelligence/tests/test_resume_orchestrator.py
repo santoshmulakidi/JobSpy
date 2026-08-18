@@ -278,3 +278,82 @@ def test_no_page_target_leaves_prompts_unconstrained():
     fake = FakeCompletion()
     orchestrate_resume(_paged_request(None), settings(), completion=fake)
     assert all("LENGTH TARGET" not in p for p in fake.prompts)
+
+
+from ai.resume_orchestrator import RefineRequest, refine_resume
+
+
+def _refine(instruction="Shorten the summary.", **kw):
+    return RefineRequest(
+        source_resume=BASE_RESUME, current_resume=BASE_RESUME, job_description=JD,
+        target_title="AI Engineer", instruction=instruction, **kw,
+    )
+
+
+def test_refine_uses_the_chosen_model_then_the_reviewer_chain():
+    fake = FakeCompletion()
+    result = refine_resume(
+        _refine(writer_provider="omniroute", writer_model="claude/claude-opus-5"),
+        settings(), completion=fake,
+    )
+    assert fake.models == ["claude/claude-opus-5"]
+    assert result.status == "REVIEWED"
+    assert "REFINE_SUCCEEDED" in result.event_codes
+
+
+def test_refine_falls_back_when_a_provider_fails():
+    fake = FakeCompletion(failures=("no-think/claude/claude-haiku-4-5-20251001",))
+    result = refine_resume(_refine(), settings(), completion=fake)
+    assert fake.models == [
+        "no-think/claude/claude-haiku-4-5-20251001",
+        "no-think/claude/claude-sonnet-5",
+    ]
+    assert result.status == "REVIEWED"
+
+
+# A resume whose experience section clears the repair minimum, so the numeric
+# gate is what rejects the output rather than the section-restore safety net.
+FULL_RESUME = BASE_RESUME.replace(
+    "- Built Python and Azure APIs.",
+    "- Built Python and Azure APIs.\n"
+    + "\n".join(
+        f"- Delivered REST endpoints and Azure Functions for workstream {n}, "
+        "covering validation, retries, and production support." for n in range(1, 9)
+    ),
+)
+
+
+def test_refine_rejects_output_that_invents_numbers():
+    # This is the gate refinement previously skipped entirely.
+    class Fabricator(FakeCompletion):
+        def __call__(self, provider, messages):
+            self.models.append(provider["model"])
+            return FULL_RESUME.replace(
+                "- Built Python and Azure APIs.",
+                "- Built Python and Azure APIs, cutting latency by 97%.",
+            )
+
+    fake = Fabricator()
+    result = refine_resume(
+        RefineRequest(
+            source_resume=FULL_RESUME, current_resume=FULL_RESUME, job_description=JD,
+            target_title="AI Engineer", instruction="Tighten the bullets.",
+        ),
+        settings(), completion=fake,
+    )
+    assert result.status == "FAILED"
+    assert result.resume_text is None
+    assert "REFINE_REJECTED" in result.event_codes
+
+
+def test_refine_carries_the_page_budget():
+    fake = FakeCompletion()
+    refine_resume(_refine(target_pages=1), settings(), completion=fake)
+    assert "LENGTH TARGET" in fake.prompts[0]
+
+
+def test_refine_shows_the_model_the_source_of_truth():
+    fake = FakeCompletion()
+    refine_resume(_refine(), settings(), completion=fake)
+    assert "SOURCE RESUME (truth baseline)" in fake.prompts[0]
+    assert "Shorten the summary." in fake.prompts[0]

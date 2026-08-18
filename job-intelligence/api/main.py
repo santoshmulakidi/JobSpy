@@ -23,7 +23,13 @@ from sqlalchemy.orm import Session
 from analytics import AnalyticsEngine
 from ai import rebuild_resume
 from ai.resume_keyword_plan import extract_target_title, normalized_hash
-from ai.resume_orchestrator import GenerationMode, OrchestrationRequest, orchestrate_resume
+from ai.resume_orchestrator import (
+    GenerationMode,
+    OrchestrationRequest,
+    RefineRequest,
+    orchestrate_resume,
+    refine_resume,
+)
 from api.schemas import (
     AIGenerationJobOut,
     AnalyticsOut,
@@ -54,6 +60,8 @@ from api.schemas import (
     ResumeLabGenerateRequest,
     ResumeLabGenerateResponse,
     ResumeLabCoverLetterRequest,
+    ResumeLabRefineRequest,
+    ResumeLabRefineResponse,
     ResumeRebuildRequest,
     ResumeRebuildResponse,
     SavedSearchIn,
@@ -855,6 +863,39 @@ def _gemini_cover_letter_from_run(
     raise HTTPException(
         status_code=503,
         detail="All Gemini keys failed temporarily. OpenRouter was not called.",
+    )
+
+
+@app.post("/resume-lab/refine", response_model=ResumeLabRefineResponse)
+def refine_resume_lab_resume(
+    payload: ResumeLabRefineRequest, session: Session = Depends(get_session)
+):
+    repository = JobRepository(session)
+    profile = repository.get_resume_lab_profile(payload.profile_id)
+    if profile is None or not profile.resume_text:
+        raise HTTPException(status_code=404, detail="Resume Lab profile not found")
+    result = refine_resume(
+        RefineRequest(
+            source_resume=profile.resume_text,
+            current_resume=payload.current_resume,
+            job_description=payload.job_description,
+            target_title=payload.target_title,
+            instruction=payload.instruction,
+            speed=payload.speed,
+            writer_provider=payload.writer_provider,
+            writer_model=payload.writer_model,
+            target_pages=payload.target_pages,
+        ),
+        settings,
+    )
+    if result.status != "REVIEWED" or not result.resume_text:
+        raise HTTPException(
+            status_code=502,
+            detail="Refinement did not produce a valid resume. See the model events.",
+        )
+    return ResumeLabRefineResponse(
+        status=result.status, resume_text=result.resume_text,
+        events=[GenerationEventOut(**asdict(e)) for e in result.events],
     )
 
 

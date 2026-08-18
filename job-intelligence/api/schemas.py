@@ -192,6 +192,24 @@ class ResumeLabGenerateResponse(BaseModel):
     cache_hit: bool = False
 
 
+class ResumeLabRefineRequest(BaseModel):
+    profile_id: int
+    current_resume: str = Field(min_length=50)
+    job_description: str = Field(min_length=50)
+    target_title: str = Field(min_length=1, max_length=500)
+    instruction: str = Field(min_length=3, max_length=4000)
+    speed: Literal["fast", "balanced", "best"] = "balanced"
+    writer_provider: str | None = Field(default=None, max_length=40)
+    writer_model: str | None = Field(default=None, max_length=160)
+    target_pages: Literal[1, 2, 3] | None = None
+
+
+class ResumeLabRefineResponse(BaseModel):
+    status: Literal["REVIEWED", "FAILED"]
+    resume_text: str | None
+    events: list[GenerationEventOut]
+
+
 class ResumeLabCoverLetterRequest(BaseModel):
     run_id: str
     job_description: str = Field(min_length=50)
