@@ -191,6 +191,17 @@ export type ResumeModelChoice = {
 export type ResumeGenerationMode = "HYBRID" | "IMPORTANT";
 export type ResumeGenerationSpeed = "fast" | "balanced" | "best";
 
+export type ResumeLabModelChoice = {
+  id: string;
+  provider: string;
+  model: string;
+  label: string;
+  cost: "Free" | "Paid";
+  pace: "Fast" | "Medium" | "Slow";
+  speed: ResumeGenerationSpeed;
+  note: string;
+};
+
 export type ResumeLabProfile = {
   id: number;
   name: string;

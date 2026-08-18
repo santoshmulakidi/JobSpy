@@ -18,6 +18,7 @@ import type {
   ResumeModelChoice,
   ResumeGenerationMode,
   ResumeGenerationSpeed,
+  ResumeLabModelChoice,
   ResumeLabProfile,
   ResumeLabRunResult,
 } from "@/types/job";
@@ -186,6 +187,7 @@ export function removeResumeLabResume(profileId: number, sourceVersion: number) 
 export function generateResumeLabResume(payload: {
   profile_id: number; source_version: number; mode: ResumeGenerationMode;
   speed?: ResumeGenerationSpeed;
+  writer_provider?: string | null; writer_model?: string | null;
   job_description: string; target_title?: string | null;
   company_name?: string | null; idempotency_key: string;
 }) {
@@ -247,6 +249,45 @@ export function resumeModelChoices(): ResumeModelChoice[] {
     { provider: "openrouter", model: "anthropic/claude-sonnet-4-5", label: "Premium: Claude Sonnet 4.5", tier: "Premium" },
     { provider: "openrouter", model: "anthropic/claude-opus-4-5", label: "Premium: Claude Opus 4.5", tier: "Premium" },
     { provider: "openrouter", model: "openai/gpt-4o", label: "Premium: GPT-4o", tier: "Premium" },
+  ];
+}
+
+// Writer models offered in the Resume Lab dropdown. `speed` drives the
+// server-side repair budget; the reviewer stage is chosen by the backend.
+export function resumeLabModelChoices(): ResumeLabModelChoice[] {
+  return [
+    {
+      id: "haiku-fast", provider: "omniroute",
+      model: "no-think/claude/claude-haiku-4-5-20251001",
+      label: "Claude Haiku 4.5", cost: "Free", pace: "Fast", speed: "fast",
+      note: "Quickest. Single review pass, no ATS repair.",
+    },
+    {
+      id: "glm-fast", provider: "nvidia", model: "z-ai/glm-5.2",
+      label: "NVIDIA GLM-5.2", cost: "Free", pace: "Fast", speed: "fast",
+      note: "Free NVIDIA writer. No ATS repair pass.",
+    },
+    {
+      id: "sonnet-balanced", provider: "omniroute",
+      model: "no-think/claude/claude-sonnet-5",
+      label: "Claude Sonnet 5", cost: "Free", pace: "Medium", speed: "balanced",
+      note: "Recommended. Strong prose, one ATS repair pass.",
+    },
+    {
+      id: "sonnet-thinking", provider: "omniroute", model: "claude/claude-sonnet-5",
+      label: "Claude Sonnet 5 (thinking)", cost: "Free", pace: "Slow", speed: "best",
+      note: "Extended reasoning, up to two ATS repair passes.",
+    },
+    {
+      id: "opus-best", provider: "omniroute", model: "claude/claude-opus-5",
+      label: "Claude Opus 5", cost: "Free", pace: "Slow", speed: "best",
+      note: "Highest quality, slowest. Two ATS repair passes.",
+    },
+    {
+      id: "deepseek-paid", provider: "openrouter", model: "deepseek/deepseek-v4-pro",
+      label: "DeepSeek V4 Pro", cost: "Paid", pace: "Slow", speed: "best",
+      note: "Billed via OpenRouter credits.",
+    },
   ];
 }
 

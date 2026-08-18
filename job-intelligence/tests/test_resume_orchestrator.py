@@ -195,3 +195,46 @@ def test_internal_score_ignores_job_description_prose():
     assert result.ats_score == 100
     assert "ATS_REPAIR_STARTED" not in result.event_codes
     assert "ATS_TARGET_REACHED" in result.event_codes
+
+
+def _request_with_model(provider, model, speed="balanced"):
+    return OrchestrationRequest(
+        source_resume=BASE_RESUME, job_description=JD, target_title="AI Engineer",
+        company_name="Example", mode=GenerationMode.HYBRID, speed=speed,
+        writer_provider=provider, writer_model=model,
+    )
+
+
+def test_selected_writer_model_leads_the_chain():
+    fake = FakeCompletion()
+    orchestrate_resume(
+        _request_with_model("omniroute", "claude/claude-opus-5"),
+        settings(), completion=fake,
+    )
+    assert fake.models[0] == "claude/claude-opus-5"
+
+
+def test_selected_writer_falls_back_to_the_tier_chain():
+    fake = FakeCompletion(failures=("claude/claude-opus-5",))
+    result = orchestrate_resume(
+        _request_with_model("omniroute", "claude/claude-opus-5"),
+        settings(), completion=fake,
+    )
+    assert fake.models[:2] == ["claude/claude-opus-5", "no-think/claude/claude-sonnet-5"]
+    assert result.status == "REVIEWED"
+
+
+def test_selected_model_is_not_duplicated_in_the_chain():
+    fake = FakeCompletion(failures=("no-think/claude/claude-sonnet-5",))
+    orchestrate_resume(
+        _request_with_model("omniroute", "no-think/claude/claude-sonnet-5"),
+        settings(), completion=fake,
+    )
+    writer_calls = [m for m in fake.models if m == "no-think/claude/claude-sonnet-5"]
+    assert len(writer_calls) == 1
+
+
+def test_no_selected_model_keeps_the_tier_default():
+    fake = FakeCompletion()
+    orchestrate_resume(request(), settings(), completion=fake)
+    assert fake.models[0] == "no-think/claude/claude-sonnet-5"

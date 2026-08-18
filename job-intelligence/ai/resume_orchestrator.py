@@ -35,6 +35,8 @@ class OrchestrationRequest:
     company_name: str | None
     mode: GenerationMode
     speed: str = "balanced"
+    writer_provider: str | None = None
+    writer_model: str | None = None
 
 
 @dataclass
@@ -86,6 +88,19 @@ def _supported_coverage(resume_text: str, supported: list[str]) -> int:
     lowered = resume_text.lower()
     matched = sum(1 for term in supported if term.lower() in lowered)
     return round(matched / len(supported) * 100)
+
+
+def _provider_for(name: str, model: str, settings: Settings) -> dict[str, str]:
+    """Build a provider entry for a user-selected writer model."""
+    bases = {
+        "omniroute": (settings.omniroute_base_url, settings.omniroute_api_key),
+        "openrouter": (settings.openrouter_base_url, settings.openrouter_api_key),
+        "nvidia": (settings.nvidia_base_url, settings.nvidia_api_key),
+        "groq": (settings.groq_base_url, settings.groq_api_key),
+    }
+    resolved = name if name in bases else "omniroute"
+    base_url, api_key = bases[resolved]
+    return _provider(resolved, base_url, api_key, model)
 
 
 def _provider(name: str, base_url: str, api_key: str | None, model: str) -> dict[str, str]:
@@ -182,6 +197,15 @@ def orchestrate_resume(
         writer_chain = [omniroute_writer_best, omniroute_writer, paid_writer]
     else:
         writer_chain = [omniroute_writer, nvidia_fallback]
+    if request.writer_model:
+        # An explicitly chosen model leads; the tier chain stays behind it as
+        # fallback so a bad pick degrades instead of failing outright.
+        chosen = _provider_for(
+            request.writer_provider or "omniroute", request.writer_model, settings
+        )
+        writer_chain = [chosen] + [
+            p for p in writer_chain if p["model"] != chosen["model"]
+        ]
     draft = None
     writer = writer_chain[0]
     for attempt, candidate in enumerate(writer_chain):

@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { createResumeLabProfile, exportCoverLetterDocx, exportResumeDocx, generateResumeLabCoverLetter, generateResumeLabResume, getJob, getJobs, getResumeLabProfiles, parseResume, rebuildResume, removeResumeLabResume, saveResumeLabResume } from "@/lib/api";
+import { createResumeLabProfile, exportCoverLetterDocx, exportResumeDocx, generateResumeLabCoverLetter, generateResumeLabResume, getJob, getJobs, getResumeLabProfiles, parseResume, rebuildResume, resumeLabModelChoices, removeResumeLabResume, saveResumeLabResume } from "@/lib/api";
 import { loadProfiles } from "@/lib/job-profiles";
 import type { ResumeGenerationMode, ResumeGenerationSpeed, ResumeLabProfile, ResumeLabRunResult, ResumeRebuildResult } from "@/types/job";
 
@@ -470,7 +470,10 @@ export default function ResumeLabPage() {
   const [returnTo, setReturnTo] = useState<string | null>(null);
   const [rebuildLoading, setRebuildLoading] = useState(false);
   const [rebuildResult, setRebuildResult] = useState<ResumeRebuildResult | null>(null);
-  const [generationSpeed, setGenerationSpeed] = useState<ResumeGenerationSpeed>("balanced");
+  const modelChoices = resumeLabModelChoices();
+  const [modelChoiceId, setModelChoiceId] = useState<string>("sonnet-balanced");
+  const modelChoice = modelChoices.find((c) => c.id === modelChoiceId) ?? modelChoices[0]!;
+  const generationSpeed: ResumeGenerationSpeed = modelChoice.speed;
   const generationMode: ResumeGenerationMode = generationSpeed === "best" ? "IMPORTANT" : "HYBRID";
   const [generationRun, setGenerationRun] = useState<ResumeLabRunResult | null>(null);
   const [generatedSnapshot, setGeneratedSnapshot] = useState<string | null>(null);
@@ -500,14 +503,9 @@ export default function ResumeLabPage() {
   const [coverLetterProvider, setCoverLetterProvider] = useState("");
   const [coverLetterLoading, setCoverLetterLoading] = useState(false);
   const [coverLetterDocxLoading, setCoverLetterDocxLoading] = useState(false);
-  // Refinement runs through /resume/rebuild, so keep its model in step with the
-  // tier's generation writer. Nemotron Ultra is deliberately absent here too —
-  // it exhausts the per-call timeout before returning.
-  const selectedModel = generationSpeed === "fast"
-    ? "omniroute|no-think/claude/claude-haiku-4-5-20251001"
-    : generationSpeed === "best"
-      ? "omniroute|claude/claude-sonnet-5"
-      : "omniroute|no-think/claude/claude-sonnet-5";
+  // Refinement runs through /resume/rebuild, so it reuses whichever writer the
+  // user picked rather than resolving a model of its own.
+  const selectedModel = `${modelChoice.provider}|${modelChoice.model}`;
 
   async function downloadWord() {
     if (!rebuildResult) return;
@@ -539,7 +537,7 @@ export default function ResumeLabPage() {
   const activeProfile = profiles.find((profile) => profile.id === profileId) ?? profiles[0];
   const currentSnapshot = JSON.stringify([
     activeProfile?.id ?? null, activeProfile?.source_version ?? null,
-    jobDescription, jobTitle, jobCompany, generationMode, generationSpeed,
+    jobDescription, jobTitle, jobCompany, generationMode, generationSpeed, modelChoiceId,
   ]);
   const coverLetterEnabled = Boolean(
     generationRun?.status === "REVIEWED" && generationRun.resume_text
@@ -769,6 +767,8 @@ export default function ResumeLabPage() {
         source_version: activeProfile.source_version,
         mode: generationMode,
         speed: generationSpeed,
+        writer_provider: modelChoice.provider,
+        writer_model: modelChoice.model,
         job_description: jobDescription,
         target_title: jobTitle || null,
         company_name: jobCompany || null,
@@ -778,9 +778,8 @@ export default function ResumeLabPage() {
       if (run.status !== "REVIEWED" || !run.resume_text) {
         throw new Error("Resume generation did not complete review. See the model events below.");
       }
-      const speedLabel = generationSpeed === "fast" ? "Fast" : generationSpeed === "best" ? "Best Quality" : "Balanced";
       const result: ResumeRebuildResult = {
-        provider: `${speedLabel} (${generationMode === "HYBRID" ? "NVIDIA-First Hybrid" : "OpenRouter Important"})`,
+        provider: `${modelChoice.cost} · ${modelChoice.pace} · ${modelChoice.label}`,
         model: run.events.filter((event) => event.model).at(-1)?.model ?? null,
         rebuilt_resume: run.resume_text,
         change_summary: [`ATS ${run.ats_score ?? "not available"}% after ${run.attempts} attempt(s)`],
@@ -788,7 +787,7 @@ export default function ResumeLabPage() {
         prompt: "",
       };
       setRebuildResult(result);
-      setGeneratedSnapshot(JSON.stringify([activeProfile.id, activeProfile.source_version, jobDescription, jobTitle, jobCompany, generationMode, generationSpeed]));
+      setGeneratedSnapshot(JSON.stringify([activeProfile.id, activeProfile.source_version, jobDescription, jobTitle, jobCompany, generationMode, generationSpeed, modelChoiceId]));
       setAtsBefore(before);
       const after = computeAts(result.rebuilt_resume, jobDescription);
       setAtsAfter(after);
@@ -1083,19 +1082,19 @@ export default function ResumeLabPage() {
               className="min-h-80"
             />
             <div className="flex flex-wrap gap-2">
-              <div className="grid w-full gap-2 md:grid-cols-3">
-                <button type="button" onClick={() => setGenerationSpeed("fast")} className={`rounded-lg border p-3 text-left ${generationSpeed === "fast" ? "border-primary bg-primary/5" : ""}`}>
-                  <span className="font-medium">Fast</span> <span className="text-xs text-muted-foreground">Free</span>
-                  <p className="mt-1 text-xs text-muted-foreground">Free NVIDIA GLM-5.2 writer, single Claude Haiku review pass, no ATS repair loop. Quickest turnaround.</p>
-                </button>
-                <button type="button" onClick={() => setGenerationSpeed("balanced")} className={`rounded-lg border p-3 text-left ${generationSpeed === "balanced" ? "border-primary bg-primary/5" : ""}`}>
-                  <span className="font-medium">Balanced</span> <span className="text-xs text-primary">Default</span>
-                  <p className="mt-1 text-xs text-muted-foreground">Nemotron Ultra writes first, then free GLM-5.2. Paid OpenRouter starts only if both fail.</p>
-                </button>
-                <button type="button" onClick={() => setGenerationSpeed("best")} className={`rounded-lg border p-3 text-left ${generationSpeed === "best" ? "border-primary bg-primary/5" : ""}`}>
-                  <span className="font-medium">Best Quality</span> <span className="text-xs text-muted-foreground">Paid</span>
-                  <p className="mt-1 text-xs text-muted-foreground">Paid OpenRouter writer, Claude Sonnet review fallback, up to 2 ATS repair passes. Slowest, highest quality.</p>
-                </button>
+              <div className="w-full space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Generation model</label>
+                <Select value={modelChoiceId} onValueChange={setModelChoiceId}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {modelChoices.map((choice) => (
+                      <SelectItem key={choice.id} value={choice.id}>
+                        {choice.cost} · {choice.pace} · {choice.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">{modelChoice.note}</p>
               </div>
               <Button onClick={rebuildTailoredResume} disabled={rebuildLoading}>
                 {rebuildLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
