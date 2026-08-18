@@ -238,3 +238,43 @@ def test_no_selected_model_keeps_the_tier_default():
     fake = FakeCompletion()
     orchestrate_resume(request(), settings(), completion=fake)
     assert fake.models[0] == "no-think/claude/claude-sonnet-5"
+
+
+def _paged_request(pages):
+    return OrchestrationRequest(
+        source_resume=BASE_RESUME, job_description=JD, target_title="AI Engineer",
+        company_name="Example", mode=GenerationMode.HYBRID, speed="balanced",
+        target_pages=pages,
+    )
+
+
+def test_page_target_reaches_writer_reviewer_and_repair_prompts():
+    fake = FakeCompletion()
+    orchestrate_resume(
+        _paged_request(1), settings(repairs=1), completion=fake,
+        score_fn=lambda _r, _j: 40,
+    )
+    # writer, reviewer and the repair pass must all carry the budget
+    assert len(fake.prompts) == 3
+    for prompt in fake.prompts:
+        assert "LENGTH TARGET" in prompt
+        assert "550 words" in prompt
+
+
+def test_page_target_never_asks_to_drop_roles():
+    fake = FakeCompletion()
+    orchestrate_resume(_paged_request(1), settings(), completion=fake)
+    assert "Condense by shortening and merging bullets, not by removing roles." in fake.prompts[0]
+
+
+def test_two_and_three_page_targets_use_larger_budgets():
+    for pages, budget in ((2, "950 words"), (3, "1400 words")):
+        fake = FakeCompletion()
+        orchestrate_resume(_paged_request(pages), settings(), completion=fake)
+        assert budget in fake.prompts[0]
+
+
+def test_no_page_target_leaves_prompts_unconstrained():
+    fake = FakeCompletion()
+    orchestrate_resume(_paged_request(None), settings(), completion=fake)
+    assert all("LENGTH TARGET" not in p for p in fake.prompts)

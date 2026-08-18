@@ -770,6 +770,7 @@ def generate_resume_lab_resume(
     cache_key = normalized_hash(
         input_hash, settings.resume_orchestration_version, payload.speed,
         payload.writer_provider or "", payload.writer_model or "",
+        str(payload.target_pages or ""),
         settings.nvidia_resume_writer_model, settings.nvidia_resume_writer_fallback_model,
         settings.openrouter_resume_writer_model,
         settings.omniroute_resume_reviewer_model,
@@ -788,6 +789,7 @@ def generate_resume_lab_resume(
             company_name=payload.company_name,
             mode=GenerationMode(payload.mode),
             speed=payload.speed,
+            target_pages=payload.target_pages,
             writer_provider=payload.writer_provider,
             writer_model=payload.writer_model,
         ),

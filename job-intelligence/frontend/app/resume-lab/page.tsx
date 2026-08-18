@@ -518,6 +518,7 @@ export default function ResumeLabPage() {
   const [rebuildResult, setRebuildResult] = useState<ResumeRebuildResult | null>(null);
   const modelChoices = resumeLabModelChoices();
   const [modelChoiceId, setModelChoiceId] = useState<string>("sonnet-balanced");
+  const [targetPages, setTargetPages] = useState<string>("2");
   const modelChoice = modelChoices.find((c) => c.id === modelChoiceId) ?? modelChoices[0]!;
   const generationSpeed: ResumeGenerationSpeed = modelChoice.speed;
   const generationMode: ResumeGenerationMode = generationSpeed === "best" ? "IMPORTANT" : "HYBRID";
@@ -583,7 +584,7 @@ export default function ResumeLabPage() {
   const activeProfile = profiles.find((profile) => profile.id === profileId) ?? profiles[0];
   const currentSnapshot = JSON.stringify([
     activeProfile?.id ?? null, activeProfile?.source_version ?? null,
-    jobDescription, jobTitle, jobCompany, generationMode, generationSpeed, modelChoiceId,
+    jobDescription, jobTitle, jobCompany, generationMode, generationSpeed, modelChoiceId, targetPages,
   ]);
   const coverLetterEnabled = Boolean(
     generationRun?.status === "REVIEWED" && generationRun.resume_text
@@ -815,6 +816,7 @@ export default function ResumeLabPage() {
         speed: generationSpeed,
         writer_provider: modelChoice.provider,
         writer_model: modelChoice.model,
+        target_pages: targetPages === "full" ? null : Number(targetPages),
         job_description: jobDescription,
         target_title: jobTitle || null,
         company_name: jobCompany || null,
@@ -833,7 +835,7 @@ export default function ResumeLabPage() {
         prompt: "",
       };
       setRebuildResult(result);
-      setGeneratedSnapshot(JSON.stringify([activeProfile.id, activeProfile.source_version, jobDescription, jobTitle, jobCompany, generationMode, generationSpeed, modelChoiceId]));
+      setGeneratedSnapshot(JSON.stringify([activeProfile.id, activeProfile.source_version, jobDescription, jobTitle, jobCompany, generationMode, generationSpeed, modelChoiceId, targetPages]));
       setAtsBefore(before);
       const after = computeAts(result.rebuilt_resume, jobDescription);
       setAtsAfter(after);
@@ -1149,6 +1151,21 @@ export default function ResumeLabPage() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">{modelChoice.note}</p>
+              </div>
+              <div className="w-full space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Resume length</label>
+                <Select value={targetPages} onValueChange={setTargetPages}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 page — most condensed</SelectItem>
+                    <SelectItem value="2">2 pages — recommended</SelectItem>
+                    <SelectItem value="3">3 pages</SelectItem>
+                    <SelectItem value="full">Full length — no trimming</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Every employer, title and date is kept. Shorter targets condense older roles first.
+                </p>
               </div>
               <Button onClick={rebuildTailoredResume} disabled={rebuildLoading}>
                 {rebuildLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}

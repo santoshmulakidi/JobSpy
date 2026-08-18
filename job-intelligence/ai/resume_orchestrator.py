@@ -37,6 +37,7 @@ class OrchestrationRequest:
     speed: str = "balanced"
     writer_provider: str | None = None
     writer_model: str | None = None
+    target_pages: int | None = None
 
 
 @dataclass
@@ -124,6 +125,26 @@ def _completion_with_settings(
         raise TemporaryProviderError("provider temporarily unavailable") from exc
 
 
+# Approximate word budgets per page for a dense technical resume. Used to tell
+# the model how much to condense; employers and dates are never dropped.
+_PAGE_WORD_BUDGET = {1: 550, 2: 950, 3: 1400}
+
+
+def _length_instruction(target_pages: int | None) -> str:
+    if not target_pages:
+        return ""
+    budget = _PAGE_WORD_BUDGET.get(target_pages, 950)
+    return (
+        f"\n\nLENGTH TARGET: about {budget} words, roughly {target_pages} page"
+        f"{'s' if target_pages > 1 else ''}. Keep every employer, job title, "
+        "location, and date range exactly as in the source, and keep the "
+        "Education and contact details complete. Condense by shortening and "
+        "merging bullets, not by removing roles. Give the two most recent roles "
+        "the most detail; reduce older roles to their strongest 2 to 4 bullets "
+        "and drop their Environment lines if space requires it."
+    )
+
+
 def _messages(request: OrchestrationRequest, *, draft: str | None = None) -> list[dict[str, str]]:
     plan = build_keyword_plan(
         request.source_resume, request.job_description, target_title=request.target_title
@@ -136,12 +157,15 @@ def _messages(request: OrchestrationRequest, *, draft: str | None = None) -> lis
             f"naturally: {supported}. Unsupported JD keywords that must NOT be added: {unsupported}. "
             "Replace the displayed titles of the two most recent roles with the target title. "
             "Preserve employers, dates, education, contact details, responsibilities, and every other fact."
+            + _length_instruction(request.target_pages)
         )
     else:
         task = (
             "Review and return the complete corrected resume. Treat the source resume as the sole "
             "source of truth. Remove unsupported claims, AI filler, promotional wording, repetition, "
-            "and uniform bullet patterns. Preserve all roles.\n\nWRITER DRAFT:\n" + draft
+            "and uniform bullet patterns. Preserve all roles."
+            + _length_instruction(request.target_pages)
+            + "\n\nWRITER DRAFT:\n" + draft
         )
     return [
         {"role": "system", "content": "You are a truthful ATS resume specialist. Output plain resume text only."},
@@ -281,6 +305,7 @@ def orchestrate_resume(
                 f"Add these supported exact JD phrases naturally: {', '.join(missing) or 'improve existing placement'}. "
                 f"Never add unsupported phrases: {', '.join(plan.unsupported) or 'None'}. "
                 "Preserve all employers, dates, older roles, education, contact details, and numeric claims."
+                + _length_instruction(request.target_pages)
             )},
         ]
         try:

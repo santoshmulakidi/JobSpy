@@ -170,6 +170,7 @@ class ResumeLabGenerateRequest(BaseModel):
     source_version: int = Field(ge=0)
     mode: Literal["HYBRID", "IMPORTANT"]
     speed: Literal["fast", "balanced", "best"] = "balanced"
+    target_pages: Literal[1, 2, 3] | None = None
     writer_provider: str | None = Field(default=None, max_length=40)
     writer_model: str | None = Field(default=None, max_length=160)
     job_description: str = Field(min_length=50)
