@@ -79,6 +79,15 @@ def _validate_generated_resume(text: str, *, base_resume: str) -> str:
     return repaired
 
 
+def _supported_coverage(resume_text: str, supported: list[str]) -> int:
+    """Percentage of truthfully-supported JD terms present in the resume."""
+    if not supported:
+        return 100
+    lowered = resume_text.lower()
+    matched = sum(1 for term in supported if term.lower() in lowered)
+    return round(matched / len(supported) * 100)
+
+
 def _provider(name: str, base_url: str, api_key: str | None, model: str) -> dict[str, str]:
     return {"name": name, "base_url": base_url.rstrip("/"), "api_key": api_key or "", "model": model}
 
@@ -215,11 +224,17 @@ def orchestrate_resume(
         )
     titled, originals = replace_two_recent_titles(validated, request.target_title)
     best_text = titled
-    best_score = score_fn(best_text, request.job_description)
-    attempts = 1
     plan = build_keyword_plan(
         request.source_resume, request.job_description, target_title=request.target_title
     )
+    # Score against the terms the repair loop can actually act on. Scoring every
+    # JD token instead counts prose ("verbal", "desirable", "qualifications")
+    # and unsupported skills as permanent misses, so the target is unreachable
+    # and every run burns its full repair budget for nothing.
+    if score_fn is compute_ats_score:
+        score_fn = lambda text, _jd: _supported_coverage(text, plan.supported)
+    best_score = score_fn(best_text, request.job_description)
+    attempts = 1
     if request.speed == "fast":
         max_repairs = 0
     elif request.speed == "best":

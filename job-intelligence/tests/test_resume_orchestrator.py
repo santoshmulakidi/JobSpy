@@ -171,3 +171,27 @@ def test_below_85_uses_targeted_repair_and_stops_when_target_reached():
     assert result.attempts == 2
     assert "ATS_REPAIR_STARTED" in result.event_codes
     assert "ATS_TARGET_REACHED" in result.event_codes
+
+
+def test_internal_score_ignores_job_description_prose():
+    # The JD is mostly boilerplate the resume can never truthfully match; only
+    # the supported tech terms should count toward the repair target.
+    prose_jd = (
+        "We are seeking a highly experienced candidate. Verbal and written "
+        "communication is critical. Desirable qualifications include the "
+        "ability to learn quickly. Requires Python and Azure experience."
+    )
+    fake = FakeCompletion()
+    result = orchestrate_resume(
+        OrchestrationRequest(
+            source_resume=BASE_RESUME, job_description=prose_jd,
+            target_title="AI Engineer", company_name="Example",
+            mode=GenerationMode.HYBRID, speed="balanced",
+        ),
+        settings(repairs=2), completion=fake,
+    )
+    # BASE_RESUME genuinely contains Python and Azure, so coverage is complete
+    # and no repair pass is needed despite the unmatched prose.
+    assert result.ats_score == 100
+    assert "ATS_REPAIR_STARTED" not in result.event_codes
+    assert "ATS_TARGET_REACHED" in result.event_codes
