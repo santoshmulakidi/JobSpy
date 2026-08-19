@@ -261,10 +261,15 @@ def refine_resume(
             continue
         try:
             validated = _validate_generated_resume(raw, base_resume=request.source_resume)
-        except ValueError as exc:
+        except Exception as exc:
             # Same factual gate generation uses: a refinement that invents a
-            # number is rejected rather than shown to the user.
-            emit("REFINE_REJECTED", "warning", provider, f"Refined output failed validation: {exc}")
+            # number is rejected rather than shown to the user. Catch broadly so
+            # a malformed model response falls through to the next provider
+            # instead of escaping as an unhandled 500.
+            emit(
+                "REFINE_REJECTED", "warning", provider,
+                f"Refined output failed validation: {type(exc).__name__}: {exc}",
+            )
             continue
         emit("REFINE_SUCCEEDED", "info", provider, "Refinement completed")
         return OrchestrationResult(status="REVIEWED", resume_text=validated, events=events)

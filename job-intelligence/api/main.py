@@ -874,20 +874,26 @@ def refine_resume_lab_resume(
     profile = repository.get_resume_lab_profile(payload.profile_id)
     if profile is None or not profile.resume_text:
         raise HTTPException(status_code=404, detail="Resume Lab profile not found")
-    result = refine_resume(
-        RefineRequest(
-            source_resume=profile.resume_text,
-            current_resume=payload.current_resume,
-            job_description=payload.job_description,
-            target_title=payload.target_title,
-            instruction=payload.instruction,
-            speed=payload.speed,
-            writer_provider=payload.writer_provider,
-            writer_model=payload.writer_model,
-            target_pages=payload.target_pages,
-        ),
-        settings,
-    )
+    try:
+        result = refine_resume(
+            RefineRequest(
+                source_resume=profile.resume_text,
+                current_resume=payload.current_resume,
+                job_description=payload.job_description,
+                target_title=payload.target_title,
+                instruction=payload.instruction,
+                speed=payload.speed,
+                writer_provider=payload.writer_provider,
+                writer_model=payload.writer_model,
+                target_pages=payload.target_pages,
+            ),
+            settings,
+        )
+    except Exception as exc:  # surface the cause instead of a bare 500
+        logging.getLogger(__name__).exception("resume-lab refine failed")
+        raise HTTPException(
+            status_code=502, detail=f"Refinement failed: {type(exc).__name__}: {exc}"
+        ) from exc
     if result.status != "REVIEWED" or not result.resume_text:
         # Return the events rather than a bare status code. Without them the
         # caller is told to "see the model events" and has no way to see them.
