@@ -357,3 +357,15 @@ def test_refine_shows_the_model_the_source_of_truth():
     refine_resume(_refine(), settings(), completion=fake)
     assert "SOURCE RESUME (truth baseline)" in fake.prompts[0]
     assert "Shorten the summary." in fake.prompts[0]
+
+
+def test_generated_resume_normalizes_nonstandard_bullet_glyphs():
+    from ai.resume_orchestrator import _validate_generated_resume
+
+    text_with_odd_bullets = BASE_RESUME.replace(
+        "- Built Python and Azure APIs.",
+        "▪ Built Python and Azure APIs.",
+    )
+    result = _validate_generated_resume(text_with_odd_bullets, base_resume=BASE_RESUME)
+    assert "▪" not in result
+    assert "- Built Python and Azure APIs." in result

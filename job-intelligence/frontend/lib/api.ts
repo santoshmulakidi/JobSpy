@@ -310,6 +310,16 @@ export function resumeLabModelChoices(): ResumeLabModelChoice[] {
       label: "DeepSeek V4 Pro", cost: "Paid", pace: "Slow", speed: "best",
       note: "Billed via OpenRouter credits.",
     },
+    {
+      id: "claude-sonnet-45-paid", provider: "openrouter", model: "anthropic/claude-sonnet-4-5",
+      label: "Claude Sonnet 4.5", cost: "Paid", pace: "Medium", speed: "best",
+      note: "Billed via OpenRouter credits. Strong prose quality at moderate latency.",
+    },
+    {
+      id: "gpt-4o-paid", provider: "openrouter", model: "openai/gpt-4o",
+      label: "GPT-4o", cost: "Paid", pace: "Medium", speed: "best",
+      note: "Billed via OpenRouter credits.",
+    },
   ];
 }
 

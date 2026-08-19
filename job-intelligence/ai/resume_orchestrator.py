@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -71,6 +72,20 @@ class OrchestrationResult:
 CompletionFn = Callable[[dict[str, str], list[dict[str, str]]], str]
 
 
+_BULLET_GLYPH_RE = re.compile(r"^(\s*)[▪▶●◆■□○◦‣∙·–—]\s+")
+
+
+def _normalize_bullets(text: str) -> str:
+    """Rewrite non-standard bullet glyphs to a plain hyphen.
+
+    Some models (notably NVIDIA's GLM route) emit "▪" instead of "-". The
+    frontend's bullet detector only recognizes -, •, and *, so unrecognized
+    glyphs get miscounted as parse-breaking characters and the resume shows
+    "0 achievement bullets" even when every line has one.
+    """
+    return "\n".join(_BULLET_GLYPH_RE.sub(r"\1- ", line) for line in text.split("\n"))
+
+
 def _validate_generated_resume(text: str, *, base_resume: str) -> str:
     extracted = _extract_tailored_resume(text)
     repaired = _repair_incomplete_resume(rebuilt_resume=extracted, base_resume=base_resume)
@@ -79,7 +94,7 @@ def _validate_generated_resume(text: str, *, base_resume: str) -> str:
     )
     if unsupported:
         raise ValueError("unsupported numeric claims: " + ", ".join(unsupported))
-    return repaired
+    return _normalize_bullets(repaired)
 
 
 def _supported_coverage(resume_text: str, supported: list[str]) -> int:
