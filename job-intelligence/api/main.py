@@ -889,9 +889,14 @@ def refine_resume_lab_resume(
         settings,
     )
     if result.status != "REVIEWED" or not result.resume_text:
+        # Return the events rather than a bare status code. Without them the
+        # caller is told to "see the model events" and has no way to see them.
+        reasons = "; ".join(
+            event.message for event in result.events if event.severity != "info"
+        )
         raise HTTPException(
             status_code=502,
-            detail="Refinement did not produce a valid resume. See the model events.",
+            detail=f"Refinement did not produce a valid resume. {reasons}".strip(),
         )
     return ResumeLabRefineResponse(
         status=result.status, resume_text=result.resume_text,

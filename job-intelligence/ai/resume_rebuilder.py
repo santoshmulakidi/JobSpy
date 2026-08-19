@@ -665,10 +665,29 @@ def _repair_incomplete_resume(*, rebuilt_resume: str, base_resume: str) -> str:
 _NUMERIC_CLAIM_RE = re.compile(r"(?<![\w.])\d+(?:[.,]\d+)*(?:%|\+)?(?!\w)")
 
 
+def _normalize_numeric_claim(value: str) -> str:
+    """Reduce a numeric claim to the figure itself.
+
+    Models legitimately restate "over 10 years" as "10+ years" and "300,000
+    users" as "300000". Comparing the raw tokens flags those rewrites as
+    fabricated numbers, which rejected every refinement of a resume containing
+    "over 10 years". Only the figure decides whether a claim is supported.
+    """
+    return value.rstrip("%+").replace(",", "")
+
+
 def _unsupported_numeric_claims(*, base_resume: str, rebuilt_resume: str) -> list[str]:
     """Return numeric claims introduced by the model but absent from the source resume."""
-    source_numbers = set(_NUMERIC_CLAIM_RE.findall(base_resume))
-    return sorted(set(_NUMERIC_CLAIM_RE.findall(rebuilt_resume)) - source_numbers)
+    source_numbers = {
+        _normalize_numeric_claim(value) for value in _NUMERIC_CLAIM_RE.findall(base_resume)
+    }
+    return sorted(
+        {
+            value
+            for value in _NUMERIC_CLAIM_RE.findall(rebuilt_resume)
+            if _normalize_numeric_claim(value) not in source_numbers
+        }
+    )
 
 
 def _fallback_resume_prompt(prompt: str) -> str:

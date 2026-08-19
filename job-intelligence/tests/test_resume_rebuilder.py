@@ -358,3 +358,13 @@ def test_resume_rebuild_endpoint_validates_and_returns_fallback(monkeypatch):
     assert body["provider"] in {"prompt_only", "omniroute", "openrouter", "nvidia", "groq", "gemini"}
     assert body["rebuilt_resume"]
     assert body["prompt"]
+
+
+def test_numeric_guard_allows_equivalent_restatements():
+    # "over 10 years" -> "10+ years" is a rewrite, not a new claim. Treating it
+    # as fabricated rejected every refinement of a resume saying "over 10 years".
+    base = BASE_RESUME + "\nOver 10 years of experience across 300,000 users."
+    assert _unsupported_numeric_claims(
+        base_resume=base,
+        rebuilt_resume=base.replace("Over 10 years", "10+ years").replace("300,000", "300000"),
+    ) == []
