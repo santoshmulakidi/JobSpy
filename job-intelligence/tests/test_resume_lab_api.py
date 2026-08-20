@@ -77,3 +77,64 @@ def test_generation_is_cached_for_identical_inputs(monkeypatch):
         assert len(cover_calls) == 1
     finally:
         app.dependency_overrides.clear()
+
+
+def test_refine_endpoint_serializes_successful_events(monkeypatch):
+    engine = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
+    Base.metadata.create_all(engine)
+    session = sessionmaker(bind=engine)()
+    repository = JobRepository(session)
+    profile = repository.list_resume_lab_profiles()[0]
+    source_resume = "Senior engineer with Python, Azure, APIs, and testing experience. " * 3
+    repository.save_resume_lab_resume(
+        profile.id,
+        resume_text=source_resume,
+        resume_filename="resume.txt",
+        expected_source_version=0,
+        only_if_empty=False,
+    )
+    session.commit()
+
+    def fake_refine(request, settings):
+        return OrchestrationResult(
+            status="REVIEWED",
+            resume_text="Refined senior engineer resume with Python and Azure. " * 3,
+            events=[
+                GenerationEvent(
+                    "REFINE_SUCCEEDED",
+                    "info",
+                    "refine",
+                    "omniroute",
+                    "claude-test",
+                    1,
+                    datetime.now(UTC).isoformat(),
+                    "Refinement completed",
+                )
+            ],
+        )
+
+    monkeypatch.setattr("api.main.refine_resume", fake_refine)
+
+    def override_session():
+        yield session
+
+    app.dependency_overrides[get_session] = override_session
+    try:
+        response = TestClient(app).post(
+            "/resume-lab/refine",
+            json={
+                "profile_id": profile.id,
+                "current_resume": source_resume,
+                "job_description": "Senior AI Engineer requires Python, Azure, APIs, and testing. " * 2,
+                "target_title": "Senior AI Engineer",
+                "instruction": "Tighten the summary.",
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["status"] == "REVIEWED"
+        assert response.json()["events"][0]["code"] == "REFINE_SUCCEEDED"
+    finally:
+        app.dependency_overrides.clear()

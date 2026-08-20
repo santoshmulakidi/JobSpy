@@ -46,6 +46,7 @@ from api.schemas import (
     CompanyTargetOut,
     DocumentGenerationRequest,
     DocumentGenerationResponse,
+    GenerationEventOut,
     JobDocumentsOut,
     CoverLetterRequest,
     CoverLetterResponse,
