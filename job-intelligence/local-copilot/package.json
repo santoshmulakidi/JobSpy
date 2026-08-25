@@ -9,6 +9,7 @@
     "test:electron-audio": "vite build --config vite.utility.config.ts --outDir .vite/build --emptyOutDir false && vite build --config vite.capture-preload.config.ts --outDir .vite/build --emptyOutDir false && vite build --config vite.audio-runtime.config.ts --outDir .vite/build --emptyOutDir false && electron tests/electron/audio-utility-harness.cjs",
     "test:electron-audio:packaged": "electron tests/electron/audio-utility-harness.cjs packaged",
     "typecheck": "tsc --noEmit",
+    "evidence": "node scripts/release-evidence.mjs",
     "package": "electron-forge package",
     "make": "electron-forge make"
   },
@@ -21,7 +22,9 @@
   "devDependencies": {
     "@electron-forge/cli": "7.11.2",
     "@electron-forge/maker-squirrel": "7.11.2",
+    "@electron-forge/plugin-fuses": "^7.11.2",
     "@electron-forge/plugin-vite": "7.11.2",
+    "@electron/fuses": "^1.8.0",
     "@types/node": "22.15.3",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",

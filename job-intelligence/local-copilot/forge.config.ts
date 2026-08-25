@@ -1,8 +1,17 @@
 import type { ForgeConfig } from '@electron-forge/shared-types';
+import { FuseV1Options, FuseVersion } from '@electron/fuses';
+
+const windowsSigning = process.env.WIN_CERT_FILE
+  ? {
+      certificateFile: process.env.WIN_CERT_FILE,
+      certificatePassword: process.env.WIN_CERT_PASSWORD,
+    }
+  : {};
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    ...(process.platform === 'win32' ? windowsSigning : {}),
   },
   rebuildConfig: {},
   makers: [
@@ -12,6 +21,18 @@ const config: ForgeConfig = {
     },
   ],
   plugins: [
+    {
+      name: '@electron-forge/plugin-fuses',
+      config: {
+        version: FuseVersion.V1,
+        [FuseV1Options.RunAsNode]: false,
+        [FuseV1Options.EnableCookieEncryption]: true,
+        [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+        [FuseV1Options.EnableNodeCliInspectArguments]: false,
+        [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+        [FuseV1Options.OnlyLoadAppFromAsar]: true,
+      },
+    },
     {
       name: '@electron-forge/plugin-vite',
       config: {
