@@ -26,12 +26,24 @@ export interface AnswerRequest {
   readonly attachments?: readonly ScreenshotAttachment[];
 }
 
-export type AnswerOutcome = 'completed' | 'cancelled' | 'failed';
+export type AnswerSettlement = {
+  readonly outcome: 'completed';
+  readonly providerId: LlmProviderId;
+  readonly modelId: string;
+  readonly answer: string;
+  readonly latencyMs: number;
+} | {
+  readonly outcome: 'cancelled';
+} | {
+  readonly outcome: 'failed';
+  readonly providerId: LlmProviderId;
+  readonly message: string;
+};
 
 export interface AnswerSendOptions {
   /** Aborted by the session lifecycle (stop or a superseding request). */
   readonly signal?: AbortSignal;
-  readonly onSettled?: (outcome: AnswerOutcome) => void;
+  readonly onSettled?: (settlement: AnswerSettlement) => void;
 }
 
 export interface AnswerSendFailure {
@@ -143,7 +155,7 @@ export class AnswerService {
     options: AnswerSendOptions,
   ): Promise<void> {
     const startedAt = Date.now();
-    let outcome: AnswerOutcome = 'cancelled';
+    let settlement: AnswerSettlement = { outcome: 'cancelled' };
     const onExternalAbort = () => controller.abort();
     options.signal?.addEventListener('abort', onExternalAbort, { once: true });
     try {
@@ -182,24 +194,28 @@ export class AnswerService {
       this.history.push({ role: 'user', content: request.question }, { role: 'assistant', content: answer });
       while (this.history.length > this.historyLimit) this.history.shift();
 
-      outcome = 'completed';
+      settlement = {
+        outcome: 'completed',
+        providerId: provider.id,
+        modelId: model,
+        answer,
+        latencyMs: Date.now() - startedAt,
+      };
       if (this.activeRequestId === requestId && !controller.signal.aborted) {
-        this.publish({ type: 'answer-completed', model, latencyMs: Date.now() - startedAt });
+        this.publish({ type: 'answer-completed', model, latencyMs: settlement.latencyMs });
       }
     } catch (error) {
       if (controller.signal.aborted) {
-        outcome = 'cancelled';
+        settlement = { outcome: 'cancelled' };
         this.publish({ type: 'answer-cancelled' });
       } else {
-        outcome = 'failed';
-        this.publish({
-          type: 'answer-failed',
-          message: error instanceof Error ? error.message : 'The answer request failed.',
-        });
+        const message = error instanceof Error ? error.message : 'The answer request failed.';
+        settlement = { outcome: 'failed', providerId: provider.id, message };
+        this.publish({ type: 'answer-failed', message });
       }
     } finally {
       options.signal?.removeEventListener('abort', onExternalAbort);
-      options.onSettled?.(outcome);
+      options.onSettled?.(settlement);
       if (this.activeRequestId === requestId) {
         this.activeRequestId = null;
         this.abortController = null;

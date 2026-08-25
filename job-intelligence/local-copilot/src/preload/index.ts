@@ -40,6 +40,11 @@ export const copilot: CopilotBridge = {
     confirm: (request: IpcRequest<'capture:confirm'>) => invoke('capture:confirm', request),
     discard: (request: IpcRequest<'capture:discard'>) => invoke('capture:discard', request),
   },
+  history: {
+    list: (request: IpcRequest<'history:list'>) => invoke('history:list', request),
+    remove: (request: IpcRequest<'history:delete'>) => invoke('history:delete', request),
+    export: (request: IpcRequest<'history:export'>) => invoke('history:export', request),
+  },
   overlay: {
     setOpacity: (request: IpcRequest<'overlay:set-opacity'>) => invoke('overlay:set-opacity', request),
     setAlwaysOnTop: (request: IpcRequest<'overlay:set-always-on-top'>) =>

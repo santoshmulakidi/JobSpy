@@ -191,7 +191,7 @@ describe('IPC boundary', () => {
     })).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_REQUEST' } });
   });
 
-  it('rejects incomplete provider success and reports pruned channels as unknown', async () => {
+  it('rejects incomplete provider success, pruned channels, and unregistered history operations', async () => {
     const { dispatchIpc } = await import('../../src/main/ipc/register-ipc');
 
     await expect(dispatchIpc('providers:list', trustedEvent, undefined, {
@@ -199,10 +199,14 @@ describe('IPC boundary', () => {
     })).resolves.toMatchObject({ ok: false, error: { code: 'INTERNAL' } });
     await expect(dispatchIpc('providers:test', trustedEvent, { providerId: 'openai' }))
       .resolves.toMatchObject({ ok: false, error: { code: 'UNKNOWN_CHANNEL' } });
-    await expect(dispatchIpc('history:list', trustedEvent, undefined))
-      .resolves.toMatchObject({ ok: false, error: { code: 'UNKNOWN_CHANNEL' } });
     await expect(dispatchIpc('session:pause', trustedEvent, undefined))
       .resolves.toMatchObject({ ok: false, error: { code: 'UNKNOWN_CHANNEL' } });
+    await expect(dispatchIpc('history:list', trustedEvent, undefined))
+      .resolves.toMatchObject({ ok: false, error: { code: 'INVALID_REQUEST' } });
+    await expect(dispatchIpc('history:list', trustedEvent, {}))
+      .resolves.toMatchObject({ ok: false, error: { code: 'NOT_READY' } });
+    await expect(dispatchIpc('history:export', trustedEvent, { sessionId: 'session-1', format: 'pdf' as never }))
+      .resolves.toMatchObject({ ok: false, error: { code: 'INVALID_REQUEST' } });
   });
 
   it('validates answer payloads and defaults unregistered answer channels to unavailable', async () => {

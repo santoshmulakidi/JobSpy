@@ -38,6 +38,21 @@ export type ScreenshotEditsValue = z.infer<typeof ScreenshotEdits>;
 export const ConfirmCaptureRequest = z.object({ captureId: NonEmptyId, edits: ScreenshotEdits.optional() }).strict();
 export const DiscardCaptureRequest = z.object({ captureId: NonEmptyId }).strict();
 
+export const ListHistoryRequest = z.object({ limit: z.number().int().min(1).max(100).optional() }).strict();
+const HistorySessionSummary = z.object({
+  sessionId: NonEmptyId,
+  status: NonEmptyId,
+  startedAt: NonEmptyId,
+  endedAt: z.string().nullable(),
+  turnCount: z.number().int().nonnegative(),
+  preview: z.string(),
+}).strict();
+export type HistorySessionSummaryValue = z.infer<typeof HistorySessionSummary>;
+export const DeleteHistoryRequest = z.object({ sessionId: NonEmptyId }).strict();
+export const ExportHistoryRequest = z
+  .object({ sessionId: NonEmptyId, format: z.enum(['json', 'markdown']) })
+  .strict();
+
 export const SetOverlayOpacityRequest = z.object({ opacity: z.number().min(0.1).max(1) }).strict();
 export const SetOverlayAlwaysOnTopRequest = z.object({ enabled: z.boolean() }).strict();
 export const HideOverlayRequest = NoRequest;
@@ -132,6 +147,19 @@ const ConfirmedScreenshot = z.object({
 export const PreviewCaptureResponse = z.union([z.object({ ok: z.literal(true), preview: ScreenshotPreview }).strict(), IpcFailure]);
 export const ConfirmCaptureResponse = z.union([z.object({ ok: z.literal(true), screenshot: ConfirmedScreenshot.optional() }).strict(), IpcFailure]);
 export const DiscardCaptureResponse = IpcResponse;
+export const ListHistoryResponse = z.union([
+  z.object({ ok: z.literal(true), sessions: z.array(HistorySessionSummary) }).strict(),
+  IpcFailure,
+]);
+export const DeleteHistoryResponse = IpcResponse;
+export const ExportHistoryResponse = z.union([
+  z.object({
+    ok: z.literal(true),
+    filename: NonEmptyId,
+    content: z.string(),
+  }).strict(),
+  IpcFailure,
+]);
 export const SetOverlayOpacityResponse = IpcResponse;
 export const SetOverlayAlwaysOnTopResponse = IpcResponse;
 export const HideOverlayResponse = IpcResponse;
@@ -148,6 +176,9 @@ export const IPC_METHODS = {
   'capture:preview': { request: PreviewCaptureRequest, response: PreviewCaptureResponse },
   'capture:confirm': { request: ConfirmCaptureRequest, response: ConfirmCaptureResponse },
   'capture:discard': { request: DiscardCaptureRequest, response: DiscardCaptureResponse },
+  'history:list': { request: ListHistoryRequest, response: ListHistoryResponse },
+  'history:delete': { request: DeleteHistoryRequest, response: DeleteHistoryResponse },
+  'history:export': { request: ExportHistoryRequest, response: ExportHistoryResponse },
   'overlay:set-opacity': { request: SetOverlayOpacityRequest, response: SetOverlayOpacityResponse },
   'overlay:set-always-on-top': {
     request: SetOverlayAlwaysOnTopRequest,
@@ -178,6 +209,11 @@ export interface CopilotBridge {
     preview(request: IpcRequest<'capture:preview'>): Promise<IpcMethodResponse<'capture:preview'>>;
     confirm(request: IpcRequest<'capture:confirm'>): Promise<IpcMethodResponse<'capture:confirm'>>;
     discard(request: IpcRequest<'capture:discard'>): Promise<IpcMethodResponse<'capture:discard'>>;
+  };
+  readonly history: {
+    list(request: IpcRequest<'history:list'>): Promise<IpcMethodResponse<'history:list'>>;
+    remove(request: IpcRequest<'history:delete'>): Promise<IpcMethodResponse<'history:delete'>>;
+    export(request: IpcRequest<'history:export'>): Promise<IpcMethodResponse<'history:export'>>;
   };
   readonly overlay: {
     setOpacity(request: IpcRequest<'overlay:set-opacity'>): Promise<IpcMethodResponse<'overlay:set-opacity'>>;

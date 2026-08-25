@@ -30,6 +30,11 @@ function bridge(): CopilotBridge & { emitAnswerEvent(event: CopilotMainEventValu
       confirm: vi.fn(async () => ({ ok: true as const, screenshot: { id: 'shot-1', width: 100, height: 80, edits: {} } })),
       discard: vi.fn(async () => ({ ok: true as const })),
     },
+    history: {
+      list: vi.fn(async (_request?: unknown) => ({ ok: true as const, sessions: [] })),
+      remove: vi.fn(async (_request?: unknown) => ({ ok: true as const })),
+      export: vi.fn(async (_request?: unknown) => ({ ok: true as const, filename: 'copilot-session.md', content: '# Copilot session' })),
+    },
     overlay: {
       setOpacity: vi.fn(async () => ({ ok: true as const })),
       setAlwaysOnTop: vi.fn(async () => ({ ok: true as const })),
@@ -192,6 +197,41 @@ describe('complete renderer journey', () => {
     expect(renderToStaticMarkup(<CopilotApp controller={controller} />)).toContain('Screenshot approved for the next request');
     await controller.discardScreenshot('shot-1');
     expect(controller.getState().screenshot).toBeUndefined();
+  });
+
+  it('keeps saved sessions listed and exportable only when history is enabled', async () => {
+    const api = bridge();
+    const controller = createCopilotController(api);
+    await controller.load();
+
+    expect(renderToStaticMarkup(<CopilotApp controller={controller} />)).toContain('Sessions are ephemeral');
+
+    await controller.startSession();
+    expect(vi.mocked(api.session.start).mock.calls[0]?.[0]).toMatchObject({ ephemeral: true });
+
+    controller.setPersistHistory(true);
+    expect(vi.mocked(api.history.list)).toHaveBeenCalled();
+    await controller.startSession();
+    expect(vi.mocked(api.session.start).mock.lastCall?.[0]).toMatchObject({ ephemeral: false });
+
+    controller.editTranscript('Is this offer safe?');
+    await controller.sendQuestion();
+    api.emitAnswerEvent({ type: 'answer-completed', model: 'gpt-test', latencyMs: 42 });
+    await Promise.resolve();
+
+    const sessions = [
+      { sessionId: 'session-9', status: 'active', startedAt: '2026-08-25T10:00:00.000Z', endedAt: null, turnCount: 2, preview: 'Is this offer safe?' },
+    ];
+    vi.mocked(api.history.list).mockResolvedValue({ ok: true as const, sessions });
+    await controller.loadHistory();
+
+    const html = renderToStaticMarkup(<CopilotApp controller={controller} />);
+    expect(html).toContain('Is this offer safe?');
+    expect(html).toContain('2 turns');
+    await controller.exportHistory('session-9', 'markdown');
+    expect(api.history.export).toHaveBeenCalledWith({ sessionId: 'session-9', format: 'markdown' });
+    await controller.deleteHistory('session-9');
+    expect(api.history.remove).toHaveBeenCalledWith({ sessionId: 'session-9' });
   });
 
   it('exposes transcript announcements and keyboard move controls without claiming a shortcut', async () => {

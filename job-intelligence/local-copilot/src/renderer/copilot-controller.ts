@@ -1,4 +1,10 @@
-import type { CopilotBridge, ProviderValue, ScreenshotEditsValue, ScreenshotPreviewValue } from '../shared/contracts';
+import type {
+  CopilotBridge,
+  HistorySessionSummaryValue,
+  ProviderValue,
+  ScreenshotEditsValue,
+  ScreenshotPreviewValue,
+} from '../shared/contracts';
 
 export type UiPhase = 'idle' | 'capturing' | 'paused' | 'generating' | 'error' | 'stopped';
 export type UiTheme = 'system' | 'light' | 'dark';
@@ -22,8 +28,11 @@ export interface CopilotUiState {
   readonly answerConnected: boolean;
   readonly screenshot?: ScreenshotPreviewValue; readonly approvedScreenshotId?: string;
   readonly theme: UiTheme; readonly fontScale: number; readonly opacity: number; readonly alwaysOnTop: boolean;
+  readonly persistHistory: boolean; readonly history: readonly HistorySessionSummaryValue[];
   readonly message: string; readonly error: string;
 }
+
+export type HistoryExportFormat = 'json' | 'markdown';
 
 export interface CopilotController {
   getState(): CopilotUiState; subscribe(listener: () => void): () => void; load(): Promise<void>;
@@ -33,6 +42,8 @@ export interface CopilotController {
   editTranscript(text: string): void; sendQuestion(): Promise<void>; retryAnswer(): Promise<void>;
   cancelAnswer(): Promise<void>; previewScreenshot(): Promise<void>;
   confirmScreenshot(id: string, edits: ScreenshotEditsValue): Promise<void>; discardScreenshot(id: string): Promise<void>;
+  setPersistHistory(value: boolean): void; loadHistory(): Promise<void>;
+  deleteHistory(sessionId: string): Promise<void>; exportHistory(sessionId: string, format: HistoryExportFormat): Promise<void>;
   setTheme(theme: UiTheme): void; setFontScale(scale: number): void; setOpacity(opacity: number): Promise<void>;
   setAlwaysOnTop(enabled: boolean): Promise<void>; move(x: number, y: number): Promise<void>; hide(): Promise<void>;
 }
@@ -41,7 +52,7 @@ const initialState: CopilotUiState = {
   loaded: false, providers: [], selectedSttProviderId: '', selectedLlmProviderId: '', selectedModel: '',
   phase: 'idle', sessionPending: false, transcriptDraft: '', transcriptFinal: false,
   answer: '', answerPending: false, answerConnected: false, theme: 'system', fontScale: 1,
-  opacity: 1, alwaysOnTop: true, message: '', error: '',
+  opacity: 1, alwaysOnTop: true, persistHistory: false, history: [], message: '', error: '',
 };
 
 export function createCopilotController(bridge: CopilotBridge): CopilotController {
@@ -97,7 +108,7 @@ export function createCopilotController(bridge: CopilotBridge): CopilotControlle
     selectModel: (selectedModel) => publish({ selectedModel }),
     async startSession() {
       if (!state.selectedSttProviderId || !state.selectedLlmProviderId) return fail('Choose speech and answer providers first.');
-      await command((operationId) => bridge.session.start({ operationId, sttProviderId: state.selectedSttProviderId, llmProviderId: state.selectedLlmProviderId, microphone: true, systemAudio: true, ephemeral: true }));
+      await command((operationId) => bridge.session.start({ operationId, sttProviderId: state.selectedSttProviderId, llmProviderId: state.selectedLlmProviderId, microphone: true, systemAudio: true, ephemeral: !state.persistHistory }));
     },
     async stopSession() { await command((operationId) => bridge.session.stop({ operationId })); },
     accept(event) {
@@ -108,9 +119,15 @@ export function createCopilotController(bridge: CopilotBridge): CopilotControlle
       }
       else if (event.type === 'transcript-failed') fail(event.message);
       else if (event.type === 'answer-delta') publish({ answer: state.answer + event.text, answerPending: true });
-      else if (event.type === 'answer-completed') publish({ answerPending: false, model: event.model, latencyMs: event.latencyMs });
+      else if (event.type === 'answer-completed') {
+        publish({ answerPending: false, model: event.model, latencyMs: event.latencyMs });
+        if (state.persistHistory) void controller.loadHistory();
+      }
       else if (event.type === 'answer-cancelled') publish({ answerPending: false, message: 'Answer cancelled.' });
-      else if (event.type === 'answer-failed') publish({ answerPending: false, error: event.message });
+      else if (event.type === 'answer-failed') {
+        publish({ answerPending: false, error: event.message });
+        if (state.persistHistory) void controller.loadHistory();
+      }
       else fail(event.message);
     },
     editTranscript(transcriptDraft) {
@@ -140,6 +157,35 @@ export function createCopilotController(bridge: CopilotBridge): CopilotControlle
     async confirmScreenshot(id, edits) { const response = await bridge.capture.confirm({ captureId: id, edits }); if (!response.ok) return fail(response.error.message); publish({ approvedScreenshotId: response.screenshot?.id, message: response.screenshot ? 'Screenshot approved for the next request.' : 'Screenshot removed.', ...(response.screenshot ? {} : { screenshot: undefined }) }); },
     async discardScreenshot(id) { const response = await bridge.capture.discard({ captureId: id }); if (!response.ok) return fail(response.error.message); publish({ screenshot: undefined, approvedScreenshotId: undefined, message: 'Screenshot discarded.' }); },
     setTheme: (theme) => publish({ theme }), setFontScale: (fontScale) => publish({ fontScale: Math.min(1.4, Math.max(.9, fontScale)) }),
+    setPersistHistory(persistHistory) {
+      publish({ persistHistory, message: persistHistory ? 'New sessions are saved on this device.' : '' });
+      if (persistHistory && bridge.history) void controller.loadHistory();
+    },
+    async loadHistory() {
+      if (!bridge.history) return;
+      const response = await bridge.history.list({});
+      if (!response.ok) return fail(response.error.message);
+      publish({ history: response.sessions });
+    },
+    async deleteHistory(sessionId) {
+      const response = await bridge.history.remove({ sessionId });
+      if (!response.ok) return fail(response.error.message);
+      await controller.loadHistory();
+    },
+    async exportHistory(sessionId, format) {
+      const response = await bridge.history.export({ sessionId, format });
+      if (!response.ok) return fail(response.error.message);
+      if (typeof document === 'undefined') return;
+      const blob = new Blob([response.content], { type: format === 'json' ? 'application/json' : 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = response.filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1_000);
+    },
     async setOpacity(opacity) { const response = await bridge.overlay.setOpacity({ opacity }); if (!response.ok) return fail(response.error.message); publish({ opacity }); },
     async setAlwaysOnTop(alwaysOnTop) { const response = await bridge.overlay.setAlwaysOnTop({ enabled: alwaysOnTop }); if (!response.ok) return fail(response.error.message); publish({ alwaysOnTop }); },
     async move(x, y) { const response = await bridge.overlay.move({ x, y }); if (!response.ok) fail(response.error.message); },

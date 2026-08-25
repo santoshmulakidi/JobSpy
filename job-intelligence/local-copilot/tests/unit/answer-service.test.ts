@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { AnswerService, type AnswerEvent, type AnswerOutcome, type AnswerSecretStore } from '../../src/main/answers/answer-service';
+import { AnswerService, type AnswerEvent, type AnswerSecretStore, type AnswerSettlement } from '../../src/main/answers/answer-service';
 import type { ScreenshotAttachment } from '../../src/main/capture/screenshot-service';
 import type { CopilotRequest, LlmAdapter, LlmEvent } from '../../src/providers/llm/types';
 
@@ -183,24 +183,24 @@ describe('AnswerService', () => {
   });
 
   it('honours an external abort signal and settles exactly once', async () => {
-    const outcomes: AnswerOutcome[] = [];
+    const outcomes: AnswerSettlement[] = [];
     const controller = new AbortController();
     const { service, events } = createServiceWithAdapter(hangingAdapter());
 
     expect(service.send(
       { providerId: 'openai', question: 'Session stopping?' },
-      { signal: controller.signal, onSettled: (outcome) => outcomes.push(outcome) },
+      { signal: controller.signal, onSettled: (settlement) => outcomes.push(settlement) },
     )).toEqual({ ok: true });
 
     controller.abort();
     await settle();
 
     expect(events).toEqual([{ type: 'answer-cancelled' }]);
-    expect(outcomes).toEqual(['cancelled']);
+    expect(outcomes.map(({ outcome }) => outcome)).toEqual(['cancelled']);
   });
 
   it('settles successful streams as completed', async () => {
-    const outcomes: AnswerOutcome[] = [];
+    const outcomes: AnswerSettlement[] = [];
     const { service } = createServiceWithAdapter(scriptedAdapter([
       { type: 'text-delta', text: 'Done.' },
       { type: 'completed', reason: 'stop' },
@@ -208,11 +208,12 @@ describe('AnswerService', () => {
 
     expect(service.send(
       { providerId: 'openai', question: 'Quick one?' },
-      { onSettled: (outcome) => outcomes.push(outcome) },
+      { onSettled: (settlement) => outcomes.push(settlement) },
     )).toEqual({ ok: true });
     await settle();
 
-    expect(outcomes).toEqual(['completed']);
+    expect(outcomes.map(({ outcome }) => outcome)).toEqual(['completed']);
+    expect(outcomes[0]).toMatchObject({ outcome: 'completed', providerId: 'openai', modelId: 'gpt-4o-mini', answer: 'Done.' });
   });
 
   it('carries ephemeral history into follow-up requests and bounds its size', async () => {

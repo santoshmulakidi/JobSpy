@@ -32,6 +32,12 @@ import {
 } from './capture/screenshot-service';
 import { Database } from './storage/database';
 import { SecretStore } from './storage/secrets';
+import {
+  exportSessionJson,
+  exportSessionMarkdown,
+  HistoryRepository,
+  historyExportFilename,
+} from './storage/history-repository';
 import { AnswerService } from './answers/answer-service';
 import type { ScreenshotAttachment } from './capture/screenshot-service';
 import { createLlmAdapter, listLlmProviders, type LlmProviderId, type SttProviderId } from './providers/provider-registry';
@@ -113,6 +119,13 @@ app.whenReady().then(async () => {
   const userData = app.getPath('userData');
   const database = Database.open(join(userData, 'copilot.sqlite'));
   const secretStore = SecretStore.create({ database, directory: join(userData, 'secrets') });
+  const history = new HistoryRepository(database);
+  let activeHistorySessionId: string | null = null;
+  const endActiveHistorySession = () => {
+    if (activeHistorySessionId === null) return;
+    history.endSession(activeHistorySessionId);
+    activeHistorySessionId = null;
+  };
   const llmProviders = listLlmProviders({ includeOptional: true });
   const providers = [
     { id: 'deepgram', kind: 'stt' as const, name: 'Deepgram', destination: 'Deepgram (audio leaves this device)', optional: false },
@@ -158,6 +171,7 @@ app.whenReady().then(async () => {
     onFrame: (frame) => transcriptionService.handleFrame(frame),
     onFailure: (message) => {
       void transcriptionService.stop();
+      endActiveHistorySession();
       sessionController.dispatch({ type: 'utility-process-crashed', message });
     },
   });
@@ -167,7 +181,7 @@ app.whenReady().then(async () => {
       if (event.sender?.id !== overlayWindow.webContents.id) {
         return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized request.' } };
       }
-      const request = payload as { operationId: string; sttProviderId: string; microphone: boolean; systemAudio: boolean };
+      const request = payload as { operationId: string; sttProviderId: string; microphone: boolean; systemAudio: boolean; ephemeral: boolean };
       if (!sttProviderIds.includes(request.sttProviderId)) {
         return { ok: false, error: { code: 'INVALID_REQUEST' as const, message: 'Invalid request.' } };
       }
@@ -183,6 +197,9 @@ app.whenReady().then(async () => {
         return { ok: false, error: { code: 'INTERNAL' as const, message: 'Operation failed.' } };
       }
       sessionController.dispatch({ type: 'start' });
+      activeHistorySessionId = request.ephemeral
+        ? null
+        : history.startSession({ microphone: request.microphone, systemAudio: request.systemAudio, sttProviderId: request.sttProviderId });
       return { ok: true, operationId: request.operationId, snapshot: sessionSnapshot(sessionController) };
     },
     'session:stop': async (payload, event) => {
@@ -190,6 +207,7 @@ app.whenReady().then(async () => {
         return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized request.' } };
       }
       await Promise.allSettled([audioRuntime.stop(), transcriptionService.stop()]);
+      endActiveHistorySession();
       sessionController.dispatch({ type: 'stop' });
       const request = payload as { operationId: string };
       return { ok: true, operationId: request.operationId, snapshot: sessionSnapshot(sessionController) };
@@ -261,15 +279,40 @@ app.whenReady().then(async () => {
       const signal = startedEvent && (startedEvent.type === 'generation-started' || startedEvent.type === 'generation-superseded')
         ? startedEvent.signal
         : undefined;
-      const send = async (attachments: readonly ScreenshotAttachment[]) => answerService.send({
-        providerId: request.providerId,
-        ...(request.model ? { model: request.model } : {}),
-        question: request.question,
-        attachments,
-      }, {
-        signal,
-        onSettled: () => sessionController.dispatch({ type: 'generation-completed', requestId }),
-      });
+      const send = async (attachments: readonly ScreenshotAttachment[]) => {
+        const result = answerService.send({
+          providerId: request.providerId,
+          ...(request.model ? { model: request.model } : {}),
+          question: request.question,
+          attachments,
+        }, {
+          signal,
+          onSettled: (settlement) => {
+            if (activeHistorySessionId) {
+              if (settlement.outcome === 'completed') {
+                history.addModelTurn(activeHistorySessionId, {
+                  providerId: settlement.providerId,
+                  modelId: settlement.modelId,
+                  status: 'completed',
+                  text: settlement.answer,
+                  latencyMs: settlement.latencyMs,
+                });
+              } else if (settlement.outcome === 'failed') {
+                history.addModelTurn(activeHistorySessionId, {
+                  providerId: settlement.providerId,
+                  status: 'failed',
+                  text: '',
+                });
+              }
+            }
+            sessionController.dispatch({ type: 'generation-completed', requestId });
+          },
+        });
+        if (result.ok && activeHistorySessionId) {
+          history.addUserTurn(activeHistorySessionId, request.question);
+        }
+        return result;
+      };
       return request.screenshotId
         ? await screenshotService.withConfirmed([request.screenshotId], send)
         : await send([]);
@@ -279,20 +322,44 @@ app.whenReady().then(async () => {
       answerService.cancel();
       return { ok: true };
     },
+    'history:list': (payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      const request = payload as { limit?: number };
+      return { ok: true, sessions: history.listSessions(request.limit) };
+    },
+    'history:delete': (payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      history.deleteSession((payload as { sessionId: string }).sessionId);
+      return { ok: true };
+    },
+    'history:export': (payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      const request = payload as { sessionId: string; format: 'json' | 'markdown' };
+      const detail = history.getSession(request.sessionId);
+      if (!detail) return { ok: false, error: { code: 'INVALID_REQUEST' as const, message: 'Invalid request.' } };
+      return {
+        ok: true,
+        filename: historyExportFilename(detail, request.format),
+        content: request.format === 'json' ? exportSessionJson(detail) : exportSessionMarkdown(detail),
+      };
+    },
   });
 
   captureWindow.webContents.on('render-process-gone', () => {
     void audioRuntime.stop();
     void transcriptionService.stop();
+    endActiveHistorySession();
   });
   captureWindow.on('closed', () => {
     void audioRuntime.stop();
     void transcriptionService.stop();
+    endActiveHistorySession();
   });
   app.once('before-quit', () => {
     screenshotService.dispose();
     answerService.dispose();
     transcriptionService.dispose();
+    endActiveHistorySession();
     database.close();
     void audioRuntime.stop();
   });

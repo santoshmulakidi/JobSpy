@@ -2,6 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { createCopilotController, type CopilotController } from './copilot-controller';
+import { HistoryPanel } from './features/history/history-panel';
 import { ProviderSetup } from './features/settings/provider-setup';
 import { SessionView } from './features/session/session-view';
 import './styles/tokens.css';
@@ -27,9 +28,11 @@ export function CopilotApp({ controller }: { readonly controller: CopilotControl
           <label>Text size <output>{Math.round(state.fontScale * 100)}%</output><input type="range" min="0.9" max="1.4" step="0.1" value={state.fontScale} onChange={(event) => controller.setFontScale(event.currentTarget.valueAsNumber)} /></label>
           <label>Opacity <output>{Math.round(state.opacity * 100)}%</output><input type="range" min="0.1" max="1" step="0.1" value={state.opacity} onChange={(event) => void controller.setOpacity(event.currentTarget.valueAsNumber)} /></label>
           <label className="check"><input type="checkbox" checked={state.alwaysOnTop} onChange={(event) => void controller.setAlwaysOnTop(event.currentTarget.checked)} /> Always on top</label>
+          <label className="check"><input type="checkbox" checked={state.persistHistory} onChange={(event) => controller.setPersistHistory(event.currentTarget.checked)} /> Save history</label>
           <fieldset><legend>Move overlay</legend><div className="button-row"><button type="button" aria-label="Move overlay left" onClick={() => void controller.move(-20, 0)}>←</button><button type="button" aria-label="Move overlay up" onClick={() => void controller.move(0, -20)}>↑</button><button type="button" aria-label="Move overlay down" onClick={() => void controller.move(0, 20)}>↓</button><button type="button" aria-label="Move overlay right" onClick={() => void controller.move(20, 0)}>→</button></div></fieldset>
           <small>Window edges remain natively resizable. Global shortcuts are unavailable in this build.</small>
         </section>
+        <HistoryPanel state={state} controller={controller} />
       </aside>
     </div>
     <div className="resize-hint" aria-hidden="true" />
