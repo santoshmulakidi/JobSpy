@@ -10,6 +10,11 @@ interface CaptureConnection {
   release(): void;
 }
 
+interface SourceResources {
+  readonly stream: MediaStream;
+  readonly connection: CaptureConnection;
+}
+
 type ConnectStream = (
   stream: MediaStream,
   source: AudioSource,
@@ -27,8 +32,8 @@ interface BrowserMediaCaptureHostOptions {
 export class BrowserMediaCaptureHost {
   private readonly mediaDevices: Pick<MediaDevices, 'getDisplayMedia' | 'getUserMedia'>;
   private readonly connectStream: ConnectStream;
-  private readonly streams: MediaStream[] = [];
-  private readonly connections: CaptureConnection[] = [];
+  private readonly resources = new Map<AudioSource, SourceResources>();
+  private epoch = 0;
 
   public constructor(options: BrowserMediaCaptureHostOptions = {}) {
     this.mediaDevices = options.mediaDevices ?? navigator.mediaDevices;
@@ -41,46 +46,89 @@ export class BrowserMediaCaptureHost {
     onChunk: (chunk: RawAudioChunk) => void,
     onSourceLost: (source: AudioSource) => void,
   ): Promise<void> {
-    this.stop();
+    const epoch = this.beginLifecycle();
     try {
       if (config.systemAudio) {
         const stream = await this.mediaDevices.getDisplayMedia({ audio: true, video: true });
+        if (epoch !== this.epoch) {
+          stopStream(stream);
+          return;
+        }
         for (const track of stream.getVideoTracks()) {
           track.stop();
         }
-        this.attach(stream, 'system', onChunk, onSourceLost);
+        this.attach(epoch, stream, 'system', onChunk, onSourceLost);
       }
       if (config.microphone) {
         const stream = await this.mediaDevices.getUserMedia({
           audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
         });
-        this.attach(stream, 'microphone', onChunk, onSourceLost);
+        if (epoch !== this.epoch) {
+          stopStream(stream);
+          return;
+        }
+        this.attach(epoch, stream, 'microphone', onChunk, onSourceLost);
       }
     } catch (error) {
-      this.stop();
+      if (epoch === this.epoch) {
+        this.releaseAll();
+      }
       throw error;
     }
   }
 
   public stop(): void {
-    for (const connection of this.connections.splice(0)) {
-      connection.release();
-    }
-    for (const stream of this.streams.splice(0)) {
-      for (const track of stream.getTracks()) {
-        track.stop();
-      }
-    }
+    this.epoch += 1;
+    this.releaseAll();
   }
 
   private attach(
+    epoch: number,
     stream: MediaStream,
     source: AudioSource,
     onChunk: (chunk: RawAudioChunk) => void,
     onSourceLost: (source: AudioSource) => void,
   ): void {
-    this.streams.push(stream);
-    this.connections.push(this.connectStream(stream, source, onChunk, onSourceLost));
+    const connection = this.connectStream(stream, source, onChunk, () => {
+      if (epoch !== this.epoch) {
+        return;
+      }
+      this.releaseSource(source);
+      onSourceLost(source);
+    });
+    this.resources.set(source, { stream, connection });
+  }
+
+  private beginLifecycle(): number {
+    this.epoch += 1;
+    this.releaseAll();
+    return this.epoch;
+  }
+
+  private releaseAll(): void {
+    for (const source of [...this.resources.keys()]) {
+      this.releaseSource(source);
+    }
+  }
+
+  private releaseSource(source: AudioSource): void {
+    const resource = this.resources.get(source);
+    if (!resource) {
+      return;
+    }
+    this.resources.delete(source);
+    for (const track of resource.stream.getTracks()) {
+      track.onended = null;
+    }
+    resource.connection.release();
+    stopStream(resource.stream);
+  }
+}
+
+function stopStream(stream: MediaStream): void {
+  for (const track of stream.getTracks()) {
+    track.onended = null;
+    track.stop();
   }
 }
 

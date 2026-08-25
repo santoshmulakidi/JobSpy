@@ -7,14 +7,15 @@ import {
   type IpcMethodResponse,
 } from '../../shared/contracts';
 
-type IpcSenderEvent = {
+export type IpcSenderEvent = {
   senderFrame?: {
     parent: unknown | null;
     url: string;
   } | null;
+  sender?: { readonly id: number };
 };
 
-type IpcOperation = (payload: unknown) => unknown | Promise<unknown>;
+type IpcOperation = (payload: unknown, event: IpcSenderEvent) => unknown | Promise<unknown>;
 
 export type IpcOperations = Partial<Record<IpcChannel, IpcOperation>>;
 
@@ -80,7 +81,7 @@ export async function dispatchIpc(
   }
 
   try {
-    const response = await (operations[channel] ?? notReady)(request.data);
+    const response = await (operations[channel] ?? notReady)(request.data, event);
     const parsedResponse = method.response.safeParse(response);
     if (!parsedResponse.success) {
       return internalError();

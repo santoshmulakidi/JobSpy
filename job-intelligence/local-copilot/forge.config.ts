@@ -28,6 +28,10 @@ const config: ForgeConfig = {
             entry: 'src/audio/utility-entry.ts',
             config: 'vite.utility.config.ts',
           },
+          {
+            entry: 'src/audio/capture-preload.ts',
+            config: 'vite.capture-preload.config.ts',
+          },
         ],
         renderer: [
           {

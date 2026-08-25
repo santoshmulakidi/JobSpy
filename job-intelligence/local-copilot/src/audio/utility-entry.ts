@@ -1,28 +1,23 @@
-import type { AudioFrame, AudioSource } from './audio-frame';
+import { CaptureController } from './capture-controller';
 import {
-  CaptureController,
-  type CaptureConfig,
-  type CaptureEvent,
-  type RawAudioChunk,
-} from './capture-controller';
+  AudioUtilityCommandSchema,
+  AudioUtilityConnectSchema,
+  CaptureStreamCommandSchema,
+  type CaptureHostCommand,
+  type AudioUtilityConfig,
+  type AudioUtilityMessage,
+  zeroCandidatePcm,
+} from './protocol';
+import { VadDetector } from './vad';
 
-export type AudioUtilityCommand =
-  | { readonly type: 'start'; readonly config: CaptureConfig }
-  | { readonly type: 'audio-chunk'; readonly chunk: RawAudioChunk }
-  | { readonly type: 'source-lost'; readonly source: AudioSource }
-  | { readonly type: 'stop' };
-
-export type AudioUtilityMessage =
-  | { readonly type: 'ready' }
-  | { readonly type: 'frame'; readonly frame: AudioFrame }
-  | CaptureEvent
-  | { readonly type: 'error'; readonly message: string }
-  | { readonly type: 'stopped' };
+export type { AudioUtilityCommand, AudioUtilityConfig, AudioUtilityMessage } from './protocol';
 
 export interface AudioUtilityPort {
-  on(event: 'message', listener: (event: { data: unknown }) => void): unknown;
-  off(event: 'message', listener: (event: { data: unknown }) => void): unknown;
-  postMessage(message: AudioUtilityMessage): void;
+  on(event: 'message', listener: (event: { data: unknown; ports?: AudioUtilityPort[] }) => void): unknown;
+  off(event: 'message', listener: (event: { data: unknown; ports?: AudioUtilityPort[] }) => void): unknown;
+  postMessage(message: AudioUtilityMessage | CaptureHostCommand): void;
+  start?(): void;
+  close?(): void;
 }
 
 export interface AudioUtilityHandle {
@@ -30,19 +25,73 @@ export interface AudioUtilityHandle {
 }
 
 /** Installs the Node-only utility runtime. Browser media APIs remain in BrowserMediaCaptureHost. */
-export function startAudioUtility(port: AudioUtilityPort): AudioUtilityHandle {
+export function startAudioUtility(
+  port: AudioUtilityPort,
+  capturePort: AudioUtilityPort = port,
+  expectedLifecycle?: string,
+): AudioUtilityHandle {
   const controller = new CaptureController();
   let resolveClosed: () => void = () => undefined;
   const closed = new Promise<void>((resolve) => {
     resolveClosed = resolve;
   });
   let started = false;
+  let stopped = false;
+  let vad: VadDetector | null = null;
+  let config: AudioUtilityConfig | null = null;
+  const inFlight = new Set<number>();
+  let droppedSinceAck = 0;
+  let lastDroppedSequence = -1;
+
+  const close = (errorMessage?: string) => {
+    if (stopped) {
+      return;
+    }
+    stopped = true;
+    controller.stop();
+    inFlight.clear();
+    port.off('message', onMessage);
+    if (capturePort !== port) {
+      capturePort.off('message', onCaptureMessage);
+    }
+    if (config?.capture) {
+      capturePort.postMessage({ type: 'stop-capture', lifecycle: config.capture.lifecycle });
+    }
+    if (errorMessage) {
+      port.postMessage({ type: 'error', fatal: true, message: errorMessage });
+    }
+    port.postMessage({ type: 'stopped' });
+    if (capturePort !== port) {
+      capturePort.close?.();
+    }
+    resolveClosed();
+  };
 
   const pumpFrames = async () => {
-    for await (const frame of controller.frames()) {
-      const transferredFrame = { ...frame, pcm: frame.pcm.slice() };
-      port.postMessage({ type: 'frame', frame: transferredFrame });
-      frame.pcm.fill(0);
+    try {
+      for await (const frame of controller.frames()) {
+        try {
+          for (const event of vad?.accept(frame) ?? []) {
+            port.postMessage(event);
+          }
+          if (!config || inFlight.size >= config.maxInFlightFrames) {
+            droppedSinceAck += 1;
+            lastDroppedSequence = frame.sequence;
+            continue;
+          }
+          const transferredFrame = { ...frame, pcm: frame.pcm.slice() };
+          inFlight.add(frame.sequence);
+          try {
+            port.postMessage({ type: 'frame', frame: transferredFrame });
+          } finally {
+            transferredFrame.pcm.fill(0);
+          }
+        } finally {
+          frame.pcm.fill(0);
+        }
+      }
+    } catch {
+      close('Audio utility processing failed.');
     }
   };
   const pumpEvents = async () => {
@@ -52,17 +101,39 @@ export function startAudioUtility(port: AudioUtilityPort): AudioUtilityHandle {
   };
 
   const onMessage = (event: { data: unknown }) => {
-    const command = event.data as AudioUtilityCommand;
+    const parsed = AudioUtilityCommandSchema.safeParse(event.data);
+    if (!parsed.success) {
+      zeroCandidatePcm(event.data);
+      close('Invalid audio utility command.');
+      return;
+    }
+    const command = parsed.data;
     try {
       switch (command?.type) {
         case 'start':
           if (started) {
             throw new Error('Audio utility capture is already started.');
           }
+          config = command.config;
+          if (expectedLifecycle && command.config.capture?.lifecycle !== expectedLifecycle) {
+            throw new Error('Capture lifecycle does not match the attached port.');
+          }
           controller.start(command.config);
+          vad = new VadDetector(command.config.vad);
           started = true;
           void pumpFrames();
           void pumpEvents();
+          if (command.config.capture) {
+            capturePort.postMessage({
+              type: 'start-capture',
+              lifecycle: command.config.capture.lifecycle,
+              config: {
+                microphone: command.config.capture.microphone,
+                systemAudio: command.config.capture.systemAudio,
+              },
+              credits: command.config.capture.initialCredits,
+            });
+          }
           break;
         case 'audio-chunk':
           controller.accept(command.chunk);
@@ -70,26 +141,93 @@ export function startAudioUtility(port: AudioUtilityPort): AudioUtilityHandle {
         case 'source-lost':
           controller.sourceLost(command.source);
           break;
+        case 'frame-ack':
+          if (inFlight.delete(command.sequence) && droppedSinceAck > 0) {
+            port.postMessage({
+              type: 'frames-dropped',
+              count: droppedSinceAck,
+              lastSequence: lastDroppedSequence,
+            });
+            droppedSinceAck = 0;
+            lastDroppedSequence = -1;
+          }
+          break;
         case 'stop':
-          controller.stop();
-          port.off('message', onMessage);
-          port.postMessage({ type: 'stopped' });
-          resolveClosed();
+          close();
           break;
         default:
           throw new Error('Unsupported audio utility command.');
       }
-    } catch (error) {
-      port.postMessage({ type: 'error', message: error instanceof Error ? error.message : 'Audio utility failed.' });
+    } catch {
+      zeroCandidatePcm(event.data);
+      close('Audio utility processing failed.');
+    }
+  };
+
+  const onCaptureMessage = (event: { data: unknown }) => {
+    const parsed = CaptureStreamCommandSchema.safeParse(event.data);
+    if (!parsed.success || !config?.capture || parsed.data.lifecycle !== config.capture.lifecycle) {
+      zeroCandidatePcm(event.data);
+      close('Invalid capture stream command.');
+      return;
+    }
+    const command = parsed.data;
+    try {
+      switch (command.type) {
+        case 'audio-chunk':
+          controller.accept(command.chunk);
+          capturePort.postMessage({
+            type: 'capture-credit',
+            lifecycle: config.capture.lifecycle,
+            count: 1,
+          });
+          break;
+        case 'source-lost':
+          controller.sourceLost(command.source);
+          break;
+        case 'capture-stopped':
+          close();
+          break;
+      }
+    } catch {
+      zeroCandidatePcm(event.data);
+      close('Audio utility processing failed.');
     }
   };
 
   port.on('message', onMessage);
+  port.start?.();
+  if (capturePort !== port) {
+    capturePort.on('message', onCaptureMessage);
+    capturePort.start?.();
+  }
   port.postMessage({ type: 'ready' });
   return { closed };
 }
 
+export function startAudioUtilityParentPort(parentPort: AudioUtilityPort): Promise<AudioUtilityHandle> {
+  return new Promise((resolve, reject) => {
+    const onConnect = (event: { data: unknown; ports?: AudioUtilityPort[] }) => {
+      const parsed = AudioUtilityConnectSchema.safeParse(event.data);
+      const [capturePort, ...extraPorts] = event.ports ?? [];
+      if (!parsed.success || !capturePort || extraPorts.length > 0) {
+        parentPort.off('message', onConnect);
+        parentPort.postMessage({ type: 'error', fatal: true, message: 'Invalid audio utility connection.' });
+        parentPort.postMessage({ type: 'stopped' });
+        reject(new Error('Invalid audio utility connection.'));
+        return;
+      }
+      parentPort.off('message', onConnect);
+      resolve(startAudioUtility(parentPort, capturePort, parsed.data.lifecycle));
+    };
+    parentPort.on('message', onConnect);
+  });
+}
+
 const utilityParentPort = process.parentPort;
 if (utilityParentPort) {
-  startAudioUtility(utilityParentPort);
+  void startAudioUtilityParentPort(utilityParentPort)
+    .then(({ closed }) => closed)
+    .then(() => { process.exitCode = 0; })
+    .catch(() => { process.exitCode = 1; });
 }

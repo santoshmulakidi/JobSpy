@@ -1,10 +1,26 @@
-import { app, desktopCapturer, net, protocol, session } from 'electron';
+import {
+  MessageChannelMain,
+  app,
+  desktopCapturer,
+  net,
+  protocol,
+  session,
+  utilityProcess,
+} from 'electron';
 import { relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { createOverlayWindow } from './windows/overlay-window';
 import { registerIpc } from './ipc/register-ipc';
-import { installElectronLoopbackHandler } from '../audio/electron-loopback-handler';
+import { CapturePermissionGate, installElectronLoopbackHandler } from '../audio/electron-loopback-handler';
+import { createAudioCaptureWindow } from './windows/audio-capture-window';
+import {
+  AudioPipelineRuntime,
+  asUtilityChild,
+  resolveAudioUtilityEntry,
+  type AudioPipelinePort,
+} from './audio/audio-pipeline-runtime';
+import { SessionController } from './sessions/session-controller';
 
 const LOCAL_SCHEME = 'copilot';
 const CONTENT_SECURITY_POLICY = [
@@ -64,11 +80,71 @@ function installContentSecurityPolicy(): void {
 app.whenReady().then(async () => {
   protocol.handle(LOCAL_SCHEME, (request) => net.fetch(resolveRendererAsset(request.url).toString()));
   installContentSecurityPolicy();
-  installElectronLoopbackHandler(session.defaultSession, desktopCapturer);
-  registerIpc();
-  createOverlayWindow();
+  const overlayWindow = createOverlayWindow();
+  const captureWindow = createAudioCaptureWindow();
+  const permissionGate = new CapturePermissionGate(captureWindow.webContents);
+  const sessionController = new SessionController();
+  installElectronLoopbackHandler(session.defaultSession, desktopCapturer, permissionGate);
+
+  const audioRuntime = new AudioPipelineRuntime({
+    captureWebContents: captureWindow.webContents,
+    permissionGate,
+    utilityEntryPath: resolveAudioUtilityEntry({
+      isPackaged: app.isPackaged,
+      buildDirectory: __dirname,
+      appPath: app.getAppPath(),
+    }),
+    forkUtility: (entryPath) => asUtilityChild(utilityProcess.fork(entryPath, [], {
+      env: utilityEnvironment(),
+      serviceName: 'Copilot Audio Utility',
+      stdio: 'ignore',
+    })),
+    createMessageChannel: () => new MessageChannelMain() as unknown as {
+      port1: AudioPipelinePort;
+      port2: AudioPipelinePort;
+    },
+    onFrame: (frame) => frame.pcm.fill(0),
+    onFailure: (message) => {
+      sessionController.dispatch({ type: 'utility-process-crashed', message });
+    },
+  });
+
+  registerIpc({
+    'session:start': async (payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) {
+        return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized request.' } };
+      }
+      const request = payload as { microphone: boolean; systemAudio: boolean };
+      await audioRuntime.start({ microphone: request.microphone, systemAudio: request.systemAudio });
+      sessionController.dispatch({ type: 'start' });
+      return { ok: true };
+    },
+    'session:stop': (_payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) {
+        return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized request.' } };
+      }
+      audioRuntime.stop();
+      sessionController.dispatch({ type: 'stop' });
+      return { ok: true };
+    },
+  });
+
+  captureWindow.webContents.on('render-process-gone', () => audioRuntime.stop());
+  captureWindow.on('closed', () => audioRuntime.stop());
+  app.once('before-quit', () => audioRuntime.stop());
 });
 
 app.on('window-all-closed', () => {
   app.quit();
 });
+
+function utilityEnvironment(): Record<string, string> {
+  const environment: Record<string, string> = {};
+  for (const name of ['SystemRoot', 'WINDIR', 'PATH', 'TEMP', 'TMP']) {
+    const value = process.env[name];
+    if (value !== undefined) {
+      environment[name] = value;
+    }
+  }
+  return environment;
+}

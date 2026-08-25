@@ -154,4 +154,19 @@ describe('IPC boundary', () => {
     });
     expect(JSON.stringify(response)).not.toContain('should-never-reach-renderer');
   });
+
+  it('passes the authenticated sender to a narrow main-process operation', async () => {
+    const { registerIpc } = await import('../../src/main/ipc/register-ipc');
+    let observedEvent: unknown;
+
+    registerIpc({
+      'session:start': (_payload, event) => {
+        observedEvent = event;
+        return { ok: true };
+      },
+    });
+    await handlers.get('session:start')?.(trustedEvent, validStartRequest);
+
+    expect(observedEvent).toBe(trustedEvent);
+  });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-let creationOptions: { webPreferences: Record<string, unknown> } | undefined;
+let creationOptions: { show?: boolean; webPreferences: Record<string, unknown> } | undefined;
 
 vi.mock('electron', () => ({
   BrowserWindow: vi.fn(function BrowserWindow(options) {
@@ -52,5 +52,24 @@ describe('packaged overlay window security', () => {
 
     expect(event.preventDefault).toHaveBeenCalledOnce();
     expect(callbacks.open?.()).toEqual({ action: 'deny' });
+  });
+
+  it('creates a hidden sandboxed capture renderer with a dedicated preload', async () => {
+    const { createAudioCaptureWindow } = await import('../../src/main/windows/audio-capture-window');
+
+    createAudioCaptureWindow();
+
+    expect(creationOptions).toMatchObject({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+        webSecurity: true,
+        backgroundThrottling: false,
+        devTools: false,
+      },
+    });
+    expect(creationOptions?.webPreferences.preload).toMatch(/capture-preload\.js$/);
   });
 });

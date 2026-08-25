@@ -1,5 +1,5 @@
 import { createAudioFrame, type AudioFrame, type AudioSource } from './audio-frame';
-import { resamplePcm16Mono } from './resampler';
+import { StreamingPcm16Resampler } from './resampler';
 
 export interface RawAudioChunk {
   readonly source: AudioSource;
@@ -31,6 +31,12 @@ interface BufferedChunk {
   readonly source: AudioSource;
   readonly capturedAt: number;
   readonly pcm: Int16Array;
+}
+
+interface SourceResampler {
+  readonly inputSampleRate: number;
+  readonly inputChannels: number;
+  readonly resampler: StreamingPcm16Resampler;
 }
 
 interface Subscriber<T> {
@@ -111,7 +117,9 @@ export class CaptureController {
   private nextSequence = 0;
   private nextArrival = 0;
   private droppedFrames = 0;
+  private emittedTimestamp = Number.NEGATIVE_INFINITY;
   private readonly buffered: BufferedChunk[] = [];
+  private readonly resamplers = new Map<AudioSource, SourceResampler>();
   private readonly lostSources = new Set<AudioSource>();
   private readonly frameSubscribers = new Set<Subscriber<AudioFrame>>();
   private readonly eventSubscribers = new Set<Subscriber<CaptureEvent>>();
@@ -120,7 +128,14 @@ export class CaptureController {
     if (config.memoryOnly === false) {
       throw new Error('Raw audio persistence requires an explicit recording writer.');
     }
-    if (config.targetSampleRate <= 0 || config.maxBufferedFrames <= 0 || config.jitterWindowMs < 0) {
+    if (
+      !Number.isSafeInteger(config.targetSampleRate)
+      || config.targetSampleRate <= 0
+      || !Number.isSafeInteger(config.maxBufferedFrames)
+      || config.maxBufferedFrames <= 0
+      || !Number.isSafeInteger(config.jitterWindowMs)
+      || config.jitterWindowMs < 0
+    ) {
       throw new RangeError('Capture configuration values are outside their valid range.');
     }
     this.stop();
@@ -129,39 +144,43 @@ export class CaptureController {
     this.nextSequence = 0;
     this.nextArrival = 0;
     this.droppedFrames = 0;
+    this.emittedTimestamp = Number.NEGATIVE_INFINITY;
     this.lostSources.clear();
   }
 
   public accept(chunk: RawAudioChunk): void {
-    if (!this.active || !this.config) {
-      throw new Error('Capture must be started before accepting audio.');
-    }
-    if (!Number.isFinite(chunk.capturedAt)) {
-      throw new RangeError('Capture timestamp must be finite.');
-    }
-    const normalized = resamplePcm16Mono(
-      chunk.pcm,
-      chunk.sampleRate,
-      chunk.channels,
-      this.config.targetSampleRate,
-    );
-    if (normalized !== chunk.pcm) {
+    try {
+      if (!this.active || !this.config) {
+        throw new Error('Capture must be started before accepting audio.');
+      }
+      if (!Number.isFinite(chunk.capturedAt) || chunk.capturedAt < 0) {
+        throw new RangeError('Capture timestamp must be a finite non-negative number.');
+      }
+      if (chunk.capturedAt < this.emittedTimestamp) {
+        this.droppedFrames += 1;
+        return;
+      }
+      const normalized = this.resamplerFor(chunk).accept(chunk.pcm);
+      if (normalized.length === 0) {
+        return;
+      }
+      this.buffered.push({
+        arrival: this.nextArrival,
+        source: chunk.source,
+        capturedAt: chunk.capturedAt,
+        pcm: normalized,
+      });
+      this.nextArrival += 1;
+      this.sortBuffered();
+      while (this.buffered.length > this.config.maxBufferedFrames) {
+        const dropped = this.buffered.shift();
+        dropped?.pcm.fill(0);
+        this.droppedFrames += 1;
+      }
+      this.releaseJitteredFrames();
+    } finally {
       chunk.pcm.fill(0);
     }
-    this.buffered.push({
-      arrival: this.nextArrival,
-      source: chunk.source,
-      capturedAt: chunk.capturedAt,
-      pcm: normalized,
-    });
-    this.nextArrival += 1;
-    this.sortBuffered();
-    while (this.buffered.length > this.config.maxBufferedFrames) {
-      const dropped = this.buffered.shift();
-      dropped?.pcm.fill(0);
-      this.droppedFrames += 1;
-    }
-    this.releaseJitteredFrames();
   }
 
   public sourceLost(source: AudioSource): void {
@@ -169,8 +188,9 @@ export class CaptureController {
       return;
     }
     this.lostSources.add(source);
+    this.resamplers.get(source)?.resampler.clear();
+    this.resamplers.delete(source);
     this.publish(this.eventSubscribers, { type: 'source-lost', source });
-    this.flushBuffered();
   }
 
   public frames(): AsyncIterable<AudioFrame> {
@@ -213,6 +233,10 @@ export class CaptureController {
       chunk.pcm.fill(0);
     }
     this.buffered.length = 0;
+    for (const { resampler } of this.resamplers.values()) {
+      resampler.clear();
+    }
+    this.resamplers.clear();
     this.active = false;
     for (const subscriber of [...this.frameSubscribers]) {
       subscriber.close();
@@ -245,12 +269,6 @@ export class CaptureController {
     }
   }
 
-  private flushBuffered(): void {
-    while (this.buffered.length > 0) {
-      this.releaseOne();
-    }
-  }
-
   private releaseOne(): void {
     if (!this.config) {
       return;
@@ -267,13 +285,43 @@ export class CaptureController {
       channels: 1,
       pcm: chunk.pcm,
     });
-    this.nextSequence += 1;
     if (this.frameSubscribers.size === 0) {
       frame.pcm.fill(0);
       this.droppedFrames += 1;
       return;
     }
+    this.nextSequence += 1;
+    this.emittedTimestamp = Math.max(this.emittedTimestamp, frame.capturedAt);
     this.publish(this.frameSubscribers, frame);
+  }
+
+  private resamplerFor(chunk: RawAudioChunk): StreamingPcm16Resampler {
+    if (
+      !Number.isSafeInteger(chunk.sampleRate)
+      || chunk.sampleRate <= 0
+      || !Number.isSafeInteger(chunk.channels)
+      || chunk.channels <= 0
+    ) {
+      throw new RangeError('Chunk sample rate and channels must be positive safe integers.');
+    }
+    const existing = this.resamplers.get(chunk.source);
+    if (existing) {
+      if (existing.inputSampleRate !== chunk.sampleRate || existing.inputChannels !== chunk.channels) {
+        throw new Error('Audio source format changed during an active capture.');
+      }
+      return existing.resampler;
+    }
+    const resampler = new StreamingPcm16Resampler(
+      chunk.sampleRate,
+      chunk.channels,
+      this.config?.targetSampleRate ?? 0,
+    );
+    this.resamplers.set(chunk.source, {
+      inputSampleRate: chunk.sampleRate,
+      inputChannels: chunk.channels,
+      resampler,
+    });
+    return resampler;
   }
 
   private publish<T>(subscribers: Set<Subscriber<T>>, value: T): void {
