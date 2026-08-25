@@ -107,9 +107,9 @@ class ZipRecruiter(Scraper):
                 return jobs_list, ""
         except Exception as e:
             if "Proxy responded with" in str(e):
-                log.error(f"Indeed: Bad proxy")
+                log.error(f"ZipRecruiter: Bad proxy")
             else:
-                log.error(f"Indeed: {str(e)}")
+                log.error(f"ZipRecruiter: {str(e)}")
             return jobs_list, ""
 
         res_data = res.json()

@@ -235,7 +235,6 @@ class BDJobs(Scraper):
                 date_posted=date_posted,
                 job_url=job_url,
                 is_remote=is_remote,
-                site=self.site,
             )
 
             # Always fetch description for BDJobs

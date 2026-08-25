@@ -115,7 +115,6 @@ class Indeed(Scraper):
             headers=api_headers_temp,
             json=payload,
             timeout=10,
-            verify=False,
         )
         if not response.ok:
             log.info(

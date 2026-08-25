@@ -18,6 +18,12 @@ pip install -U python-jobspy
 
 _Python version >= [3.10](https://www.python.org/downloads/release/python-3100/) required_
 
+### Environment Variables
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `INDEED_API_KEY` | For Indeed searches | Indeed app API key. Indeed results return no data when unset. |
+
 ### Usage
 
 ```python

@@ -1,3 +1,5 @@
+import os
+
 job_search_query = """
     query GetJobData {{
         jobSearch(
@@ -100,7 +102,7 @@ job_search_query = """
 api_headers = {
     "Host": "apis.indeed.com",
     "content-type": "application/json",
-    "indeed-api-key": "161092c2017b5bbab13edb12461a62d5a833871e7cad6d9d475304573de67ac8",
+    "indeed-api-key": os.environ.get("INDEED_API_KEY", ""),
     "accept": "application/json",
     "indeed-locale": "en-US",
     "accept-language": "en-US,en;q=0.9",

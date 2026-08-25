@@ -175,16 +175,12 @@ class Glassdoor(Scraper):
         company_name = job["header"]["employerNameFromSearch"]
         company_id = job_data["jobview"]["header"]["employer"]["id"]
         location_name = job["header"].get("locationName", "")
-        location_type = job["header"].get("locationType", "")
         age_in_days = job["header"].get("ageInDays")
         is_remote, location = False, None
         date_diff = (datetime.now() - timedelta(days=age_in_days)).date()
         date_posted = date_diff if age_in_days is not None else None
 
-        if location_type == "S":
-            is_remote = True
-        else:
-            location = parse_location(location_name)
+        location = parse_location(location_name) if location_name else None
 
         compensation = parse_compensation(job["header"])
         try:

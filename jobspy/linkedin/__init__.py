@@ -269,10 +269,10 @@ class LinkedIn(Scraper):
         description = None
         if div_content is not None:
             div_content = remove_attributes(div_content)
-            description = div_content.prettify(formatter="html")
-            if self.scraper_input.description_format == DescriptionFormat.MARKDOWN:
+            description = div_content.prettify(formatter="html") or None
+            if description and self.scraper_input.description_format == DescriptionFormat.MARKDOWN:
                 description = markdown_converter(description)
-            elif self.scraper_input.description_format == DescriptionFormat.PLAIN:
+            elif description and self.scraper_input.description_format == DescriptionFormat.PLAIN:
                 description = plain_converter(description)
         h3_tag = soup.find(
             "h3", text=lambda text: text and "Job function" in text.strip()

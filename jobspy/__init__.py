@@ -177,13 +177,11 @@ def scrape_jobs(
                         job_data["description"],
                         enforce_annual_salary=enforce_annual_salary,
                     )
-                    job_data["salary_source"] = SalarySource.DESCRIPTION.value
-
-            job_data["salary_source"] = (
-                job_data["salary_source"]
-                if "min_amount" in job_data and job_data["min_amount"]
-                else None
-            )
+                    if job_data["interval"]:
+                        job_data["salary_source"] = SalarySource.DESCRIPTION.value
+                    else:
+                        job_data["interval"] = None
+                        job_data["currency"] = None
 
             #naukri-specific fields
             job_data["skills"] = (
