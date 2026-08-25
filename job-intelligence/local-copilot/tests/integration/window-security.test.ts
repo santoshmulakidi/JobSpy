@@ -30,6 +30,8 @@ vi.mock('electron', () => ({
     return {
       loadURL: vi.fn(),
       webContents: createdWebContents,
+      on: vi.fn(),
+      setContentProtection: vi.fn(),
     };
   }),
 }));

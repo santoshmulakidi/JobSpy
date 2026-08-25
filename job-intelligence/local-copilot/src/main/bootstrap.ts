@@ -2,15 +2,17 @@ import {
   MessageChannelMain,
   app,
   desktopCapturer,
+  nativeImage,
   net,
   protocol,
+  screen,
   session,
   utilityProcess,
 } from 'electron';
 import { relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { createOverlayWindow } from './windows/overlay-window';
+import { captureWithOverlayHidden, createOverlayControls, createOverlayWindow } from './windows/overlay-window';
 import { registerIpc } from './ipc/register-ipc';
 import { CapturePermissionGate, installElectronLoopbackHandler } from '../audio/electron-loopback-handler';
 import { createAudioCaptureWindow } from './windows/audio-capture-window';
@@ -21,6 +23,12 @@ import {
   type AudioPipelinePort,
 } from './audio/audio-pipeline-runtime';
 import { SessionController } from './sessions/session-controller';
+import {
+  ScreenshotService,
+  captureElectronDisplay,
+  editScreenshotWithNativeImage,
+  type ScreenshotEdits,
+} from './capture/screenshot-service';
 
 const LOCAL_SCHEME = 'copilot';
 const CONTENT_SECURITY_POLICY = [
@@ -81,6 +89,14 @@ app.whenReady().then(async () => {
   protocol.handle(LOCAL_SCHEME, (request) => net.fetch(resolveRendererAsset(request.url).toString()));
   installContentSecurityPolicy();
   const overlayWindow = createOverlayWindow();
+  const overlayControls = createOverlayControls(overlayWindow);
+  const screenshotService = new ScreenshotService({
+    capture: (displayId) => captureWithOverlayHidden(
+      overlayWindow,
+      () => captureElectronDisplay({ desktopCapturer, screen }, displayId),
+    ),
+    edit: (screenshot, edits) => editScreenshotWithNativeImage(nativeImage, screenshot, edits),
+  });
   const captureWindowHandle = createAudioCaptureWindow();
   await captureWindowHandle.ready;
   const captureWindow = captureWindowHandle.window;
@@ -129,11 +145,53 @@ app.whenReady().then(async () => {
       sessionController.dispatch({ type: 'stop' });
       return { ok: true };
     },
+    'capture:preview': async (payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      const request = payload as { displayId?: string };
+      return { ok: true, preview: await screenshotService.preview(request.displayId) };
+    },
+    'capture:confirm': async (payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      const request = payload as { captureId: string; edits?: ScreenshotEdits };
+      return { ok: true, screenshot: await screenshotService.confirm(request.captureId, request.edits ?? {}) };
+    },
+    'capture:discard': (payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      screenshotService.discard((payload as { captureId: string }).captureId);
+      return { ok: true };
+    },
+    'overlay:set-opacity': (payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      overlayControls.setOpacity((payload as { opacity: number }).opacity);
+      return { ok: true };
+    },
+    'overlay:set-click-through': (payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      overlayControls.setClickThrough((payload as { enabled: boolean }).enabled);
+      return { ok: true };
+    },
+    'overlay:set-always-on-top': (payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      overlayControls.setAlwaysOnTop((payload as { enabled: boolean }).enabled);
+      return { ok: true };
+    },
+    'overlay:set-capture-protection': (payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      return { ok: true, ...overlayControls.setCaptureProtection((payload as { enabled: boolean }).enabled) };
+    },
+    'overlay:hide': (_payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      overlayControls.hide();
+      return { ok: true };
+    },
   });
 
   captureWindow.webContents.on('render-process-gone', () => { void audioRuntime.stop(); });
   captureWindow.on('closed', () => { void audioRuntime.stop(); });
-  app.once('before-quit', () => { void audioRuntime.stop(); });
+  app.once('before-quit', () => {
+    screenshotService.dispose();
+    void audioRuntime.stop();
+  });
 });
 
 app.on('window-all-closed', () => {
@@ -149,4 +207,8 @@ function utilityEnvironment(): Record<string, string> {
     }
   }
   return environment;
+}
+
+function unauthorizedResponse() {
+  return { ok: false as const, error: { code: 'UNAUTHORIZED' as const, message: 'Unauthorized request.' } };
 }

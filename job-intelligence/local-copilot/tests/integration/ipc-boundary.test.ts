@@ -169,4 +169,23 @@ describe('IPC boundary', () => {
 
     expect(observedEvent).toBe(trustedEvent);
   });
+
+  it('validates screenshot edits and detailed preview responses', async () => {
+    const { dispatchIpc } = await import('../../src/main/ipc/register-ipc');
+    const preview = {
+      id: 'shot-1',
+      dataUrl: 'data:image/png;base64,AAAA',
+      width: 100,
+      height: 80,
+      expiresAt: Date.now() + 1000,
+    };
+
+    await expect(dispatchIpc('capture:preview', trustedEvent, { displayId: 'display-1' }, {
+      'capture:preview': () => ({ ok: true, preview }),
+    })).resolves.toEqual({ ok: true, preview });
+    await expect(dispatchIpc('capture:confirm', trustedEvent, {
+      captureId: 'shot-1',
+      edits: { redactions: [{ x: -1, y: 0, width: 1, height: 1 }] },
+    })).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_REQUEST' } });
+  });
 });

@@ -43,6 +43,10 @@ export const copilot = {
     setOpacity: (request: IpcRequest<'overlay:set-opacity'>) => invoke('overlay:set-opacity', request),
     setClickThrough: (request: IpcRequest<'overlay:set-click-through'>) =>
       invoke('overlay:set-click-through', request),
+    setAlwaysOnTop: (request: IpcRequest<'overlay:set-always-on-top'>) =>
+      invoke('overlay:set-always-on-top', request),
+    setCaptureProtection: (request: IpcRequest<'overlay:set-capture-protection'>) =>
+      invoke('overlay:set-capture-protection', request),
     hide: () => invoke('overlay:hide', undefined),
   },
 };

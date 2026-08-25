@@ -23,7 +23,18 @@ export const SaveProviderSecretRequest = z
   .strict();
 
 export const PreviewCaptureRequest = z.object({ displayId: NonEmptyId.optional() }).strict();
-export const ConfirmCaptureRequest = z.object({ captureId: NonEmptyId }).strict();
+const ScreenshotRectangle = z.object({
+  x: z.number().int().nonnegative(),
+  y: z.number().int().nonnegative(),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+}).strict();
+const ScreenshotEdits = z.object({
+  crop: ScreenshotRectangle.optional(),
+  redactions: z.array(ScreenshotRectangle).max(20).optional(),
+  remove: z.boolean().optional(),
+}).strict();
+export const ConfirmCaptureRequest = z.object({ captureId: NonEmptyId, edits: ScreenshotEdits.optional() }).strict();
 export const DiscardCaptureRequest = z.object({ captureId: NonEmptyId }).strict();
 
 export const ListHistoryRequest = z
@@ -37,6 +48,8 @@ export const ExportHistoryRequest = z
 
 export const SetOverlayOpacityRequest = z.object({ opacity: z.number().min(0.1).max(1) }).strict();
 export const SetOverlayClickThroughRequest = z.object({ enabled: z.boolean() }).strict();
+export const SetOverlayAlwaysOnTopRequest = z.object({ enabled: z.boolean() }).strict();
+export const SetOverlayCaptureProtectionRequest = z.object({ enabled: z.boolean() }).strict();
 export const HideOverlayRequest = NoRequest;
 
 export const IpcErrorCode = z.enum([
@@ -64,8 +77,22 @@ export const SessionStatusResponse = IpcResponse;
 export const ListProvidersResponse = IpcResponse;
 export const TestProviderResponse = IpcResponse;
 export const SaveProviderSecretResponse = IpcResponse;
-export const PreviewCaptureResponse = IpcResponse;
-export const ConfirmCaptureResponse = IpcResponse;
+const ScreenshotPreview = z.object({
+  id: NonEmptyId,
+  displayId: NonEmptyId.optional(),
+  dataUrl: z.string().startsWith('data:image/'),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  expiresAt: z.number().int().positive(),
+}).strict();
+const ConfirmedScreenshot = z.object({
+  id: NonEmptyId,
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  edits: ScreenshotEdits,
+}).strict();
+export const PreviewCaptureResponse = z.union([z.object({ ok: z.literal(true), preview: ScreenshotPreview }).strict(), IpcFailure]);
+export const ConfirmCaptureResponse = z.union([z.object({ ok: z.literal(true), screenshot: ConfirmedScreenshot.optional() }).strict(), IpcFailure]);
 export const DiscardCaptureResponse = IpcResponse;
 export const ListHistoryResponse = IpcResponse;
 export const GetHistoryResponse = IpcResponse;
@@ -73,6 +100,11 @@ export const DeleteHistoryResponse = IpcResponse;
 export const ExportHistoryResponse = IpcResponse;
 export const SetOverlayOpacityResponse = IpcResponse;
 export const SetOverlayClickThroughResponse = IpcResponse;
+export const SetOverlayAlwaysOnTopResponse = IpcResponse;
+export const SetOverlayCaptureProtectionResponse = z.union([
+  z.object({ ok: z.literal(true), status: z.enum(['best-effort', 'unsupported', 'disabled']) }).strict(),
+  IpcFailure,
+]);
 export const HideOverlayResponse = IpcResponse;
 
 export const IPC_METHODS = {
@@ -94,6 +126,14 @@ export const IPC_METHODS = {
   'overlay:set-click-through': {
     request: SetOverlayClickThroughRequest,
     response: SetOverlayClickThroughResponse,
+  },
+  'overlay:set-always-on-top': {
+    request: SetOverlayAlwaysOnTopRequest,
+    response: SetOverlayAlwaysOnTopResponse,
+  },
+  'overlay:set-capture-protection': {
+    request: SetOverlayCaptureProtectionRequest,
+    response: SetOverlayCaptureProtectionResponse,
   },
   'overlay:hide': { request: HideOverlayRequest, response: HideOverlayResponse },
 } as const;
