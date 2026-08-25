@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   createHttpLlmAdapter,
+  encodeImageData,
   exactEndpoint,
   invalidEvent,
   usage,
@@ -48,7 +49,7 @@ function buildGeminiBody(request: CopilotRequest): unknown {
   const contents = request.messages
     .filter(({ role }) => role !== 'system')
     .map(({ role, content }) => ({ role: role === 'assistant' ? 'model' : 'user', parts: [{ text: content }] }));
-  const images = request.images?.map(({ mediaType, data }) => ({ inlineData: { mimeType: mediaType, data } })) ?? [];
+  const images = request.images?.map(({ mediaType, data }) => ({ inlineData: { mimeType: mediaType, data: encodeImageData(data) } })) ?? [];
   if (images.length) {
     const lastUser = [...contents].reverse().find(({ role }) => role === 'user');
     if (lastUser) lastUser.parts.push(...images as never[]);

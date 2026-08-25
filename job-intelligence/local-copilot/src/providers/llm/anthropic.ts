@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   createHttpLlmAdapter,
+  encodeImageData,
   exactEndpoint,
   invalidEvent,
   usage,
@@ -55,7 +56,7 @@ function buildAnthropicBody(model: string, request: CopilotRequest): unknown {
     .filter(({ role }) => role !== 'system')
     .map(({ role, content }) => ({ role, content: [{ type: 'text', text: content }] }));
   const images = request.images?.map(({ mediaType, data }) => ({
-    type: 'image', source: { type: 'base64', media_type: mediaType, data },
+    type: 'image', source: { type: 'base64', media_type: mediaType, data: encodeImageData(data) },
   })) ?? [];
   if (images.length) {
     const lastUser = [...messages].reverse().find(({ role }) => role === 'user');

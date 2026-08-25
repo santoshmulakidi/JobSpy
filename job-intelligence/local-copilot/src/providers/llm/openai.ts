@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   createHttpLlmAdapter,
   exactEndpoint,
+  encodeImageData,
   failure,
   invalidEvent,
   usage,
@@ -71,7 +72,7 @@ function buildOpenAiBody(model: string, request: CopilotRequest): unknown {
     content: [{ type: 'input_text', text: content }],
   }));
   const images = request.images?.map(({ mediaType, data }) => ({
-    type: 'input_image', image_url: `data:${mediaType};base64,${data}`,
+    type: 'input_image', image_url: `data:${mediaType};base64,${encodeImageData(data)}`,
   })) ?? [];
   if (images.length) {
     const lastUser = [...input].reverse().find(({ role }) => role === 'user');

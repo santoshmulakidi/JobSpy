@@ -35,7 +35,7 @@ const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data:",
+  "img-src 'self' blob:",
   "connect-src 'none'",
   "object-src 'none'",
   "base-uri 'none'",

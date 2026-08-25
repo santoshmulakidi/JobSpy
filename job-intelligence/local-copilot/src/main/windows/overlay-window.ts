@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { installNavigationPolicy } from '../security/navigation-policy';
 
 const LOCAL_APP_URL = 'copilot://app/index.html';
+const captureQueues = new WeakMap<object, Promise<void>>();
 
 export function createOverlayWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -26,7 +27,8 @@ export function createOverlayWindow(): BrowserWindow {
 
   installNavigationPolicy(window);
   createOverlayControls(window).setCaptureProtection(true);
-  installOverlayContainment(window);
+  const disposeContainment = installOverlayContainment(window);
+  window.once('closed', disposeContainment);
   void window.loadURL(LOCAL_APP_URL);
 
   return window;
@@ -93,24 +95,33 @@ export async function captureWithOverlayHidden<T>(
   capture: () => Promise<T>,
   compositorDelayMs = 50,
 ): Promise<T> {
-  const restore = window.isVisible();
-  if (restore) {
-    window.hide();
-    await new Promise((resolve) => setTimeout(resolve, compositorDelayMs));
-  }
-  try {
-    return await capture();
-  } finally {
-    if (restore && !window.isDestroyed()) window.showInactive();
-  }
+  const run = async () => {
+    const restore = window.isVisible();
+    if (restore) {
+      window.hide();
+      await new Promise((resolve) => setTimeout(resolve, compositorDelayMs));
+    }
+    try {
+      return await capture();
+    } finally {
+      if (restore && !window.isDestroyed()) window.showInactive();
+    }
+  };
+  const previous = captureQueues.get(window);
+  const result = previous ? previous.then(run) : run();
+  captureQueues.set(window, result.then(() => undefined, () => undefined));
+  return result;
 }
 
-function installOverlayContainment(window: BrowserWindow): void {
+type ContainedWindow = Pick<BrowserWindow, 'getBounds' | 'setBounds' | 'isDestroyed' | 'on' | 'off'>;
+type DisplayScreen = Pick<typeof screen, 'getDisplayMatching' | 'on' | 'off'>;
+
+export function installOverlayContainment(window: ContainedWindow, displayScreen: DisplayScreen = screen): () => void {
   let correcting = false;
   const contain = () => {
     if (correcting || window.isDestroyed()) return;
     const bounds = window.getBounds();
-    const contained = containOverlayBounds(bounds, screen.getDisplayMatching(bounds).workArea);
+    const contained = containOverlayBounds(bounds, displayScreen.getDisplayMatching(bounds).workArea);
     if (Object.keys(contained).some((key) => contained[key as keyof Rectangle] !== bounds[key as keyof Rectangle])) {
       correcting = true;
       window.setBounds(contained);
@@ -119,4 +130,14 @@ function installOverlayContainment(window: BrowserWindow): void {
   };
   window.on('move', contain);
   window.on('resize', contain);
+  displayScreen.on('display-added', contain);
+  displayScreen.on('display-removed', contain);
+  displayScreen.on('display-metrics-changed', contain);
+  return () => {
+    window.off('move', contain);
+    window.off('resize', contain);
+    displayScreen.off('display-added', contain);
+    displayScreen.off('display-removed', contain);
+    displayScreen.off('display-metrics-changed', contain);
+  };
 }

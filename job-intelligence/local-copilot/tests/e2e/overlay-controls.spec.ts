@@ -4,6 +4,7 @@ import {
   captureWithOverlayHidden,
   containOverlayBounds,
   createOverlayControls,
+  installOverlayContainment,
 } from '../../src/main/windows/overlay-window';
 
 function fakeWindow() {
@@ -68,5 +69,50 @@ describe('overlay native controls', () => {
     await expect(result).resolves.toBe('pixels');
     expect(window.showInactive).toHaveBeenCalledOnce();
     vi.useRealTimers();
+  });
+
+  it('serializes overlapping capture lifecycles', async () => {
+    vi.useFakeTimers();
+    const window = fakeWindow();
+    let finishFirst!: () => void;
+    const firstCapture = vi.fn(() => new Promise<string>((resolve) => { finishFirst = () => resolve('first'); }));
+    const secondCapture = vi.fn(async () => 'second');
+
+    const first = captureWithOverlayHidden(window as never, firstCapture, 50);
+    const second = captureWithOverlayHidden(window as never, secondCapture, 50);
+    await vi.advanceTimersByTimeAsync(50);
+    expect(firstCapture).toHaveBeenCalledOnce();
+    expect(secondCapture).not.toHaveBeenCalled();
+
+    finishFirst();
+    await first;
+    await vi.advanceTimersByTimeAsync(50);
+    await expect(second).resolves.toBe('second');
+    expect(secondCapture).toHaveBeenCalledOnce();
+    vi.useRealTimers();
+  });
+
+  it('recontains on display changes and disposes every listener', () => {
+    const listeners = new Map<string, () => void>();
+    const display = {
+      on: vi.fn((event: string, listener: () => void) => listeners.set(event, listener)),
+      off: vi.fn(),
+      getDisplayMatching: vi.fn(() => ({ workArea: { x: 0, y: 0, width: 100, height: 100 } })),
+    };
+    const window = {
+      isDestroyed: () => false,
+      getBounds: vi.fn(() => ({ x: 90, y: 90, width: 40, height: 40 })),
+      setBounds: vi.fn(),
+      on: vi.fn((event: string, listener: () => void) => listeners.set(`window:${event}`, listener)),
+      off: vi.fn(),
+    };
+
+    const dispose = installOverlayContainment(window as never, display as never);
+    listeners.get('display-metrics-changed')?.();
+    expect(window.setBounds).toHaveBeenCalledWith({ x: 60, y: 60, width: 40, height: 40 });
+
+    dispose();
+    expect(display.off).toHaveBeenCalledTimes(3);
+    expect(window.off).toHaveBeenCalledTimes(2);
   });
 });

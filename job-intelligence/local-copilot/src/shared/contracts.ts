@@ -80,7 +80,8 @@ export const SaveProviderSecretResponse = IpcResponse;
 const ScreenshotPreview = z.object({
   id: NonEmptyId,
   displayId: NonEmptyId.optional(),
-  dataUrl: z.string().startsWith('data:image/'),
+  mediaType: z.enum(['image/png', 'image/jpeg', 'image/webp']),
+  bytes: z.instanceof(Uint8Array),
   width: z.number().int().positive(),
   height: z.number().int().positive(),
   expiresAt: z.number().int().positive(),

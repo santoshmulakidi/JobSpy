@@ -16,7 +16,11 @@ export interface CopilotMessage {
 
 export interface CopilotImage {
   readonly mediaType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif';
-  readonly data: string;
+  readonly data: Uint8Array;
+}
+
+export function encodeImageData(data: Uint8Array): string {
+  return Buffer.from(data.buffer, data.byteOffset, data.byteLength).toString('base64');
 }
 
 export interface CopilotRequest {

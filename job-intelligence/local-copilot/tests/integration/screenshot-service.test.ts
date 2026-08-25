@@ -39,7 +39,7 @@ function createService(buffers: Buffer[], ttlMs = 30_000) {
 
 describe('ScreenshotService', () => {
   it('requires an explicit preview and confirmation before request use', async () => {
-    const { service } = createService([Buffer.from('screen')]);
+    const { service, captured } = createService([Buffer.from('screen')]);
 
     const preview = await service.preview('display-1');
     await expect(service.withConfirmed([preview.id], async () => undefined)).rejects.toThrow('not confirmed');
@@ -48,10 +48,26 @@ describe('ScreenshotService', () => {
       crop: { x: 10, y: 10, width: 50, height: 40 },
       redactions: [{ x: 2, y: 3, width: 8, height: 9 }],
     });
-    const attachment = await service.withConfirmed([confirmation!.id], async ([value]) => value);
+    let attachmentBytes: Uint8Array | undefined;
+    const attachment = await service.withConfirmed([confirmation!.id], async ([value]) => {
+      expect(Buffer.from(value!.data).toString()).toBe('screen');
+      attachmentBytes = value!.data;
+      return { id: value!.id, mediaType: value!.mediaType };
+    });
 
     expect(attachment).toMatchObject({ id: preview.id, mediaType: 'image/png' });
-    expect(Buffer.from(attachment!.data, 'base64').toString()).toBe('screen');
+    expect([...attachmentBytes!]).toEqual([0, 0, 0, 0, 0, 0]);
+    expect(captured[0].every((byte) => byte === 0)).toBe(true);
+  });
+
+  it('deduplicates confirmed ids before enforcing the five-attachment limit', async () => {
+    const { service } = createService([]);
+    const previews = await Promise.all(Array.from({ length: 5 }, () => service.preview()));
+    await Promise.all(previews.map(({ id }) => service.confirm(id, {})));
+
+    await expect(service.withConfirmed([...previews.map(({ id }) => id), previews[0].id], async (attachments) => {
+      expect(attachments).toHaveLength(5);
+    })).resolves.toBeUndefined();
   });
 
   it('bounds all pending and confirmed screenshots to five', async () => {

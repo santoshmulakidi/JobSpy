@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   createHttpLlmAdapter,
+  encodeImageData,
   exactEndpoint,
   failure,
   invalidEvent,
@@ -70,7 +71,7 @@ function createChatAdapter(
 function buildChatBody(model: string, request: CopilotRequest): unknown {
   const messages = request.messages.map(({ role, content }) => ({ role, content }));
   const images = request.images?.map(({ mediaType, data }) => ({
-    type: 'image_url', image_url: { url: `data:${mediaType};base64,${data}` },
+    type: 'image_url', image_url: { url: `data:${mediaType};base64,${encodeImageData(data)}` },
   })) ?? [];
   if (images.length) {
     const lastUser = [...messages].reverse().find(({ role }) => role === 'user');

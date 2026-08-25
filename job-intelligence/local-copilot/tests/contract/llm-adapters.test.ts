@@ -26,7 +26,7 @@ const request: CopilotRequest = {
 };
 const imageRequest: CopilotRequest = {
   messages: [{ role: 'user', content: 'Describe it' }],
-  images: [{ mediaType: 'image/png', data: 'AQID' }],
+  images: [{ mediaType: 'image/png', data: new Uint8Array([1, 2, 3]) }],
 };
 
 function sse(records: readonly string[], splits: readonly number[] = []): Response {

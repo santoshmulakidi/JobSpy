@@ -23,7 +23,8 @@ export interface CapturedScreenshot {
 export interface ScreenshotPreviewHandle {
   readonly id: string;
   readonly displayId?: string;
-  readonly dataUrl: string;
+  readonly mediaType: CapturedScreenshot['mediaType'];
+  readonly bytes: Uint8Array;
   readonly width: number;
   readonly height: number;
   readonly expiresAt: number;
@@ -39,7 +40,7 @@ export interface ConfirmedScreenshot {
 export interface ScreenshotAttachment {
   readonly id: string;
   readonly mediaType: CapturedScreenshot['mediaType'];
-  readonly data: string;
+  readonly data: Uint8Array;
 }
 
 interface ScreenshotRecord extends CapturedScreenshot {
@@ -99,7 +100,8 @@ export class ScreenshotService {
       return {
         id,
         displayId,
-        dataUrl: `data:${screenshot.mediaType};base64,${screenshot.bytes.toString('base64')}`,
+        mediaType: screenshot.mediaType,
+        bytes: screenshot.bytes,
         width: screenshot.width,
         height: screenshot.height,
         expiresAt,
@@ -136,7 +138,9 @@ export class ScreenshotService {
     ids: readonly string[],
     send: (attachments: readonly ScreenshotAttachment[]) => Promise<T>,
   ): Promise<T> {
-    const records = ids.map((id) => this.get(id));
+    const uniqueIds = [...new Set(ids)];
+    if (uniqueIds.length > 5) throw new Error('A request may contain at most five screenshots.');
+    const records = uniqueIds.map((id) => this.get(id));
     if (records.some((record) => !record.confirmed)) {
       throw new Error('Screenshot is not confirmed.');
     }
@@ -144,7 +148,7 @@ export class ScreenshotService {
       return await send(records.map((record) => ({
         id: record.id,
         mediaType: record.mediaType,
-        data: record.bytes.toString('base64'),
+        data: record.bytes,
       })));
     } finally {
       for (const record of records) this.discard(record.id);

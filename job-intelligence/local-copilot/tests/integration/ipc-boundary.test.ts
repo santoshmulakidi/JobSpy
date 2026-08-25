@@ -174,7 +174,8 @@ describe('IPC boundary', () => {
     const { dispatchIpc } = await import('../../src/main/ipc/register-ipc');
     const preview = {
       id: 'shot-1',
-      dataUrl: 'data:image/png;base64,AAAA',
+      mediaType: 'image/png',
+      bytes: new Uint8Array([1, 2, 3]),
       width: 100,
       height: 80,
       expiresAt: Date.now() + 1000,

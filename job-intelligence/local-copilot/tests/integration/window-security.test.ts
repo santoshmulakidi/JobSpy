@@ -11,6 +11,7 @@ let preloadReady: ((event: { sender: unknown }) => void) | undefined;
 let didFinishLoad: (() => void) | undefined;
 
 vi.mock('electron', () => ({
+  screen: { on: vi.fn(), off: vi.fn() },
   ipcMain: {
     on: vi.fn((channel: string, listener: typeof preloadReady) => {
       if (channel === 'audio:capture-preload-ready') preloadReady = listener;
@@ -31,6 +32,11 @@ vi.mock('electron', () => ({
       loadURL: vi.fn(),
       webContents: createdWebContents,
       on: vi.fn(),
+      off: vi.fn(),
+      once: vi.fn(),
+      getBounds: vi.fn(),
+      setBounds: vi.fn(),
+      isDestroyed: vi.fn(() => false),
       setContentProtection: vi.fn(),
     };
   }),
