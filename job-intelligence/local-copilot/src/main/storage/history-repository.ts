@@ -37,6 +37,14 @@ export interface HistorySessionDetail {
   readonly turns: readonly HistoryTurn[];
 }
 
+/** Count-only proof of deletion. It never carries session content. */
+export interface DeletionReceipt {
+  readonly sessions: number;
+  readonly turns: number;
+  readonly screenshots: number;
+  readonly recordings: number;
+}
+
 interface SessionRow {
   session_id: string;
   status: string;
@@ -184,11 +192,37 @@ export class HistoryRepository {
     };
   }
 
-  deleteSession(sessionId: string): boolean {
+  deleteSession(sessionId: string): DeletionReceipt | null {
+    return this.database.transaction(() => {
+      const existing = this.database.connection
+        .prepare('SELECT session_id FROM sessions WHERE session_id = ?')
+        .get(sessionId);
+      if (!existing) return null;
+      return this.deleteWhere('session_id = ?', sessionId);
+    });
+  }
+
+  purgeAll(): DeletionReceipt {
+    return this.database.transaction(() => this.deleteWhere('1 = 1'));
+  }
+
+  private deleteWhere(where: string, ...params: readonly string[]): DeletionReceipt {
+    const counts = {
+      turns: this.countRows('turns', where, params),
+      screenshots: this.countRows('attachments', where, params),
+      recordings: this.countRows('recordings', where, params),
+    };
     const result = this.database.connection
-      .prepare('DELETE FROM sessions WHERE session_id = ?')
-      .run(sessionId);
-    return Number(result.changes) > 0;
+      .prepare(`DELETE FROM sessions WHERE ${where}`)
+      .run(...params);
+    return { sessions: Number(result.changes), ...counts };
+  }
+
+  private countRows(table: 'turns' | 'attachments' | 'recordings', where: string, params: readonly string[]): number {
+    const row = this.database.connection
+      .prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE ${where}`)
+      .get(...params) as { n: number | bigint };
+    return Number(row.n);
   }
 
   private insertTurn(turn: {

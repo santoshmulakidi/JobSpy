@@ -207,6 +207,17 @@ describe('IPC boundary', () => {
       .resolves.toMatchObject({ ok: false, error: { code: 'INVALID_REQUEST' } });
     await expect(dispatchIpc('history:list', trustedEvent, {}))
       .resolves.toMatchObject({ ok: false, error: { code: 'NOT_READY' } });
+    await expect(dispatchIpc('history:purge', trustedEvent, undefined))
+      .resolves.toMatchObject({ ok: false, error: { code: 'NOT_READY' } });
+    await expect(dispatchIpc('history:purge', trustedEvent, undefined, {
+      'history:purge': () => ({ ok: true, receipt: { sessions: 2, turns: 5, screenshots: 1, recordings: 0 } }),
+    })).resolves.toEqual({
+      ok: true,
+      receipt: { sessions: 2, turns: 5, screenshots: 1, recordings: 0 },
+    });
+    await expect(dispatchIpc('history:purge', trustedEvent, undefined, {
+      'history:purge': () => ({ ok: true, receipt: { sessions: 1, content: 'should-never-reach-renderer' } }),
+    })).resolves.toMatchObject({ ok: false, error: { code: 'INTERNAL' } });
     await expect(dispatchIpc('history:export', trustedEvent, { sessionId: 'session-1', format: 'pdf' as never }))
       .resolves.toMatchObject({ ok: false, error: { code: 'INVALID_REQUEST' } });
   });

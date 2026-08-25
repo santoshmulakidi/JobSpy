@@ -50,6 +50,14 @@ const HistorySessionSummary = z.object({
 }).strict();
 export type HistorySessionSummaryValue = z.infer<typeof HistorySessionSummary>;
 export const DeleteHistoryRequest = z.object({ sessionId: NonEmptyId }).strict();
+export const PurgeHistoryRequest = NoRequest;
+const DeletionReceipt = z.object({
+  sessions: z.number().int().nonnegative(),
+  turns: z.number().int().nonnegative(),
+  screenshots: z.number().int().nonnegative(),
+  recordings: z.number().int().nonnegative(),
+}).strict();
+export type DeletionReceiptValue = z.infer<typeof DeletionReceipt>;
 export const ExportHistoryRequest = z
   .object({ sessionId: NonEmptyId, format: z.enum(['json', 'markdown']) })
   .strict();
@@ -153,7 +161,11 @@ export const ListHistoryResponse = z.union([
   z.object({ ok: z.literal(true), sessions: z.array(HistorySessionSummary) }).strict(),
   IpcFailure,
 ]);
-export const DeleteHistoryResponse = IpcResponse;
+export const DeleteHistoryResponse = z.union([
+  z.object({ ok: z.literal(true), receipt: DeletionReceipt }).strict(),
+  IpcFailure,
+]);
+export const PurgeHistoryResponse = DeleteHistoryResponse;
 export const ExportHistoryResponse = z.union([
   z.object({
     ok: z.literal(true),
@@ -181,6 +193,7 @@ export const IPC_METHODS = {
   'capture:discard': { request: DiscardCaptureRequest, response: DiscardCaptureResponse },
   'history:list': { request: ListHistoryRequest, response: ListHistoryResponse },
   'history:delete': { request: DeleteHistoryRequest, response: DeleteHistoryResponse },
+  'history:purge': { request: PurgeHistoryRequest, response: PurgeHistoryResponse },
   'history:export': { request: ExportHistoryRequest, response: ExportHistoryResponse },
   'overlay:set-opacity': { request: SetOverlayOpacityRequest, response: SetOverlayOpacityResponse },
   'overlay:set-always-on-top': {
@@ -217,6 +230,7 @@ export interface CopilotBridge {
   readonly history: {
     list(request: IpcRequest<'history:list'>): Promise<IpcMethodResponse<'history:list'>>;
     remove(request: IpcRequest<'history:delete'>): Promise<IpcMethodResponse<'history:delete'>>;
+    purge(): Promise<IpcMethodResponse<'history:purge'>>;
     export(request: IpcRequest<'history:export'>): Promise<IpcMethodResponse<'history:export'>>;
   };
   readonly overlay: {

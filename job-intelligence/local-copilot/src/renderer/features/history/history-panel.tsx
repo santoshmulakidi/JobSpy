@@ -14,7 +14,7 @@ export function HistoryPanel({ state, controller }: { readonly state: CopilotUiS
   }
 
   return <section className="panel history-panel" aria-labelledby="history-heading">
-    <div className="section-heading"><div><p className="eyebrow">Stored on this device only</p><h2 id="history-heading">History</h2></div><button type="button" onClick={() => void controller.loadHistory()}>Refresh</button></div>
+    <div className="section-heading"><div><p className="eyebrow">Stored on this device only</p><h2 id="history-heading">History</h2></div><span className="button-row"><button type="button" disabled={state.history.length === 0} className="danger" onClick={() => void controller.purgeHistory()}>Delete all</button><button type="button" onClick={() => void controller.loadHistory()}>Refresh</button></span></div>
     {state.history.length === 0
       ? <p className="placeholder">No saved sessions yet.</p>
       : <ul aria-label="Saved sessions">{state.history.map((session) => (

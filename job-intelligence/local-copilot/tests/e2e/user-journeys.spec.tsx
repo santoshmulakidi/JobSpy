@@ -33,7 +33,8 @@ function bridge(): CopilotBridge & { emitAnswerEvent(event: CopilotMainEventValu
     },
     history: {
       list: vi.fn(async (_request?: unknown) => ({ ok: true as const, sessions: [] })),
-      remove: vi.fn(async (_request?: unknown) => ({ ok: true as const })),
+      remove: vi.fn(async (_request?: unknown) => ({ ok: true as const, receipt: { sessions: 1, turns: 2, screenshots: 0, recordings: 0 } })),
+      purge: vi.fn(async () => ({ ok: true as const, receipt: { sessions: 3, turns: 6, screenshots: 1, recordings: 0 } })),
       export: vi.fn(async (_request?: unknown) => ({ ok: true as const, filename: 'copilot-session.md', content: '# Copilot session' })),
     },
     overlay: {
@@ -251,6 +252,20 @@ describe('complete renderer journey', () => {
     expect(api.history.export).toHaveBeenCalledWith({ sessionId: 'session-9', format: 'markdown' });
     await controller.deleteHistory('session-9');
     expect(api.history.remove).toHaveBeenCalledWith({ sessionId: 'session-9' });
+  });
+
+  it('purges every saved session and reports a count-only receipt', async () => {
+    const api = bridge();
+    const controller = createCopilotController(api);
+    await controller.load();
+    controller.setPersistHistory(true);
+
+    expect(renderToStaticMarkup(<CopilotApp controller={controller} />)).toContain('Delete all');
+    await controller.purgeHistory();
+
+    expect(api.history.purge).toHaveBeenCalledTimes(1);
+    expect(controller.getState().history).toEqual([]);
+    expect(controller.getState().message).toBe('Deleted 3 sessions, 6 turns, 1 screenshot, and 0 recordings.');
   });
 
   it('exposes transcript announcements and keyboard move controls without claiming a shortcut', async () => {

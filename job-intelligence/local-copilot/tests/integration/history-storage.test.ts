@@ -78,11 +78,12 @@ describe('HistoryRepository', () => {
     expect(turns[1]).toMatchObject({ role: 'model', status: 'failed', text: '' });
   });
 
-  it('deletes sessions and reports unknown ids', () => {
+  it('deletes sessions with count-only receipts and reports unknown ids', () => {
     const sessionId = active.startSession({ microphone: false, systemAudio: false, sttProviderId: 'deepgram' });
+    active.addUserTurn(sessionId, 'What is the notice period?');
 
-    expect(active.deleteSession(sessionId)).toBe(true);
-    expect(active.deleteSession(sessionId)).toBe(false);
+    expect(active.deleteSession(sessionId)).toEqual({ sessions: 1, turns: 1, screenshots: 0, recordings: 0 });
+    expect(active.deleteSession(sessionId)).toBeNull();
     expect(active.listSessions()).toHaveLength(0);
     expect(active.getSession(sessionId)).toBeUndefined();
   });

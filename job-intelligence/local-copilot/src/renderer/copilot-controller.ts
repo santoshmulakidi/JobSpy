@@ -43,7 +43,8 @@ export interface CopilotController {
   cancelAnswer(): Promise<void>; previewScreenshot(): Promise<void>;
   confirmScreenshot(id: string, edits: ScreenshotEditsValue): Promise<void>; discardScreenshot(id: string): Promise<void>;
   setPersistHistory(value: boolean): void; loadHistory(): Promise<void>;
-  deleteHistory(sessionId: string): Promise<void>; exportHistory(sessionId: string, format: HistoryExportFormat): Promise<void>;
+  deleteHistory(sessionId: string): Promise<void>; purgeHistory(): Promise<void>;
+  exportHistory(sessionId: string, format: HistoryExportFormat): Promise<void>;
   setTheme(theme: UiTheme): void; setFontScale(scale: number): void; setOpacity(opacity: number): Promise<void>;
   setAlwaysOnTop(enabled: boolean): Promise<void>; move(x: number, y: number): Promise<void>; hide(): Promise<void>;
 }
@@ -174,6 +175,16 @@ export function createCopilotController(bridge: CopilotBridge): CopilotControlle
       const response = await bridge.history.remove({ sessionId });
       if (!response.ok) return fail(response.error.message);
       await controller.loadHistory();
+    },
+    async purgeHistory() {
+      if (!bridge.history) return;
+      const response = await bridge.history.purge();
+      if (!response.ok) return fail(response.error.message);
+      const { sessions, turns, screenshots, recordings } = response.receipt;
+      publish({
+        history: [],
+        message: `Deleted ${sessions} session${sessions === 1 ? '' : 's'}, ${turns} turn${turns === 1 ? '' : 's'}, ${screenshots} screenshot${screenshots === 1 ? '' : 's'}, and ${recordings} recording${recordings === 1 ? '' : 's'}.`,
+      });
     },
     async exportHistory(sessionId, format) {
       const response = await bridge.history.export({ sessionId, format });

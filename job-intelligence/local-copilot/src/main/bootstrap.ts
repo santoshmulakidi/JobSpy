@@ -33,6 +33,7 @@ import {
 } from './capture/screenshot-service';
 import { Database } from './storage/database';
 import { SecretStore } from './storage/secrets';
+import { DiagnosticLog } from './diagnostics/diagnostic-log';
 import {
   exportSessionJson,
   exportSessionMarkdown,
@@ -122,6 +123,7 @@ app.whenReady().then(async () => {
   const database = Database.open(join(userData, 'copilot.sqlite'));
   const secretStore = SecretStore.create({ database, directory: join(userData, 'secrets') });
   const history = new HistoryRepository(database);
+  const diagnostics = new DiagnosticLog(database);
   let activeHistorySessionId: string | null = null;
   const endActiveHistorySession = () => {
     if (activeHistorySessionId === null) return;
@@ -149,7 +151,12 @@ app.whenReady().then(async () => {
     createAdapter: (providerId, config) => createLlmAdapter(providerId, config),
   });
   const transcriptionService = new TranscriptionService({
-    publish: (event) => overlayWindow.webContents.send(COPILOT_EVENT_CHANNEL, event),
+    publish: (event) => {
+      if (event.type === 'transcript-failed') {
+        diagnostics.record({ subsystem: 'transcription', eventType: 'transcription-failed' });
+      }
+      overlayWindow.webContents.send(COPILOT_EVENT_CHANNEL, event);
+    },
   });
   const sttProviderIds = providers.filter(({ kind }) => kind === 'stt').map(({ id }) => id);
   installElectronLoopbackHandler(session.defaultSession, desktopCapturer, permissionGate);
@@ -177,6 +184,7 @@ app.whenReady().then(async () => {
     onFailure: (message) => {
       void transcriptionService.stop();
       endActiveHistorySession();
+      diagnostics.record({ subsystem: 'audio', eventType: 'utility-process-failed', metadata: { message } });
       sessionController.dispatch({ type: 'utility-process-crashed', message });
     },
   });
@@ -315,6 +323,11 @@ app.whenReady().then(async () => {
                   status: 'failed',
                   text: '',
                 });
+                diagnostics.record({
+                  subsystem: 'answers',
+                  eventType: 'generation-failed',
+                  metadata: { providerId: settlement.providerId },
+                });
               }
             }
             sessionController.dispatch({ type: 'generation-completed', requestId });
@@ -341,8 +354,13 @@ app.whenReady().then(async () => {
     },
     'history:delete': (payload, event) => {
       if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
-      history.deleteSession((payload as { sessionId: string }).sessionId);
-      return { ok: true };
+      const receipt = history.deleteSession((payload as { sessionId: string }).sessionId);
+      if (!receipt) return { ok: false, error: { code: 'INVALID_REQUEST' as const, message: 'Invalid request.' } };
+      return { ok: true, receipt };
+    },
+    'history:purge': (_payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      return { ok: true, receipt: history.purgeAll() };
     },
     'history:export': (payload, event) => {
       if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();

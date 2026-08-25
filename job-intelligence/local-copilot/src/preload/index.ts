@@ -44,6 +44,7 @@ export const copilot: CopilotBridge = {
   history: {
     list: (request: IpcRequest<'history:list'>) => invoke('history:list', request),
     remove: (request: IpcRequest<'history:delete'>) => invoke('history:delete', request),
+    purge: () => invoke('history:purge', undefined),
     export: (request: IpcRequest<'history:export'>) => invoke('history:export', request),
   },
   overlay: {
