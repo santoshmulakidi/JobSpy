@@ -157,7 +157,24 @@ Our version will invert this posture: no account, telemetry, cloud database, or 
 - Describe capture exclusion as best effort rather than "undetectable."
 - Make session deletion deterministic and verifiable.
 
-## 11. Primary references
+## 11. Controlled live validation
+
+A short, consented Windows test was run against the installed CueFlow 2.0.4 client on 2026-08-24. A public CueFlow product page was placed in the foreground to avoid capturing private workspace content. The test used the application’s default shortcuts and then ended the session immediately after the result was inspected.
+
+Observed sequence:
+
+1. `Ctrl+Shift+Enter` started the Assistant session.
+2. CueFlow created a local session-recording directory with 24 kHz, mono capture metadata.
+3. `Ctrl+Shift+\` attached the visible public page to the next request.
+4. `Ctrl+Shift+Enter` submitted an Assist request.
+5. The Assistant UI reported **“Sent with screenshot”** and returned a structured answer with question, concise response, deeper explanation, code example, and closing summary.
+6. `Ctrl+Shift+K` ended the session; the UI returned to **Start session** and the metadata gained an `endedAt` timestamp.
+
+The completed session lasted 234,842 ms. CueFlow persisted approximately 10.65 MB of microphone PCM and 10.59 MB of speaker PCM, confirming that its default “session recording” behavior writes both channels locally even during a short functional test. The screenshot attachment itself was not found as a separate recent file, which is consistent with the application keeping screenshot context in memory or inside session state rather than as a plainly named image file.
+
+The screenshot Assist request reused an existing transcript question (“What are Closures in JavaScript?”) instead of the attempted generic typed text. This demonstrates two behaviors worth preserving explicitly in our specification: Assist is conversation-context driven, and typed requests require deterministic focus ownership. Our product must display the exact outbound prompt/context preview and must never let focus ambiguity silently change which user intent is submitted.
+
+## 12. Primary references
 
 - CueFlow product: https://www.cueflow.co.in/
 - CueFlow privacy policy: https://www.cueflow.co.in/privacy
@@ -170,4 +187,3 @@ Our version will invert this posture: no account, telemetry, cloud database, or 
 - Gemini 3.1 Flash Lite: https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite
 - Deepgram Nova-3: https://developers.deepgram.com/docs/models-languages-overview/
 - ElevenLabs Scribe Realtime: https://elevenlabs.io/docs/overview/capabilities/speech-to-text/
-
