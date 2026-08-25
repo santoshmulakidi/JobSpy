@@ -2,6 +2,7 @@ import {
   MessageChannelMain,
   app,
   desktopCapturer,
+  globalShortcut,
   nativeImage,
   net,
   protocol,
@@ -45,6 +46,7 @@ import { TranscriptionService } from './transcription/transcription-service';
 import { COPILOT_EVENT_CHANNEL } from '../shared/contracts';
 
 const LOCAL_SCHEME = 'copilot';
+const OVERLAY_TOGGLE_SHORTCUT = 'Control+Shift+Space';
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self'",
@@ -168,7 +170,10 @@ app.whenReady().then(async () => {
       port1: AudioPipelinePort;
       port2: AudioPipelinePort;
     },
-    onFrame: (frame) => transcriptionService.handleFrame(frame),
+    onFrame: (frame) => {
+      if (sessionController.snapshot().phase === 'paused') return;
+      transcriptionService.handleFrame(frame);
+    },
     onFailure: (message) => {
       void transcriptionService.stop();
       endActiveHistorySession();
@@ -200,6 +205,13 @@ app.whenReady().then(async () => {
       activeHistorySessionId = request.ephemeral
         ? null
         : history.startSession({ microphone: request.microphone, systemAudio: request.systemAudio, sttProviderId: request.sttProviderId });
+      return { ok: true, operationId: request.operationId, snapshot: sessionSnapshot(sessionController) };
+    },
+    'session:pause': (payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      const request = payload as { operationId: string };
+      const phase = sessionController.snapshot().phase;
+      sessionController.dispatch({ type: phase === 'paused' ? 'resume' : 'pause' });
       return { ok: true, operationId: request.operationId, snapshot: sessionSnapshot(sessionController) };
     },
     'session:stop': async (payload, event) => {
@@ -355,7 +367,13 @@ app.whenReady().then(async () => {
     void transcriptionService.stop();
     endActiveHistorySession();
   });
+  const overlayShortcutRegistered = globalShortcut.register(OVERLAY_TOGGLE_SHORTCUT, () => {
+    if (overlayWindow.isDestroyed()) return;
+    if (overlayWindow.isVisible()) overlayControls.hide();
+    else overlayWindow.showInactive();
+  });
   app.once('before-quit', () => {
+    if (overlayShortcutRegistered) globalShortcut.unregister(OVERLAY_TOGGLE_SHORTCUT);
     screenshotService.dispose();
     answerService.dispose();
     transcriptionService.dispose();

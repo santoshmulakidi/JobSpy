@@ -28,6 +28,7 @@ async function invoke<C extends IpcChannel>(channel: C, payload: IpcRequest<C>):
 export const copilot: CopilotBridge = {
   session: {
     start: (request: IpcRequest<'session:start'>) => invoke('session:start', request),
+    pause: (request: IpcRequest<'session:pause'>) => invoke('session:pause', request),
     stop: (request: IpcRequest<'session:stop'>) => invoke('session:stop', request),
     status: () => invoke('session:status', undefined),
   },

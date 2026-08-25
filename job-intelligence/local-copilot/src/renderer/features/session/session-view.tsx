@@ -10,6 +10,7 @@ export function SessionView({ state, controller }: { readonly state: CopilotUiSt
       <div aria-live="polite"><span className={`signal signal-${state.phase}`} /> <strong>{phaseLabel(state.phase)}</strong></div>
       <div className="button-row">
         {!active && <button className="primary" type="button" disabled={state.sessionPending} onClick={() => void controller.startSession()}>Start session</button>}
+        {active && <button type="button" disabled={state.sessionPending || state.phase === 'generating'} onClick={() => void controller.togglePause()}>{state.phase === 'paused' ? 'Resume' : 'Pause'}</button>}
         {active && <button className="danger" type="button" disabled={state.sessionPending} onClick={() => void controller.stopSession()}>Stop</button>}
         <button type="button" onClick={() => void controller.previewScreenshot()}>Screenshot</button>
       </div>

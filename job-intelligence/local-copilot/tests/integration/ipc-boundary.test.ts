@@ -200,7 +200,9 @@ describe('IPC boundary', () => {
     await expect(dispatchIpc('providers:test', trustedEvent, { providerId: 'openai' }))
       .resolves.toMatchObject({ ok: false, error: { code: 'UNKNOWN_CHANNEL' } });
     await expect(dispatchIpc('session:pause', trustedEvent, undefined))
-      .resolves.toMatchObject({ ok: false, error: { code: 'UNKNOWN_CHANNEL' } });
+      .resolves.toMatchObject({ ok: false, error: { code: 'INVALID_REQUEST' } });
+    await expect(dispatchIpc('session:pause', trustedEvent, { operationId: 'session-1' }))
+      .resolves.toMatchObject({ ok: false, error: { code: 'NOT_READY' } });
     await expect(dispatchIpc('history:list', trustedEvent, undefined))
       .resolves.toMatchObject({ ok: false, error: { code: 'INVALID_REQUEST' } });
     await expect(dispatchIpc('history:list', trustedEvent, {}))

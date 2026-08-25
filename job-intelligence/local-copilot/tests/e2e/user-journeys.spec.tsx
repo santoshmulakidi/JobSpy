@@ -14,6 +14,7 @@ function bridge(): CopilotBridge & { emitAnswerEvent(event: CopilotMainEventValu
   return {
     session: {
       start: vi.fn(async ({ operationId }) => sessionResponse(operationId, 'capturing')),
+      pause: vi.fn(async ({ operationId }) => sessionResponse(operationId, phase === 'paused' ? 'capturing' : 'paused')),
       stop: vi.fn(async ({ operationId }) => sessionResponse(operationId, 'stopped')),
       status: vi.fn(async () => ({ ok: true as const, snapshot: { phase, error: null } })),
     },
@@ -187,6 +188,24 @@ describe('complete renderer journey', () => {
     expect(renderToStaticMarkup(<CopilotApp controller={controller} />)).toContain('role="alert"');
   });
 
+  it('pauses and resumes capture without losing the answer pipeline', async () => {
+    const api = bridge();
+    const controller = createCopilotController(api);
+    await controller.load();
+    await controller.startSession();
+
+    await controller.togglePause();
+    expect(controller.getState().phase).toBe('paused');
+    expect(renderToStaticMarkup(<CopilotApp controller={controller} />)).toContain('Resume');
+
+    await controller.togglePause();
+    expect(controller.getState().phase).toBe('capturing');
+    expect(vi.mocked(api.session.pause)).toHaveBeenCalledTimes(2);
+
+    await controller.stopSession();
+    expect(controller.getState().phase).toBe('stopped');
+  });
+
   it('keeps an approved screenshot visible and removable', async () => {
     const api = bridge();
     const controller = createCopilotController(api);
@@ -245,7 +264,7 @@ describe('complete renderer journey', () => {
     expect(html).toContain('role="alert"');
     expect(html).toContain('aria-label="Move copilot overlay"');
     expect(html).toContain('aria-label="Move overlay left"');
-    expect(html).toContain('Global shortcuts are unavailable');
+    expect(html).toContain('Ctrl+Shift+Space toggles the overlay');
     expect(html).toContain('data-theme="dark"');
   });
 

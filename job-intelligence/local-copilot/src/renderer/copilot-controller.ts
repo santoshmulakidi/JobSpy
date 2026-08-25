@@ -38,7 +38,7 @@ export interface CopilotController {
   getState(): CopilotUiState; subscribe(listener: () => void): () => void; load(): Promise<void>;
   saveProviderSecret(providerId: string, secret: string): Promise<void>;
   selectSttProvider(providerId: string): void; selectLlmProvider(providerId: string): void; selectModel(model: string): void;
-  startSession(): Promise<void>; stopSession(): Promise<void>; accept(event: CopilotUiEvent): void;
+  startSession(): Promise<void>; togglePause(): Promise<void>; stopSession(): Promise<void>; accept(event: CopilotUiEvent): void;
   editTranscript(text: string): void; sendQuestion(): Promise<void>; retryAnswer(): Promise<void>;
   cancelAnswer(): Promise<void>; previewScreenshot(): Promise<void>;
   confirmScreenshot(id: string, edits: ScreenshotEditsValue): Promise<void>; discardScreenshot(id: string): Promise<void>;
@@ -109,6 +109,9 @@ export function createCopilotController(bridge: CopilotBridge): CopilotControlle
     async startSession() {
       if (!state.selectedSttProviderId || !state.selectedLlmProviderId) return fail('Choose speech and answer providers first.');
       await command((operationId) => bridge.session.start({ operationId, sttProviderId: state.selectedSttProviderId, llmProviderId: state.selectedLlmProviderId, microphone: true, systemAudio: true, ephemeral: !state.persistHistory }));
+    },
+    async togglePause() {
+      await command((operationId) => bridge.session.pause({ operationId }));
     },
     async stopSession() { await command((operationId) => bridge.session.stop({ operationId })); },
     accept(event) {

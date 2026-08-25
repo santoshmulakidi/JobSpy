@@ -13,6 +13,7 @@ export const StartSessionRequest = z
     ephemeral: z.boolean(),
   })
   .strict();
+export const PauseSessionRequest = z.object({ operationId: NonEmptyId }).strict();
 export const StopSessionRequest = z.object({ operationId: NonEmptyId }).strict();
 export const SessionStatusRequest = NoRequest;
 
@@ -108,6 +109,7 @@ const SessionSnapshot = z.object({
 }).strict();
 const SessionCommandSuccess = z.object({ ok: z.literal(true), operationId: NonEmptyId, snapshot: SessionSnapshot }).strict();
 export const StartSessionResponse = z.union([SessionCommandSuccess, IpcFailure]);
+export const PauseSessionResponse = z.union([SessionCommandSuccess, IpcFailure]);
 export const StopSessionResponse = z.union([SessionCommandSuccess, IpcFailure]);
 export const SessionStatusResponse = z.union([z.object({ ok: z.literal(true), snapshot: SessionSnapshot }).strict(), IpcFailure]);
 const Provider = z.object({
@@ -169,6 +171,7 @@ export const CancelAnswerResponse = IpcResponse;
 
 export const IPC_METHODS = {
   'session:start': { request: StartSessionRequest, response: StartSessionResponse },
+  'session:pause': { request: PauseSessionRequest, response: PauseSessionResponse },
   'session:stop': { request: StopSessionRequest, response: StopSessionResponse },
   'session:status': { request: SessionStatusRequest, response: SessionStatusResponse },
   'providers:list': { request: ListProvidersRequest, response: ListProvidersResponse },
@@ -198,6 +201,7 @@ export type SerializedIpcError = z.infer<typeof IpcError>;
 export interface CopilotBridge {
   readonly session: {
     start(request: IpcRequest<'session:start'>): Promise<IpcMethodResponse<'session:start'>>;
+    pause(request: IpcRequest<'session:pause'>): Promise<IpcMethodResponse<'session:pause'>>;
     stop(request: IpcRequest<'session:stop'>): Promise<IpcMethodResponse<'session:stop'>>;
     status(): Promise<IpcMethodResponse<'session:status'>>;
   };
