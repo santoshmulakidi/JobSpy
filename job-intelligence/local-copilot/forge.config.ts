@@ -24,6 +24,10 @@ const config: ForgeConfig = {
             entry: 'src/preload/index.ts',
             config: 'vite.preload.config.ts',
           },
+          {
+            entry: 'src/audio/utility-entry.ts',
+            config: 'vite.utility.config.ts',
+          },
         ],
         renderer: [
           {

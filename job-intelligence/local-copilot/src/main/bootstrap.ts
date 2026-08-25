@@ -1,9 +1,10 @@
-import { app, net, protocol, session } from 'electron';
+import { app, desktopCapturer, net, protocol, session } from 'electron';
 import { relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { createOverlayWindow } from './windows/overlay-window';
 import { registerIpc } from './ipc/register-ipc';
+import { installElectronLoopbackHandler } from '../audio/electron-loopback-handler';
 
 const LOCAL_SCHEME = 'copilot';
 const CONTENT_SECURITY_POLICY = [
@@ -63,6 +64,7 @@ function installContentSecurityPolicy(): void {
 app.whenReady().then(async () => {
   protocol.handle(LOCAL_SCHEME, (request) => net.fetch(resolveRendererAsset(request.url).toString()));
   installContentSecurityPolicy();
+  installElectronLoopbackHandler(session.defaultSession, desktopCapturer);
   registerIpc();
   createOverlayWindow();
 });
