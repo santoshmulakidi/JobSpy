@@ -29,6 +29,7 @@ export interface CopilotUiState {
   readonly screenshot?: ScreenshotPreviewValue; readonly approvedScreenshotId?: string;
   readonly theme: UiTheme; readonly fontScale: number; readonly opacity: number; readonly alwaysOnTop: boolean;
   readonly persistHistory: boolean; readonly history: readonly HistorySessionSummaryValue[];
+  readonly recordAudio: boolean; readonly recordingFolder: string | null;
   readonly message: string; readonly error: string;
 }
 
@@ -43,6 +44,7 @@ export interface CopilotController {
   cancelAnswer(): Promise<void>; previewScreenshot(): Promise<void>;
   confirmScreenshot(id: string, edits: ScreenshotEditsValue): Promise<void>; discardScreenshot(id: string): Promise<void>;
   setPersistHistory(value: boolean): void; loadHistory(): Promise<void>;
+  setRecordAudio(value: boolean): void; chooseRecordingFolder(): Promise<void>; clearRecordingFolder(): Promise<void>;
   deleteHistory(sessionId: string): Promise<void>; purgeHistory(): Promise<void>;
   exportHistory(sessionId: string, format: HistoryExportFormat): Promise<void>;
   setTheme(theme: UiTheme): void; setFontScale(scale: number): void; setOpacity(opacity: number): Promise<void>;
@@ -53,7 +55,7 @@ const initialState: CopilotUiState = {
   loaded: false, providers: [], selectedSttProviderId: '', selectedLlmProviderId: '', selectedModel: '',
   phase: 'idle', sessionPending: false, transcriptDraft: '', transcriptFinal: false,
   answer: '', answerPending: false, answerConnected: false, theme: 'system', fontScale: 1,
-  opacity: 1, alwaysOnTop: true, persistHistory: false, history: [], message: '', error: '',
+  opacity: 1, alwaysOnTop: true, persistHistory: false, history: [], recordAudio: false, recordingFolder: null, message: '', error: '',
 };
 
 export function createCopilotController(bridge: CopilotBridge): CopilotController {
@@ -86,11 +88,16 @@ export function createCopilotController(bridge: CopilotBridge): CopilotControlle
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },    async load() {
       bridge.onAnswerEvent?.((event) => controller.accept(event));
       const identity = sessionOperation;
-      const [providers, session] = await Promise.all([bridge.providers.list(), bridge.session.status()]);
+      const [providers, session, recordingFolder] = await Promise.all([
+        bridge.providers.list(),
+        bridge.session.status(),
+        bridge.settings.getRecordingFolder(),
+      ]);
       if (!providers.ok) fail(providers.error.message);
       else publish({ providers: providers.providers,
         selectedSttProviderId: state.selectedSttProviderId || providers.providers.find(({ kind }) => kind === 'stt')?.id || '',
         selectedLlmProviderId: state.selectedLlmProviderId || providers.providers.find(({ kind, optional }) => kind === 'llm' && !optional)?.id || '' });
+      if (recordingFolder.ok) publish({ recordingFolder: recordingFolder.folder });
       if (identity === sessionOperation) {
         if (!session.ok) fail(session.error.message);
         else publish({ phase: session.snapshot.phase, error: session.snapshot.error?.message ?? '' });
@@ -109,7 +116,15 @@ export function createCopilotController(bridge: CopilotBridge): CopilotControlle
     selectModel: (selectedModel) => publish({ selectedModel }),
     async startSession() {
       if (!state.selectedSttProviderId || !state.selectedLlmProviderId) return fail('Choose speech and answer providers first.');
-      await command((operationId) => bridge.session.start({ operationId, sttProviderId: state.selectedSttProviderId, llmProviderId: state.selectedLlmProviderId, microphone: true, systemAudio: true, ephemeral: !state.persistHistory }));
+      await command((operationId) => bridge.session.start({
+        operationId,
+        sttProviderId: state.selectedSttProviderId,
+        llmProviderId: state.selectedLlmProviderId,
+        microphone: true,
+        systemAudio: true,
+        ephemeral: !state.persistHistory,
+        recordAudio: state.recordAudio && state.recordingFolder !== null,
+      }));
     },
     async togglePause() {
       await command((operationId) => bridge.session.pause({ operationId }));
@@ -164,6 +179,21 @@ export function createCopilotController(bridge: CopilotBridge): CopilotControlle
     setPersistHistory(persistHistory) {
       publish({ persistHistory, message: persistHistory ? 'New sessions are saved on this device.' : '' });
       if (persistHistory && bridge.history) void controller.loadHistory();
+      if (!persistHistory) publish({ recordAudio: false });
+    },
+    setRecordAudio(recordAudio) {
+      if (recordAudio && !state.recordingFolder) return fail('Choose a recordings folder first.');
+      publish({ recordAudio, message: recordAudio ? 'Audio is recorded to your folder while sessions run.' : '', error: '' });
+    },
+    async chooseRecordingFolder() {
+      const response = await bridge.settings.setRecordingFolder({ action: 'choose' });
+      if (!response.ok) return fail(response.error.message);
+      publish({ recordingFolder: response.folder, recordAudio: response.folder ? state.recordAudio : false, message: response.folder ? `Recordings are saved in ${response.folder}.` : '', error: '' });
+    },
+    async clearRecordingFolder() {
+      const response = await bridge.settings.setRecordingFolder({ action: 'clear' });
+      if (!response.ok) return fail(response.error.message);
+      publish({ recordingFolder: response.folder, recordAudio: false, message: 'Audio recording is off.', error: '' });
     },
     async loadHistory() {
       if (!bridge.history) return;

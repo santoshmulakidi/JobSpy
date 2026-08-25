@@ -220,6 +220,13 @@ describe('IPC boundary', () => {
     })).resolves.toMatchObject({ ok: false, error: { code: 'INTERNAL' } });
     await expect(dispatchIpc('history:export', trustedEvent, { sessionId: 'session-1', format: 'pdf' as never }))
       .resolves.toMatchObject({ ok: false, error: { code: 'INVALID_REQUEST' } });
+    await expect(dispatchIpc('settings:get-recording-folder', trustedEvent, undefined))
+      .resolves.toMatchObject({ ok: false, error: { code: 'NOT_READY' } });
+    await expect(dispatchIpc('settings:set-recording-folder', trustedEvent, { action: 'delete' }))
+      .resolves.toMatchObject({ ok: false, error: { code: 'INVALID_REQUEST' } });
+    await expect(dispatchIpc('settings:set-recording-folder', trustedEvent, { action: 'clear' }, {
+      'settings:set-recording-folder': () => ({ ok: true, folder: null }),
+    })).resolves.toEqual({ ok: true, folder: null });
   });
 
   it('validates answer payloads and defaults unregistered answer channels to unavailable', async () => {

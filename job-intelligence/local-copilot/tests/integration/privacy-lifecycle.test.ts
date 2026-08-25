@@ -72,10 +72,11 @@ describe('privacy lifecycle', () => {
     const removedId = seedSession('removed');
     const keptId = seedSession('kept');
     seedScreenshotAndRecording(removedId, 'removed');
+    workspace.repository.addRecording(removedId, join('recordings', 'explicit.wav'));
 
     const receipt = workspace.repository.deleteSession(removedId);
 
-    expect(receipt).toEqual({ sessions: 1, turns: 2, screenshots: 1, recordings: 1 });
+    expect(receipt).toEqual({ sessions: 1, turns: 2, screenshots: 1, recordings: 2 });
     expect(Object.values(receipt!).every((value) => typeof value === 'number' && Number.isInteger(value))).toBe(true);
     expect(workspace.repository.getSession(removedId)).toBeUndefined();
     expect(workspace.repository.getSession(keptId)).toBeDefined();
@@ -88,10 +89,11 @@ describe('privacy lifecycle', () => {
     const firstId = seedSession('first');
     const secondId = seedSession('second');
     seedScreenshotAndRecording(firstId, 'first');
+    workspace.repository.addRecording(firstId, join('recordings', 'explicit.wav'));
 
     const receipt = workspace.repository.purgeAll();
 
-    expect(receipt).toEqual({ sessions: 2, turns: 4, screenshots: 1, recordings: 1 });
+    expect(receipt).toEqual({ sessions: 2, turns: 4, screenshots: 1, recordings: 2 });
     for (const table of ['sessions', 'turns', 'attachments', 'recordings']) {
       expect(workspace.database.connection.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get()).toMatchObject({ n: 0 });
     }

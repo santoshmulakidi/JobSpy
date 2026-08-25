@@ -2,6 +2,7 @@ import {
   MessageChannelMain,
   app,
   desktopCapturer,
+  dialog,
   globalShortcut,
   nativeImage,
   net,
@@ -12,6 +13,7 @@ import {
 } from 'electron';
 import { join, relative, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { unlinkSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 import { captureWithOverlayHidden, createOverlayControls, createOverlayWindow } from './windows/overlay-window';
@@ -45,9 +47,12 @@ import type { ScreenshotAttachment } from './capture/screenshot-service';
 import { createLlmAdapter, listLlmProviders, type LlmProviderId, type SttProviderId } from './providers/provider-registry';
 import { TranscriptionService } from './transcription/transcription-service';
 import { COPILOT_EVENT_CHANNEL } from '../shared/contracts';
+import { RecordingWriter } from '../audio/recording-writer';
+import type { AudioSource } from '../audio/audio-frame';
 
 const LOCAL_SCHEME = 'copilot';
 const OVERLAY_TOGGLE_SHORTCUT = 'Control+Shift+Space';
+const RECORDING_FOLDER_KEY = 'recording_folder';
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self'",
@@ -124,8 +129,85 @@ app.whenReady().then(async () => {
   const secretStore = SecretStore.create({ database, directory: join(userData, 'secrets') });
   const history = new HistoryRepository(database);
   const diagnostics = new DiagnosticLog(database);
+  const getRecordingFolderSetting = (): string | null => {
+    const row = database.connection
+      .prepare('SELECT value_json FROM app_settings WHERE setting_key = ?')
+      .get(RECORDING_FOLDER_KEY) as { value_json: string } | undefined;
+    if (!row) return null;
+    try {
+      const parsed: unknown = JSON.parse(row.value_json);
+      return typeof parsed === 'string' && parsed.length > 0 ? parsed : null;
+    } catch {
+      return null;
+    }
+  };
+  const setRecordingFolderSetting = (folder: string | null): void => {
+    if (folder === null) {
+      database.connection.prepare('DELETE FROM app_settings WHERE setting_key = ?').run(RECORDING_FOLDER_KEY);
+      return;
+    }
+    database.connection
+      .prepare(
+        `INSERT INTO app_settings (setting_key, value_json, updated_at) VALUES (?, ?, ?)
+         ON CONFLICT(setting_key) DO UPDATE SET value_json = excluded.value_json, updated_at = excluded.updated_at`,
+      )
+      .run(RECORDING_FOLDER_KEY, JSON.stringify(folder), new Date().toISOString());
+  };
+  interface ActiveRecordings {
+    readonly sessionId: string;
+    readonly writers: Map<AudioSource, RecordingWriter>;
+  }
+  let activeRecordings: ActiveRecordings | null = null;
+  const startRecording = (sessionId: string, sources: readonly AudioSource[]): boolean => {
+    if (activeRecordings) return true;
+    const folder = getRecordingFolderSetting();
+    if (!folder) return false;
+    const writers = new Map<AudioSource, RecordingWriter>();
+    try {
+      for (const source of sources) {
+        writers.set(source, new RecordingWriter({ directory: folder, sessionId, source }));
+      }
+    } catch {
+      for (const writer of writers.values()) writer.discard();
+      diagnostics.record({ subsystem: 'recordings', eventType: 'recording-start-failed' });
+      return false;
+    }
+    activeRecordings = { sessionId, writers };
+    return true;
+  };
+  const stopRecording = (): void => {
+    const recording = activeRecordings;
+    activeRecordings = null;
+    if (!recording) return;
+    for (const writer of recording.writers.values()) {
+      try {
+        const closed = writer.close();
+        if (closed && closed.framesWritten > 0) {
+          history.addRecording(recording.sessionId, closed.fileReference);
+        }
+      } catch {
+        writer.discard();
+        diagnostics.record({ subsystem: 'recordings', eventType: 'recording-close-failed' });
+      }
+    }
+  };
+  const removeRecordingFiles = (sessionIds: readonly string[]): void => {
+    if (sessionIds.length === 0) return;
+    const placeholders = sessionIds.map(() => '?').join(', ');
+    const rows = database.connection
+      .prepare(`SELECT file_reference FROM recordings WHERE session_id IN (${placeholders})`)
+      .all(...sessionIds) as unknown as { file_reference: string }[];
+    for (const row of rows) {
+      try {
+        unlinkSync(row.file_reference);
+      } catch {
+        // The file may already be gone; deletion proceeds regardless.
+      }
+    }
+  };
   let activeHistorySessionId: string | null = null;
   const endActiveHistorySession = () => {
+    stopRecording();
     if (activeHistorySessionId === null) return;
     history.endSession(activeHistorySessionId);
     activeHistorySessionId = null;
@@ -179,6 +261,15 @@ app.whenReady().then(async () => {
     },
     onFrame: (frame) => {
       if (sessionController.snapshot().phase === 'paused') return;
+      const writer = activeRecordings?.writers.get(frame.source);
+      if (writer) {
+        try {
+          writer.writeFrame(frame);
+        } catch {
+          activeRecordings?.writers.delete(frame.source);
+          diagnostics.record({ subsystem: 'recordings', eventType: 'recording-write-failed' });
+        }
+      }
       transcriptionService.handleFrame(frame);
     },
     onFailure: (message) => {
@@ -194,7 +285,7 @@ app.whenReady().then(async () => {
       if (event.sender?.id !== overlayWindow.webContents.id) {
         return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized request.' } };
       }
-      const request = payload as { operationId: string; sttProviderId: string; microphone: boolean; systemAudio: boolean; ephemeral: boolean };
+      const request = payload as { operationId: string; sttProviderId: string; microphone: boolean; systemAudio: boolean; ephemeral: boolean; recordAudio?: boolean };
       if (!sttProviderIds.includes(request.sttProviderId)) {
         return { ok: false, error: { code: 'INVALID_REQUEST' as const, message: 'Invalid request.' } };
       }
@@ -213,6 +304,13 @@ app.whenReady().then(async () => {
       activeHistorySessionId = request.ephemeral
         ? null
         : history.startSession({ microphone: request.microphone, systemAudio: request.systemAudio, sttProviderId: request.sttProviderId });
+      if (activeHistorySessionId && request.recordAudio === true) {
+        const sources: AudioSource[] = [
+          ...(request.microphone ? ['microphone' as const] : []),
+          ...(request.systemAudio ? ['system' as const] : []),
+        ];
+        startRecording(activeHistorySessionId, sources);
+      }
       return { ok: true, operationId: request.operationId, snapshot: sessionSnapshot(sessionController) };
     },
     'session:pause': (payload, event) => {
@@ -354,13 +452,39 @@ app.whenReady().then(async () => {
     },
     'history:delete': (payload, event) => {
       if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
-      const receipt = history.deleteSession((payload as { sessionId: string }).sessionId);
+      const sessionId = (payload as { sessionId: string }).sessionId;
+      removeRecordingFiles([sessionId]);
+      const receipt = history.deleteSession(sessionId);
       if (!receipt) return { ok: false, error: { code: 'INVALID_REQUEST' as const, message: 'Invalid request.' } };
       return { ok: true, receipt };
     },
     'history:purge': (_payload, event) => {
       if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      const allSessionIds = (
+        database.connection.prepare('SELECT session_id FROM sessions').all() as unknown as { session_id: string }[]
+      ).map(({ session_id }) => session_id);
+      removeRecordingFiles(allSessionIds);
       return { ok: true, receipt: history.purgeAll() };
+    },
+    'settings:get-recording-folder': (_payload, event) => event.sender?.id === overlayWindow.webContents.id
+      ? { ok: true, folder: getRecordingFolderSetting() }
+      : unauthorizedResponse(),
+    'settings:set-recording-folder': async (payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      const action = (payload as { action: 'choose' | 'clear' }).action;
+      if (action === 'clear') {
+        setRecordingFolderSetting(null);
+        return { ok: true, folder: null };
+      }
+      const result = await dialog.showOpenDialog(overlayWindow, {
+        title: 'Choose recordings folder',
+        properties: ['openDirectory', 'createDirectory'],
+      });
+      const [chosen] = result.filePaths;
+      if (!result.canceled && chosen) {
+        setRecordingFolderSetting(chosen);
+      }
+      return { ok: true, folder: getRecordingFolderSetting() };
     },
     'history:export': (payload, event) => {
       if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();

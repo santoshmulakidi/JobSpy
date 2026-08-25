@@ -43,6 +43,11 @@ function bridge(): CopilotBridge & { emitAnswerEvent(event: CopilotMainEventValu
       move: vi.fn(async () => ({ ok: true as const })),
       hide: vi.fn(async () => ({ ok: true as const })),
     },
+    settings: {
+      getRecordingFolder: vi.fn(async () => ({ ok: true as const, folder: null })),
+      setRecordingFolder: vi.fn(async ({ action }: { action: 'choose' | 'clear' }) =>
+        ({ ok: true as const, folder: action === 'choose' ? 'C:\\Recordings' : null })),
+    },
     answer: {
       send: vi.fn(async (_request: unknown) => ({ ok: true as const })),
       cancel: vi.fn(async () => ({ ok: true as const })),
@@ -252,6 +257,31 @@ describe('complete renderer journey', () => {
     expect(api.history.export).toHaveBeenCalledWith({ sessionId: 'session-9', format: 'markdown' });
     await controller.deleteHistory('session-9');
     expect(api.history.remove).toHaveBeenCalledWith({ sessionId: 'session-9' });
+  });
+
+  it('records audio only after a folder is chosen and only for saved sessions', async () => {
+    const api = bridge();
+    const controller = createCopilotController(api);
+    await controller.load();
+    expect(controller.getState().recordingFolder).toBeNull();
+
+    controller.setRecordAudio(true);
+    expect(controller.getState().error).toContain('Choose a recordings folder first.');
+
+    await controller.chooseRecordingFolder();
+    expect(api.settings.setRecordingFolder).toHaveBeenCalledWith({ action: 'choose' });
+    expect(renderToStaticMarkup(<CopilotApp controller={controller} />)).toContain('Recordings are saved in C:\\Recordings');
+
+    await controller.startSession();
+    expect(vi.mocked(api.session.start).mock.lastCall?.[0]).toMatchObject({ ephemeral: true, recordAudio: false });
+
+    controller.setPersistHistory(true);
+    controller.setRecordAudio(true);
+    await controller.startSession();
+    expect(vi.mocked(api.session.start).mock.lastCall?.[0]).toMatchObject({ ephemeral: false, recordAudio: true });
+
+    await controller.clearRecordingFolder();
+    expect(controller.getState()).toMatchObject({ recordingFolder: null, recordAudio: false });
   });
 
   it('purges every saved session and reports a count-only receipt', async () => {

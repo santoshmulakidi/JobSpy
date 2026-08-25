@@ -54,6 +54,11 @@ export const copilot: CopilotBridge = {
     move: (request: IpcRequest<'overlay:move'>) => invoke('overlay:move', request),
     hide: () => invoke('overlay:hide', undefined),
   },
+  settings: {
+    getRecordingFolder: () => invoke('settings:get-recording-folder', undefined),
+    setRecordingFolder: (request: IpcRequest<'settings:set-recording-folder'>) =>
+      invoke('settings:set-recording-folder', request),
+  },
   answer: {
     send: (request: IpcRequest<'answer:send'>) => invoke('answer:send', request),
     cancel: () => invoke('answer:cancel', undefined),

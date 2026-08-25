@@ -11,6 +11,7 @@ export const StartSessionRequest = z
     microphone: z.boolean(),
     systemAudio: z.boolean(),
     ephemeral: z.boolean(),
+    recordAudio: z.boolean().optional(),
   })
   .strict();
 export const PauseSessionRequest = z.object({ operationId: NonEmptyId }).strict();
@@ -63,6 +64,8 @@ export const ExportHistoryRequest = z
   .strict();
 
 export const SetOverlayOpacityRequest = z.object({ opacity: z.number().min(0.1).max(1) }).strict();
+export const GetRecordingFolderRequest = NoRequest;
+export const SetRecordingFolderRequest = z.object({ action: z.enum(['choose', 'clear']) }).strict();
 export const SetOverlayAlwaysOnTopRequest = z.object({ enabled: z.boolean() }).strict();
 export const HideOverlayRequest = NoRequest;
 export const MoveOverlayRequest = z.object({
@@ -175,6 +178,9 @@ export const ExportHistoryResponse = z.union([
   IpcFailure,
 ]);
 export const SetOverlayOpacityResponse = IpcResponse;
+const RecordingFolderState = z.object({ ok: z.literal(true), folder: z.string().nullable() }).strict();
+export const GetRecordingFolderResponse = z.union([RecordingFolderState, IpcFailure]);
+export const SetRecordingFolderResponse = z.union([RecordingFolderState, IpcFailure]);
 export const SetOverlayAlwaysOnTopResponse = IpcResponse;
 export const HideOverlayResponse = IpcResponse;
 export const MoveOverlayResponse = IpcResponse;
@@ -196,6 +202,14 @@ export const IPC_METHODS = {
   'history:purge': { request: PurgeHistoryRequest, response: PurgeHistoryResponse },
   'history:export': { request: ExportHistoryRequest, response: ExportHistoryResponse },
   'overlay:set-opacity': { request: SetOverlayOpacityRequest, response: SetOverlayOpacityResponse },
+  'settings:get-recording-folder': {
+    request: GetRecordingFolderRequest,
+    response: GetRecordingFolderResponse,
+  },
+  'settings:set-recording-folder': {
+    request: SetRecordingFolderRequest,
+    response: SetRecordingFolderResponse,
+  },
   'overlay:set-always-on-top': {
     request: SetOverlayAlwaysOnTopRequest,
     response: SetOverlayAlwaysOnTopResponse,
@@ -238,6 +252,10 @@ export interface CopilotBridge {
     setAlwaysOnTop(request: IpcRequest<'overlay:set-always-on-top'>): Promise<IpcMethodResponse<'overlay:set-always-on-top'>>;
     move(request: IpcRequest<'overlay:move'>): Promise<IpcMethodResponse<'overlay:move'>>;
     hide(): Promise<IpcMethodResponse<'overlay:hide'>>;
+  };
+  readonly settings: {
+    getRecordingFolder(): Promise<IpcMethodResponse<'settings:get-recording-folder'>>;
+    setRecordingFolder(request: IpcRequest<'settings:set-recording-folder'>): Promise<IpcMethodResponse<'settings:set-recording-folder'>>;
   };
   readonly answer?: {
     send(request: IpcRequest<'answer:send'>): Promise<IpcMethodResponse<'answer:send'>>;

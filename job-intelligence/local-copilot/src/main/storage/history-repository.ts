@@ -225,6 +225,15 @@ export class HistoryRepository {
     return Number(row.n);
   }
 
+  addRecording(sessionId: string, fileReference: string): void {
+    this.database.connection
+      .prepare(
+        `INSERT INTO recordings (recording_id, session_id, file_reference, retention_policy_json, created_at)
+         VALUES (?, ?, ?, ?, ?)`,
+      )
+      .run(randomUUID(), sessionId, fileReference, JSON.stringify({ retainDays: null }), new Date().toISOString());
+  }
+
   private insertTurn(turn: {
     readonly sessionId: string;
     readonly role: 'user' | 'model';
