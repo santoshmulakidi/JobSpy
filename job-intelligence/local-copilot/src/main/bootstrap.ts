@@ -10,6 +10,7 @@ import {
   utilityProcess,
 } from 'electron';
 import { join, relative, resolve } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 
 import { captureWithOverlayHidden, createOverlayControls, createOverlayWindow } from './windows/overlay-window';
@@ -253,11 +254,30 @@ app.whenReady().then(async () => {
     'answer:send': async (payload, event) => {
       if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
       const request = payload as { providerId: LlmProviderId; model?: string; question: string; screenshotId?: string };
+      const phase = sessionController.snapshot().phase;
+      if (phase !== 'capturing' && phase !== 'generating') {
+        return { ok: false, error: { code: 'NOT_READY' as const, message: 'Operation is not available.' } };
+      }
+      const requestId = randomUUID();
+      const generationEvents = sessionController.events()[Symbol.asyncIterator]();
+      sessionController.dispatch({ type: 'generate', requestId });
+      if (sessionController.snapshot().generation?.requestId !== requestId) {
+        return { ok: false, error: { code: 'NOT_READY' as const, message: 'Operation is not available.' } };
+      }
+      const started = await generationEvents.next();
+      await generationEvents.return?.();
+      const startedEvent = started.done ? undefined : started.value;
+      const signal = startedEvent && (startedEvent.type === 'generation-started' || startedEvent.type === 'generation-superseded')
+        ? startedEvent.signal
+        : undefined;
       const send = async (attachments: readonly ScreenshotAttachment[]) => answerService.send({
         providerId: request.providerId,
         ...(request.model ? { model: request.model } : {}),
         question: request.question,
         attachments,
+      }, {
+        signal,
+        onSettled: () => sessionController.dispatch({ type: 'generation-completed', requestId }),
       });
       return request.screenshotId
         ? await screenshotService.withConfirmed([request.screenshotId], send)

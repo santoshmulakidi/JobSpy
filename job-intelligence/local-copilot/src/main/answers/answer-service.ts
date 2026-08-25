@@ -26,6 +26,14 @@ export interface AnswerRequest {
   readonly attachments?: readonly ScreenshotAttachment[];
 }
 
+export type AnswerOutcome = 'completed' | 'cancelled' | 'failed';
+
+export interface AnswerSendOptions {
+  /** Aborted by the session lifecycle (stop or a superseding request). */
+  readonly signal?: AbortSignal;
+  readonly onSettled?: (outcome: AnswerOutcome) => void;
+}
+
 export interface AnswerSendFailure {
   readonly ok: false;
   readonly error: { readonly code: 'INVALID_REQUEST' | 'NOT_READY' | 'INTERNAL'; readonly message: string };
@@ -74,8 +82,8 @@ const DEFAULT_MAX_OUTPUT_TOKENS = 700;
 const DEFAULT_HISTORY_LIMIT = 12;
 
 /**
- * Main-process answer pipeline. Streams provider completions as events,
- * keeps only an ephemeral in-memory history, and supports one in-flight request.
+ * Main-process answer pipeline. Streams provider completions as events, keeps
+ * only an ephemeral in-memory history, and supersedes any in-flight request.
  */
 export class AnswerService {
   private readonly providers: readonly AnswerProviderInfo[];
@@ -101,20 +109,20 @@ export class AnswerService {
     this.timeoutMs = options.timeoutMs ?? 60_000;
   }
 
-  send(request: AnswerRequest): AnswerSendResult {
+  send(request: AnswerRequest, options: AnswerSendOptions = {}): AnswerSendResult {
     const provider = this.providers.find(({ id }) => id === request.providerId);
     if (!provider) return failure('INVALID_REQUEST', 'Choose an answer provider that is listed.');
     if (!request.question.trim()) return failure('INVALID_REQUEST', 'Enter or capture a question first.');
     if (!this.secretStore.isConfigured(request.providerId)) {
       return failure('NOT_READY', 'Save an API key for this provider before asking for answers.');
     }
-    if (this.abortController) return failure('NOT_READY', 'An answer is already being generated.');
 
+    this.abortController?.abort();
     const requestId = randomUUID();
     const controller = new AbortController();
     this.abortController = controller;
     this.activeRequestId = requestId;
-    void this.stream(requestId, provider, request, controller);
+    void this.stream(requestId, provider, request, controller, options);
     return { ok: true };
   }
 
@@ -132,9 +140,14 @@ export class AnswerService {
     provider: AnswerProviderInfo,
     request: AnswerRequest,
     controller: AbortController,
+    options: AnswerSendOptions,
   ): Promise<void> {
     const startedAt = Date.now();
+    let outcome: AnswerOutcome = 'cancelled';
+    const onExternalAbort = () => controller.abort();
+    options.signal?.addEventListener('abort', onExternalAbort, { once: true });
     try {
+      if (options.signal?.aborted) throw abortError();
       const model = this.resolveModel(provider, request.model);
       const config = this.secretStore.withSecret(provider.id, (apiKey) => ({
         apiKey,
@@ -169,19 +182,24 @@ export class AnswerService {
       this.history.push({ role: 'user', content: request.question }, { role: 'assistant', content: answer });
       while (this.history.length > this.historyLimit) this.history.shift();
 
+      outcome = 'completed';
       if (this.activeRequestId === requestId && !controller.signal.aborted) {
         this.publish({ type: 'answer-completed', model, latencyMs: Date.now() - startedAt });
       }
     } catch (error) {
       if (controller.signal.aborted) {
+        outcome = 'cancelled';
         this.publish({ type: 'answer-cancelled' });
       } else {
+        outcome = 'failed';
         this.publish({
           type: 'answer-failed',
           message: error instanceof Error ? error.message : 'The answer request failed.',
         });
       }
     } finally {
+      options.signal?.removeEventListener('abort', onExternalAbort);
+      options.onSettled?.(outcome);
       if (this.activeRequestId === requestId) {
         this.activeRequestId = null;
         this.abortController = null;
@@ -197,4 +215,8 @@ export class AnswerService {
 
 function failure(code: AnswerSendFailure['error']['code'], message: string): AnswerSendFailure {
   return { ok: false, error: { code, message } };
+}
+
+function abortError(): DOMException {
+  return new DOMException('The answer request was cancelled.', 'AbortError');
 }

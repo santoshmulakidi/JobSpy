@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { AnswerService, type AnswerEvent, type AnswerSecretStore } from '../../src/main/answers/answer-service';
+import { AnswerService, type AnswerEvent, type AnswerOutcome, type AnswerSecretStore } from '../../src/main/answers/answer-service';
 import type { ScreenshotAttachment } from '../../src/main/capture/screenshot-service';
 import type { CopilotRequest, LlmAdapter, LlmEvent } from '../../src/providers/llm/types';
 
@@ -156,17 +156,63 @@ describe('AnswerService', () => {
     expect(events.some((event) => event.type === 'answer-delta' && event.text === 'Recovered.')).toBe(true);
   });
 
-  it('rejects concurrent sends, then cancels the in-flight request and clears pending state', async () => {
+  it('supersedes the in-flight request when a new send arrives', async () => {
+    const { service, events } = createServiceWithAdapter(
+      hangingAdapter(),
+      scriptedAdapter([{ type: 'text-delta', text: 'Replacement.' }, { type: 'completed', reason: 'stop' }]),
+    );
+
+    expect(service.send({ providerId: 'openai', question: 'Long running?' })).toEqual({ ok: true });
+    expect(service.send({ providerId: 'openai', question: 'Replacement?' })).toEqual({ ok: true });
+    await settle();
+
+    expect(events.filter((event) => event.type === 'answer-cancelled')).toHaveLength(1);
+    expect(events.some((event) => event.type === 'answer-delta' && event.text === 'Replacement.')).toBe(true);
+    expect(events.at(-1)).toMatchObject({ type: 'answer-completed' });
+  });
+
+  it('cancels via the service and allows an immediate follow-up send', async () => {
     const { service, events } = createServiceWithAdapter(hangingAdapter());
 
     expect(service.send({ providerId: 'openai', question: 'Long running?' })).toEqual({ ok: true });
-    expect(service.send({ providerId: 'openai', question: 'While busy?' })).toMatchObject({ ok: false, error: { code: 'NOT_READY' } });
-
     service.cancel();
     await settle();
 
     expect(events).toEqual([{ type: 'answer-cancelled' }]);
     expect(service.send({ providerId: 'openai', question: 'After cancel?' })).toEqual({ ok: true });
+  });
+
+  it('honours an external abort signal and settles exactly once', async () => {
+    const outcomes: AnswerOutcome[] = [];
+    const controller = new AbortController();
+    const { service, events } = createServiceWithAdapter(hangingAdapter());
+
+    expect(service.send(
+      { providerId: 'openai', question: 'Session stopping?' },
+      { signal: controller.signal, onSettled: (outcome) => outcomes.push(outcome) },
+    )).toEqual({ ok: true });
+
+    controller.abort();
+    await settle();
+
+    expect(events).toEqual([{ type: 'answer-cancelled' }]);
+    expect(outcomes).toEqual(['cancelled']);
+  });
+
+  it('settles successful streams as completed', async () => {
+    const outcomes: AnswerOutcome[] = [];
+    const { service } = createServiceWithAdapter(scriptedAdapter([
+      { type: 'text-delta', text: 'Done.' },
+      { type: 'completed', reason: 'stop' },
+    ]));
+
+    expect(service.send(
+      { providerId: 'openai', question: 'Quick one?' },
+      { onSettled: (outcome) => outcomes.push(outcome) },
+    )).toEqual({ ok: true });
+    await settle();
+
+    expect(outcomes).toEqual(['completed']);
   });
 
   it('carries ephemeral history into follow-up requests and bounds its size', async () => {

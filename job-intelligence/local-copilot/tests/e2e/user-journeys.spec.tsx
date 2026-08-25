@@ -125,6 +125,7 @@ describe('complete renderer journey', () => {
     const api = bridge();
     const controller = createCopilotController(api);
     await controller.load();
+    await controller.startSession();
     controller.editTranscript('Why is the provider failing?');
     await controller.sendQuestion();
 
