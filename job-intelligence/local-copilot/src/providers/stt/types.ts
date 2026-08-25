@@ -18,13 +18,30 @@ export interface TranscriptionAdapter {
   close(): Promise<void>;
 }
 
-type SocketEvent = 'open' | 'message' | 'close' | 'error';
-type SocketListener = (event: unknown) => void;
+export type SttWebSocketErrorEvent =
+  | { readonly type: 'upgrade'; readonly status: number; readonly message: string }
+  | { readonly type: 'network'; readonly message: string };
+
+export interface SttWebSocketEventMap {
+  readonly open: unknown;
+  readonly message: { readonly data?: unknown };
+  readonly close: { readonly code?: number; readonly reason?: string; readonly wasClean?: boolean };
+  readonly error: SttWebSocketErrorEvent;
+}
+
+export type SttWebSocketListener<Event extends keyof SttWebSocketEventMap> =
+  (event: SttWebSocketEventMap[Event]) => void;
 
 export interface SttWebSocket {
   readonly readyState: number;
-  addEventListener(type: SocketEvent, listener: SocketListener): void;
-  removeEventListener(type: SocketEvent, listener: SocketListener): void;
+  addEventListener<Event extends keyof SttWebSocketEventMap>(
+    type: Event,
+    listener: SttWebSocketListener<Event>,
+  ): void;
+  removeEventListener<Event extends keyof SttWebSocketEventMap>(
+    type: Event,
+    listener: SttWebSocketListener<Event>,
+  ): void;
   send(data: string | ArrayBufferView): void;
   close(code?: number, reason?: string): void;
 }
@@ -42,7 +59,11 @@ export interface StreamingAdapterOptions {
   readonly encodeAudio: (audio: Uint8Array) => string | ArrayBufferView;
   readonly parseEvent: (event: unknown) => TranscriptEvent[];
   readonly classifyClose: (code: number, reason: string) => Extract<TranscriptEvent, { type: 'error' }>;
+  readonly classifyError?: (
+    event: SttWebSocketErrorEvent,
+  ) => Extract<TranscriptEvent, { type: 'error' }>;
   readonly closeMessage?: string;
+  readonly closeTimeoutMs?: number;
   readonly reset?: () => void;
 }
 
@@ -50,10 +71,10 @@ interface SocketBinding {
   expectedClose: boolean;
   readonly signal?: AbortSignal;
   onAbort?: () => void;
-  readonly onOpen: SocketListener;
-  readonly onMessage: SocketListener;
-  readonly onClose: SocketListener;
-  readonly onError: SocketListener;
+  readonly onOpen: SttWebSocketListener<'open'>;
+  readonly onMessage: SttWebSocketListener<'message'>;
+  readonly onClose: SttWebSocketListener<'close'>;
+  readonly onError: SttWebSocketListener<'error'>;
 }
 
 export class StreamingTranscriptionAdapter implements TranscriptionAdapter {
@@ -62,6 +83,9 @@ export class StreamingTranscriptionAdapter implements TranscriptionAdapter {
   private connectPromise: Promise<void> | null = null;
   private resolveConnect: (() => void) | null = null;
   private rejectConnect: ((error: Error) => void) | null = null;
+  private closePromise: Promise<void> | null = null;
+  private resolveClose: (() => void) | null = null;
+  private closeTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly queuedAudio: Uint8Array[] = [];
   private readonly eventQueue: TranscriptEvent[] = [];
   private readonly eventWaiters: Array<(event: IteratorResult<TranscriptEvent>) => void> = [];
@@ -97,7 +121,7 @@ export class StreamingTranscriptionAdapter implements TranscriptionAdapter {
       },
       onMessage: (event) => {
         if (this.socket !== socket) return;
-        const data = isRecord(event) ? event.data : undefined;
+        const data = event.data;
         let normalized: TranscriptEvent[];
         try {
           if (typeof data !== 'string') throw new Error('Provider event was not text.');
@@ -112,21 +136,22 @@ export class StreamingTranscriptionAdapter implements TranscriptionAdapter {
       },
       onClose: (event) => {
         if (this.socket !== socket) return;
-        const code = isRecord(event) && typeof event.code === 'number' ? event.code : 1006;
-        const reason = isRecord(event) && typeof event.reason === 'string' ? event.reason : '';
+        const code = event.code ?? 1006;
+        const reason = event.reason ?? '';
         if (!binding.expectedClose && code !== 1000) {
           this.push(this.options.classifyClose(code, reason));
         }
         this.rejectConnecting(new Error(reason || `WebSocket closed with code ${code}.`));
         this.release(socket);
         this.push({ type: 'closed' });
+        this.finishClose();
       },
       onError: (event) => {
         if (this.socket !== socket) return;
-        const message = isRecord(event) && typeof event.message === 'string'
-          ? event.message
-          : 'WebSocket connection failed.';
-        this.rejectConnecting(new Error(message));
+        this.push(this.options.classifyError?.(event)
+          ?? providerError('provider', event.message, true));
+        this.rejectConnecting(new Error(event.message));
+        this.disconnect(socket, 1011, 'connection failed');
       },
     };
     binding.onAbort = signal
@@ -183,9 +208,24 @@ export class StreamingTranscriptionAdapter implements TranscriptionAdapter {
       this.zeroQueuedAudio();
       return Promise.resolve();
     }
-    if (socket.readyState === 1 && this.options.closeMessage) socket.send(this.options.closeMessage);
+    if (this.closePromise) return this.closePromise;
+    const closing = this.beginClose();
+    if (socket.readyState === 1 && this.options.closeMessage && this.options.closeTimeoutMs) {
+      if (this.binding) this.binding.expectedClose = true;
+      try {
+        socket.send(this.options.closeMessage);
+        this.closeTimer = setTimeout(
+          () => this.disconnect(socket, 1000, 'close response timeout'),
+          this.options.closeTimeoutMs,
+        );
+      } catch {
+        this.disconnect(socket, 1011, 'close message failed');
+      }
+      return closing;
+    }
+    this.rejectConnecting(new Error('Transcription connection was closed by the client.'));
     this.disconnect(socket, 1000, 'client close');
-    return Promise.resolve();
+    return closing;
   }
 
   private flushAudio(socket: SttWebSocket): void {
@@ -207,6 +247,7 @@ export class StreamingTranscriptionAdapter implements TranscriptionAdapter {
     if (this.socket === socket) {
       this.release(socket);
       this.push({ type: 'closed' });
+      this.finishClose();
     }
   }
 
@@ -245,6 +286,19 @@ export class StreamingTranscriptionAdapter implements TranscriptionAdapter {
     this.resolveConnect = null;
     this.rejectConnect = null;
   }
+
+  private beginClose(): Promise<void> {
+    this.closePromise = new Promise<void>((resolve) => { this.resolveClose = resolve; });
+    return this.closePromise;
+  }
+
+  private finishClose(): void {
+    if (this.closeTimer) clearTimeout(this.closeTimer);
+    this.closeTimer = null;
+    this.resolveClose?.();
+    this.resolveClose = null;
+    this.closePromise = null;
+  }
 }
 
 export function providerError(
@@ -265,8 +319,4 @@ function abortError(): Error {
 
 function asError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
 }

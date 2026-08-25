@@ -1,9 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createDeepgramAdapter } from '../../src/providers/stt/deepgram';
 import { createElevenLabsAdapter } from '../../src/providers/stt/elevenlabs';
 import type {
   SttWebSocket,
+  SttWebSocketErrorEvent,
+  SttWebSocketEventMap,
+  SttWebSocketListener,
   TranscriptEvent,
   WebSocketConnection,
   WebSocketFactory,
@@ -18,25 +21,45 @@ class FakeWebSocket implements SttWebSocket {
   public closeCalls = 0;
   private readonly listeners = new Map<SocketEvent, Set<SocketListener>>();
 
-  public addEventListener(type: SocketEvent, listener: SocketListener): void {
+  public constructor(
+    private readonly closeAsynchronously = false,
+    private readonly onSend?: (data: string | ArrayBufferView, socket: FakeWebSocket) => void,
+  ) {}
+
+  public addEventListener<Event extends keyof SttWebSocketEventMap>(
+    type: Event,
+    listener: SttWebSocketListener<Event>,
+  ): void {
     const listeners = this.listeners.get(type) ?? new Set();
-    listeners.add(listener);
+    listeners.add(listener as SocketListener);
     this.listeners.set(type, listeners);
   }
 
-  public removeEventListener(type: SocketEvent, listener: SocketListener): void {
-    this.listeners.get(type)?.delete(listener);
+  public removeEventListener<Event extends keyof SttWebSocketEventMap>(
+    type: Event,
+    listener: SttWebSocketListener<Event>,
+  ): void {
+    this.listeners.get(type)?.delete(listener as SocketListener);
   }
 
   public send(data: string | ArrayBufferView): void {
     this.sent.push(typeof data === 'string'
       ? data
       : new Uint8Array(data.buffer, data.byteOffset, data.byteLength).slice());
+    this.onSend?.(data, this);
   }
 
   public close(code = 1000, reason = ''): void {
     if (this.readyState === 3) return;
     this.closeCalls += 1;
+    if (this.closeAsynchronously) {
+      this.readyState = 2;
+      queueMicrotask(() => {
+        this.readyState = 3;
+        this.emit('close', { code, reason, wasClean: code === 1000 });
+      });
+      return;
+    }
     this.readyState = 3;
     this.emit('close', { code, reason, wasClean: code === 1000 });
   }
@@ -55,22 +78,39 @@ class FakeWebSocket implements SttWebSocket {
     this.emit('close', { code, reason, wasClean: false });
   }
 
-  private emit(type: SocketEvent, event: unknown): void {
+  public upgradeError(status: number): void {
+    const event: SttWebSocketErrorEvent = {
+      type: 'upgrade',
+      status,
+      message: `Unexpected server response: ${status}`,
+    };
+    this.emit('error', event);
+  }
+
+  private emit<Event extends keyof SttWebSocketEventMap>(
+    type: Event,
+    event: SttWebSocketEventMap[Event],
+  ): void {
     for (const listener of this.listeners.get(type) ?? []) listener(event);
   }
 }
 
-function fakeSockets() {
+function fakeSockets(options: {
+  readonly closeAsynchronously?: boolean;
+  readonly onSend?: (data: string | ArrayBufferView, socket: FakeWebSocket) => void;
+} = {}) {
   const requests: WebSocketConnection[] = [];
   const sockets: FakeWebSocket[] = [];
   const factory: WebSocketFactory = (request) => {
     requests.push(request);
-    const socket = new FakeWebSocket();
+    const socket = new FakeWebSocket(options.closeAsynchronously, options.onSend);
     sockets.push(socket);
     return socket;
   };
   return { factory, requests, sockets };
 }
+
+afterEach(() => vi.useRealTimers());
 
 async function nextEvent(events: AsyncIterator<TranscriptEvent>): Promise<TranscriptEvent> {
   const result = await events.next();
@@ -246,4 +286,107 @@ describe.each(fixtures)('$name adapter contract', (fixture) => {
     expect(await nextEvent(events)).toEqual({ type: 'speech-start' });
     expect(fake.requests).toHaveLength(2);
   });
+
+  it('settles a pending connection when the socket closes asynchronously', async () => {
+    const fake = fakeSockets({ closeAsynchronously: true });
+    const adapter = fixture.create(fake.factory);
+    let outcome = 'pending';
+    void adapter.connect().then(
+      () => { outcome = 'resolved'; },
+      () => { outcome = 'rejected'; },
+    );
+
+    await adapter.close();
+    await Promise.resolve();
+
+    expect(outcome).toBe('rejected');
+  });
+});
+
+describe('Deepgram close and upgrade handling', () => {
+  it('waits for the provider final transcript and close response', async () => {
+    const fake = fakeSockets({
+      onSend: (data, socket) => {
+        if (data !== JSON.stringify({ type: 'CloseStream' })) return;
+        queueMicrotask(() => {
+          socket.message({
+            type: 'Results',
+            is_final: true,
+            speech_final: true,
+            channel: { alternatives: [{ transcript: 'final words' }] },
+          });
+          socket.serverClose(1000, 'stream complete');
+        });
+      },
+    });
+    const adapter = createDeepgramAdapter({ apiKey: 'secret-key', webSocketFactory: fake.factory });
+    const events = adapter.events()[Symbol.asyncIterator]();
+    const connecting = adapter.connect();
+    fake.sockets[0]!.open();
+    await connecting;
+    fake.sockets[0]!.message({ type: 'SpeechStarted' });
+    expect(await nextEvent(events)).toEqual({ type: 'speech-start' });
+
+    await adapter.close();
+
+    expect(await nextEvent(events)).toEqual({ type: 'final', text: 'final words' });
+    expect(await nextEvent(events)).toEqual({ type: 'speech-end' });
+    expect(await nextEvent(events)).toEqual({ type: 'closed' });
+    expect(fake.sockets[0]!.closeCalls).toBe(0);
+  });
+
+  it('forces close when Deepgram does not answer CloseStream', async () => {
+    vi.useFakeTimers();
+    const fake = fakeSockets();
+    const adapter = createDeepgramAdapter({ apiKey: 'secret-key', webSocketFactory: fake.factory });
+    const connecting = adapter.connect();
+    fake.sockets[0]!.open();
+    await connecting;
+
+    const closing = adapter.close();
+    expect(fake.sockets[0]!.closeCalls).toBe(0);
+    await vi.advanceTimersByTimeAsync(1_000);
+    await closing;
+
+    expect(fake.sockets[0]!.closeCalls).toBe(1);
+  });
+
+  it.each([401, 403])('classifies HTTP %s upgrade failures as authentication errors', async (status) => {
+    const fake = fakeSockets();
+    const adapter = createDeepgramAdapter({ apiKey: 'secret-key', webSocketFactory: fake.factory });
+    const events = adapter.events()[Symbol.asyncIterator]();
+    const received: TranscriptEvent[] = [];
+    void events.next().then((result) => {
+      if (!result.done) received.push(result.value);
+    });
+    const connecting = adapter.connect();
+
+    fake.sockets[0]!.upgradeError(status);
+    await expect(connecting).rejects.toThrow(String(status));
+    await Promise.resolve();
+
+    expect(received[0]).toMatchObject({ type: 'error', code: 'authentication', retryable: false });
+  });
+});
+
+describe('ElevenLabs request error handling', () => {
+  it.each(['invalid_request', 'input_error', 'chunk_size_exceeded', 'unaccepted_terms'] as const)(
+    'does not retry permanent %s errors',
+    async (messageType) => {
+      const fake = fakeSockets();
+      const adapter = createElevenLabsAdapter({ apiKey: 'secret-key', webSocketFactory: fake.factory });
+      const events = adapter.events()[Symbol.asyncIterator]();
+      const connecting = adapter.connect();
+      fake.sockets[0]!.open();
+      await connecting;
+
+      fake.sockets[0]!.message({ message_type: messageType, error: `${messageType} failed` });
+
+      expect(await nextEvent(events)).toMatchObject({
+        type: 'error',
+        code: 'provider',
+        retryable: false,
+      });
+    },
+  );
 });

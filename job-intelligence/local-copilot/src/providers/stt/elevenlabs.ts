@@ -96,7 +96,13 @@ export function createElevenLabsAdapter(options: ElevenLabsAdapterOptions): Tran
         if (['quota_exceeded', 'rate_limited'].includes(failure.data.message_type)) {
           return [providerError('quota', failure.data.error, failure.data.message_type === 'rate_limited')];
         }
-        return [providerError('provider', failure.data.error, true)];
+        const retryable = ![
+          'invalid_request',
+          'input_error',
+          'chunk_size_exceeded',
+          'unaccepted_terms',
+        ].includes(failure.data.message_type);
+        return [providerError('provider', failure.data.error, retryable)];
       }
       if (Ignored.safeParse(event).success) return [];
       return [invalidEvent()];

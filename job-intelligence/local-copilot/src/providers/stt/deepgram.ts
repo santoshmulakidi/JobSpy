@@ -49,6 +49,7 @@ export function createDeepgramAdapter(options: DeepgramAdapterOptions): Transcri
     webSocketFactory: options.webSocketFactory,
     encodeAudio: (audio) => audio,
     closeMessage: JSON.stringify({ type: 'CloseStream' }),
+    closeTimeoutMs: 1_000,
     reset: () => { speaking = false; },
     parseEvent: (event) => {
       const started = SpeechStarted.safeParse(event);
@@ -90,6 +91,12 @@ export function createDeepgramAdapter(options: DeepgramAdapterOptions): Transcri
         return providerError('quota', reason || 'Deepgram quota was exceeded.');
       }
       return providerError('provider', reason || 'Deepgram connection closed unexpectedly.', true);
+    },
+    classifyError: (event) => {
+      if (event.type === 'upgrade' && [401, 403].includes(event.status)) {
+        return providerError('authentication', event.message);
+      }
+      return providerError('provider', event.message, true);
     },
   });
 }
