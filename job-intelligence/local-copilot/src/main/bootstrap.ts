@@ -226,19 +226,10 @@ app.whenReady().then(async () => {
       overlayControls.setOpacity((payload as { opacity: number }).opacity);
       return { ok: true };
     },
-    'overlay:set-click-through': (payload, event) => {
-      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
-      overlayControls.setClickThrough((payload as { enabled: boolean }).enabled);
-      return { ok: true };
-    },
     'overlay:set-always-on-top': (payload, event) => {
       if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
       overlayControls.setAlwaysOnTop((payload as { enabled: boolean }).enabled);
       return { ok: true };
-    },
-    'overlay:set-capture-protection': (payload, event) => {
-      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
-      return { ok: true, ...overlayControls.setCaptureProtection((payload as { enabled: boolean }).enabled) };
     },
     'overlay:hide': (_payload, event) => {
       if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();

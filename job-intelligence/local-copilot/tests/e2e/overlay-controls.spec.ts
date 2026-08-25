@@ -10,7 +10,6 @@ import {
 function fakeWindow() {
   return {
     setOpacity: vi.fn(),
-    setIgnoreMouseEvents: vi.fn(),
     setAlwaysOnTop: vi.fn(),
     setContentProtection: vi.fn(),
     setFocusable: vi.fn(),
@@ -22,17 +21,15 @@ function fakeWindow() {
 }
 
 describe('overlay native controls', () => {
-  it('sets opacity, click-through, always-on-top, and instant hide natively', () => {
+  it('sets opacity, always-on-top, and instant hide natively', () => {
     const window = fakeWindow();
     const controls = createOverlayControls(window as never);
 
     controls.setOpacity(0.6);
-    controls.setClickThrough(true);
     controls.setAlwaysOnTop(false);
     controls.hide();
 
     expect(window.setOpacity).toHaveBeenCalledWith(0.6);
-    expect(window.setIgnoreMouseEvents).toHaveBeenCalledWith(true, { forward: true });
     expect(window.setAlwaysOnTop).toHaveBeenCalledWith(false, 'floating');
     expect(window.setFocusable).toHaveBeenCalledWith(false);
     expect(window.hide).toHaveBeenCalledOnce();

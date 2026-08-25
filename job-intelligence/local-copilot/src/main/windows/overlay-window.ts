@@ -38,7 +38,6 @@ export type CaptureProtectionStatus = { readonly status: 'best-effort' | 'unsupp
 
 type OverlayWindow = Pick<BrowserWindow,
   | 'setOpacity'
-  | 'setIgnoreMouseEvents'
   | 'setAlwaysOnTop'
   | 'setContentProtection'
   | 'setFocusable'
@@ -55,9 +54,6 @@ export function createOverlayControls(window: OverlayWindow) {
     setOpacity(opacity: number): void {
       if (!Number.isFinite(opacity) || opacity < 0.1 || opacity > 1) throw new Error('Invalid opacity.');
       window.setOpacity(opacity);
-    },
-    setClickThrough(enabled: boolean): void {
-      window.setIgnoreMouseEvents(enabled, { forward: true });
     },
     setAlwaysOnTop(enabled: boolean): void {
       window.setAlwaysOnTop(enabled, 'floating');

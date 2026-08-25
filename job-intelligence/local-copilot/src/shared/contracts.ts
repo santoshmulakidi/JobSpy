@@ -13,12 +13,10 @@ export const StartSessionRequest = z
     ephemeral: z.boolean(),
   })
   .strict();
-export const PauseSessionRequest = NoRequest;
 export const StopSessionRequest = z.object({ operationId: NonEmptyId }).strict();
 export const SessionStatusRequest = NoRequest;
 
 export const ListProvidersRequest = NoRequest;
-export const TestProviderRequest = z.object({ providerId: NonEmptyId }).strict();
 export const SaveProviderSecretRequest = z
   .object({ providerId: NonEmptyId, secret: z.string().min(1) })
   .strict();
@@ -40,19 +38,8 @@ export type ScreenshotEditsValue = z.infer<typeof ScreenshotEdits>;
 export const ConfirmCaptureRequest = z.object({ captureId: NonEmptyId, edits: ScreenshotEdits.optional() }).strict();
 export const DiscardCaptureRequest = z.object({ captureId: NonEmptyId }).strict();
 
-export const ListHistoryRequest = z
-  .object({ limit: z.number().int().min(1).max(100).optional() })
-  .strict();
-export const GetHistoryRequest = z.object({ sessionId: NonEmptyId }).strict();
-export const DeleteHistoryRequest = z.object({ sessionId: NonEmptyId }).strict();
-export const ExportHistoryRequest = z
-  .object({ sessionId: NonEmptyId, format: z.enum(['json', 'markdown']) })
-  .strict();
-
 export const SetOverlayOpacityRequest = z.object({ opacity: z.number().min(0.1).max(1) }).strict();
-export const SetOverlayClickThroughRequest = z.object({ enabled: z.boolean() }).strict();
 export const SetOverlayAlwaysOnTopRequest = z.object({ enabled: z.boolean() }).strict();
-export const SetOverlayCaptureProtectionRequest = z.object({ enabled: z.boolean() }).strict();
 export const HideOverlayRequest = NoRequest;
 export const MoveOverlayRequest = z.object({
   x: z.number().int().min(-100).max(100),
@@ -106,7 +93,6 @@ const SessionSnapshot = z.object({
 }).strict();
 const SessionCommandSuccess = z.object({ ok: z.literal(true), operationId: NonEmptyId, snapshot: SessionSnapshot }).strict();
 export const StartSessionResponse = z.union([SessionCommandSuccess, IpcFailure]);
-export const PauseSessionResponse = IpcResponse;
 export const StopSessionResponse = z.union([SessionCommandSuccess, IpcFailure]);
 export const SessionStatusResponse = z.union([z.object({ ok: z.literal(true), snapshot: SessionSnapshot }).strict(), IpcFailure]);
 const Provider = z.object({
@@ -120,7 +106,6 @@ const Provider = z.object({
 }).strict();
 export type ProviderValue = z.infer<typeof Provider>;
 export const ListProvidersResponse = z.union([z.object({ ok: z.literal(true), providers: z.array(Provider) }).strict(), IpcFailure]);
-export const TestProviderResponse = IpcResponse;
 export const SaveProviderSecretResponse = z.union([
   z.object({
     ok: z.literal(true),
@@ -147,17 +132,8 @@ const ConfirmedScreenshot = z.object({
 export const PreviewCaptureResponse = z.union([z.object({ ok: z.literal(true), preview: ScreenshotPreview }).strict(), IpcFailure]);
 export const ConfirmCaptureResponse = z.union([z.object({ ok: z.literal(true), screenshot: ConfirmedScreenshot.optional() }).strict(), IpcFailure]);
 export const DiscardCaptureResponse = IpcResponse;
-export const ListHistoryResponse = IpcResponse;
-export const GetHistoryResponse = IpcResponse;
-export const DeleteHistoryResponse = IpcResponse;
-export const ExportHistoryResponse = IpcResponse;
 export const SetOverlayOpacityResponse = IpcResponse;
-export const SetOverlayClickThroughResponse = IpcResponse;
 export const SetOverlayAlwaysOnTopResponse = IpcResponse;
-export const SetOverlayCaptureProtectionResponse = z.union([
-  z.object({ ok: z.literal(true), status: z.enum(['best-effort', 'unsupported', 'disabled']) }).strict(),
-  IpcFailure,
-]);
 export const HideOverlayResponse = IpcResponse;
 export const MoveOverlayResponse = IpcResponse;
 export const SendAnswerResponse = IpcResponse;
@@ -165,31 +141,17 @@ export const CancelAnswerResponse = IpcResponse;
 
 export const IPC_METHODS = {
   'session:start': { request: StartSessionRequest, response: StartSessionResponse },
-  'session:pause': { request: PauseSessionRequest, response: PauseSessionResponse },
   'session:stop': { request: StopSessionRequest, response: StopSessionResponse },
   'session:status': { request: SessionStatusRequest, response: SessionStatusResponse },
   'providers:list': { request: ListProvidersRequest, response: ListProvidersResponse },
-  'providers:test': { request: TestProviderRequest, response: TestProviderResponse },
   'providers:save-secret': { request: SaveProviderSecretRequest, response: SaveProviderSecretResponse },
   'capture:preview': { request: PreviewCaptureRequest, response: PreviewCaptureResponse },
   'capture:confirm': { request: ConfirmCaptureRequest, response: ConfirmCaptureResponse },
   'capture:discard': { request: DiscardCaptureRequest, response: DiscardCaptureResponse },
-  'history:list': { request: ListHistoryRequest, response: ListHistoryResponse },
-  'history:get': { request: GetHistoryRequest, response: GetHistoryResponse },
-  'history:delete': { request: DeleteHistoryRequest, response: DeleteHistoryResponse },
-  'history:export': { request: ExportHistoryRequest, response: ExportHistoryResponse },
   'overlay:set-opacity': { request: SetOverlayOpacityRequest, response: SetOverlayOpacityResponse },
-  'overlay:set-click-through': {
-    request: SetOverlayClickThroughRequest,
-    response: SetOverlayClickThroughResponse,
-  },
   'overlay:set-always-on-top': {
     request: SetOverlayAlwaysOnTopRequest,
     response: SetOverlayAlwaysOnTopResponse,
-  },
-  'overlay:set-capture-protection': {
-    request: SetOverlayCaptureProtectionRequest,
-    response: SetOverlayCaptureProtectionResponse,
   },
   'overlay:hide': { request: HideOverlayRequest, response: HideOverlayResponse },
   'overlay:move': { request: MoveOverlayRequest, response: MoveOverlayResponse },
