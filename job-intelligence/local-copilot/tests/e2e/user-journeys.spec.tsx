@@ -161,6 +161,21 @@ describe('complete renderer journey', () => {
     api.emitAnswerEvent({ type: 'transcript-final', text: 'What is the notice period?' });
     expect(controller.getState()).toMatchObject({ transcriptDraft: 'What is the notice period?', transcriptFinal: true });
 
+    api.emitAnswerEvent({ type: 'transcript-partial', text: 'And is remote work' });
+    expect(controller.getState()).toMatchObject({ transcriptDraft: 'What is the notice period? And is remote work', transcriptFinal: false });
+    api.emitAnswerEvent({ type: 'transcript-final', text: 'And is remote work allowed?' });
+    expect(controller.getState()).toMatchObject({
+      transcriptDraft: 'What is the notice period? And is remote work allowed?',
+      transcriptFinal: true,
+    });
+
+    controller.editTranscript('What is the notice period?');
+    api.emitAnswerEvent({ type: 'transcript-final', text: 'Is it remote-friendly?' });
+    expect(controller.getState()).toMatchObject({
+      transcriptDraft: 'What is the notice period? Is it remote-friendly?',
+      transcriptFinal: true,
+    });
+
     api.emitAnswerEvent({ type: 'transcript-failed', message: 'The transcription provider quota was exceeded.' });
     const state = controller.getState();
     expect(state.error).toContain('quota');

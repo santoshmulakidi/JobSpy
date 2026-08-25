@@ -63,10 +63,15 @@ export function createCopilotController(bridge: CopilotBridge): CopilotControlle
       publish({ phase: response.snapshot.phase, error: response.snapshot.error?.message ?? '' });
     } finally { if (identity === sessionOperation) publish({ sessionPending: false }); }
   };
+  let committedTranscript = '';
+  const joinTranscript = (base: string, addition: string) => {
+    const text = addition.trimStart().replace(/\s+$/, '');
+    if (!text) return base;
+    return base && !/\s$/.test(base) ? `${base} ${text}` : base + text;
+  };
   const controller: CopilotController = {
     getState: () => state,
-    subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
-    async load() {
+    subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },    async load() {
       bridge.onAnswerEvent?.((event) => controller.accept(event));
       const identity = sessionOperation;
       const [providers, session] = await Promise.all([bridge.providers.list(), bridge.session.status()]);
@@ -96,8 +101,11 @@ export function createCopilotController(bridge: CopilotBridge): CopilotControlle
     },
     async stopSession() { await command((operationId) => bridge.session.stop({ operationId })); },
     accept(event) {
-      if (event.type === 'transcript-partial') publish({ transcriptDraft: event.text, transcriptFinal: false });
-      else if (event.type === 'transcript-final') publish({ transcriptDraft: event.text, transcriptFinal: true });
+      if (event.type === 'transcript-partial') publish({ transcriptDraft: joinTranscript(committedTranscript, event.text), transcriptFinal: false });
+      else if (event.type === 'transcript-final') {
+        committedTranscript = joinTranscript(committedTranscript, event.text);
+        publish({ transcriptDraft: committedTranscript, transcriptFinal: true });
+      }
       else if (event.type === 'transcript-failed') fail(event.message);
       else if (event.type === 'answer-delta') publish({ answer: state.answer + event.text, answerPending: true });
       else if (event.type === 'answer-completed') publish({ answerPending: false, model: event.model, latencyMs: event.latencyMs });
@@ -105,7 +113,10 @@ export function createCopilotController(bridge: CopilotBridge): CopilotControlle
       else if (event.type === 'answer-failed') publish({ answerPending: false, error: event.message });
       else fail(event.message);
     },
-    editTranscript: (transcriptDraft) => publish({ transcriptDraft, transcriptFinal: true }),
+    editTranscript(transcriptDraft) {
+      committedTranscript = transcriptDraft;
+      publish({ transcriptDraft, transcriptFinal: true });
+    },
     async sendQuestion() {
       const question = state.transcriptDraft.trim();
       if (!question) return fail('Enter or capture a question first.');
