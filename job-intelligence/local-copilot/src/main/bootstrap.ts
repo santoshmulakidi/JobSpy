@@ -9,7 +9,7 @@ import {
   session,
   utilityProcess,
 } from 'electron';
-import { relative, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { captureWithOverlayHidden, createOverlayControls, createOverlayWindow } from './windows/overlay-window';
@@ -29,6 +29,12 @@ import {
   editScreenshotWithNativeImage,
   type ScreenshotEdits,
 } from './capture/screenshot-service';
+import { Database } from './storage/database';
+import { SecretStore } from './storage/secrets';
+import { AnswerService } from './answers/answer-service';
+import type { ScreenshotAttachment } from './capture/screenshot-service';
+import { createLlmAdapter, listLlmProviders, type LlmProviderId } from './providers/provider-registry';
+import { COPILOT_EVENT_CHANNEL } from '../shared/contracts';
 
 const LOCAL_SCHEME = 'copilot';
 const CONTENT_SECURITY_POLICY = [
@@ -102,8 +108,30 @@ app.whenReady().then(async () => {
   const captureWindow = captureWindowHandle.window;
   const permissionGate = new CapturePermissionGate(captureWindow.webContents);
   const sessionController = new SessionController();
+  const userData = app.getPath('userData');
+  const database = Database.open(join(userData, 'copilot.sqlite'));
+  const secretStore = SecretStore.create({ database, directory: join(userData, 'secrets') });
+  const llmProviders = listLlmProviders({ includeOptional: true });
+  const providers = [
+    { id: 'deepgram', kind: 'stt' as const, name: 'Deepgram', destination: 'Deepgram (audio leaves this device)', optional: false },
+    { id: 'elevenlabs', kind: 'stt' as const, name: 'ElevenLabs', destination: 'ElevenLabs (audio leaves this device)', optional: false },
+    ...llmProviders.map((provider) => ({
+      ...provider,
+      kind: 'llm' as const,
+      name: ({ gemini: 'Gemini', openai: 'OpenAI', anthropic: 'Anthropic', openrouter: 'OpenRouter', opencode: 'OpenCode' })[provider.id],
+      ...(provider.id === 'opencode' ? { models: ['ox-alpha', 'ox-alpha-free'] } : {}),
+    })),
+  ];
+  const answerService = new AnswerService({
+    providers: llmProviders.map(({ id }) => ({
+      id,
+      ...(id === 'opencode' ? { models: ['ox-alpha', 'ox-alpha-free'] as const } : {}),
+    })),
+    secretStore,
+    publish: (event) => overlayWindow.webContents.send(COPILOT_EVENT_CHANNEL, event),
+    createAdapter: (providerId, config) => createLlmAdapter(providerId, config),
+  });
   installElectronLoopbackHandler(session.defaultSession, desktopCapturer, permissionGate);
-
   const audioRuntime = new AudioPipelineRuntime({
     captureWebContents: captureWindow.webContents,
     permissionGate,
@@ -132,18 +160,31 @@ app.whenReady().then(async () => {
       if (event.sender?.id !== overlayWindow.webContents.id) {
         return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized request.' } };
       }
-      const request = payload as { microphone: boolean; systemAudio: boolean };
+      const request = payload as { operationId: string; microphone: boolean; systemAudio: boolean };
       await audioRuntime.start({ microphone: request.microphone, systemAudio: request.systemAudio });
       sessionController.dispatch({ type: 'start' });
-      return { ok: true };
+      return { ok: true, operationId: request.operationId, snapshot: sessionSnapshot(sessionController) };
     },
-    'session:stop': async (_payload, event) => {
+    'session:stop': async (payload, event) => {
       if (event.sender?.id !== overlayWindow.webContents.id) {
         return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized request.' } };
       }
       await audioRuntime.stop();
       sessionController.dispatch({ type: 'stop' });
-      return { ok: true };
+      const request = payload as { operationId: string };
+      return { ok: true, operationId: request.operationId, snapshot: sessionSnapshot(sessionController) };
+    },
+    'session:status': (_payload, event) => event.sender?.id === overlayWindow.webContents.id
+      ? { ok: true, snapshot: sessionSnapshot(sessionController) }
+      : unauthorizedResponse(),
+    'providers:list': (_payload, event) => event.sender?.id === overlayWindow.webContents.id
+      ? { ok: true, providers: providers.map((provider) => ({ ...provider, configured: secretStore.isConfigured(provider.id) })) }
+      : unauthorizedResponse(),
+    'providers:save-secret': (payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      const request = payload as { providerId: string; secret: string };
+      if (!providers.some(({ id }) => id === request.providerId)) return { ok: false, error: { code: 'INVALID_REQUEST' as const, message: 'Invalid request.' } };
+      return { ok: true, status: secretStore.save(request.providerId, request.secret) };
     },
     'capture:preview': async (payload, event) => {
       if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
@@ -184,12 +225,38 @@ app.whenReady().then(async () => {
       overlayControls.hide();
       return { ok: true };
     },
+    'overlay:move': (payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      const request = payload as { x: number; y: number };
+      overlayControls.move(request.x, request.y);
+      return { ok: true };
+    },
+    'answer:send': async (payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      const request = payload as { providerId: LlmProviderId; model?: string; question: string; screenshotId?: string };
+      const send = async (attachments: readonly ScreenshotAttachment[]) => answerService.send({
+        providerId: request.providerId,
+        ...(request.model ? { model: request.model } : {}),
+        question: request.question,
+        attachments,
+      });
+      return request.screenshotId
+        ? await screenshotService.withConfirmed([request.screenshotId], send)
+        : await send([]);
+    },
+    'answer:cancel': (_payload, event) => {
+      if (event.sender?.id !== overlayWindow.webContents.id) return unauthorizedResponse();
+      answerService.cancel();
+      return { ok: true };
+    },
   });
 
   captureWindow.webContents.on('render-process-gone', () => { void audioRuntime.stop(); });
   captureWindow.on('closed', () => { void audioRuntime.stop(); });
   app.once('before-quit', () => {
     screenshotService.dispose();
+    answerService.dispose();
+    database.close();
     void audioRuntime.stop();
   });
 });
@@ -211,4 +278,9 @@ function utilityEnvironment(): Record<string, string> {
 
 function unauthorizedResponse() {
   return { ok: false as const, error: { code: 'UNAUTHORIZED' as const, message: 'Unauthorized request.' } };
+}
+
+function sessionSnapshot(controller: SessionController) {
+  const { phase, error } = controller.snapshot();
+  return { phase, error };
 }

@@ -20,6 +20,7 @@ const trustedEvent = {
 };
 
 const validStartRequest = {
+  operationId: 'session-1',
   sttProviderId: 'deepgram',
   llmProviderId: 'openai',
   microphone: true,
@@ -188,5 +189,39 @@ describe('IPC boundary', () => {
       captureId: 'shot-1',
       edits: { redactions: [{ x: -1, y: 0, width: 1, height: 1 }] },
     })).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_REQUEST' } });
+  });
+
+  it('rejects incomplete provider success and reports validation as unavailable', async () => {
+    const { dispatchIpc } = await import('../../src/main/ipc/register-ipc');
+
+    await expect(dispatchIpc('providers:list', trustedEvent, undefined, {
+      'providers:list': () => ({ ok: true }),
+    })).resolves.toMatchObject({ ok: false, error: { code: 'INTERNAL' } });
+    await expect(dispatchIpc('providers:test', trustedEvent, { providerId: 'openai' }))
+      .resolves.toMatchObject({ ok: false, error: { code: 'NOT_READY' } });
+  });
+
+  it('validates answer payloads and defaults unregistered answer channels to unavailable', async () => {
+    const { dispatchIpc } = await import('../../src/main/ipc/register-ipc');
+
+    await expect(dispatchIpc('answer:send', trustedEvent, undefined, {
+      'answer:send': () => ({ ok: true }),
+    })).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_REQUEST' } });
+    await expect(dispatchIpc('answer:send', trustedEvent, {
+      providerId: 'openai',
+      question: '',
+    }, {
+      'answer:send': () => ({ ok: true }),
+    })).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_REQUEST' } });
+    await expect(dispatchIpc('answer:send', trustedEvent, {
+      providerId: 'openai',
+      question: 'What is the notice period?',
+      model: 'gpt-test',
+      screenshotId: 'shot-1',
+    }, {
+      'answer:send': () => ({ ok: true }),
+    })).resolves.toEqual({ ok: true });
+    await expect(dispatchIpc('answer:cancel', trustedEvent, undefined))
+      .resolves.toMatchObject({ ok: false, error: { code: 'NOT_READY' } });
   });
 });

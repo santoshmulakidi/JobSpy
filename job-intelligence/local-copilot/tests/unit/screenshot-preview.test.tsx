@@ -9,7 +9,7 @@ import {
 describe('ScreenshotPreview', () => {
   it('renders an accessible preview with crop, redact, confirm, and remove controls', () => {
     const html = renderToStaticMarkup(<ScreenshotPreview
-      preview={{ id: 'shot-1', mediaType: 'image/png', bytes: new Uint8Array([1]), width: 100, height: 80 }}
+      preview={{ id: 'shot-1', mediaType: 'image/png', bytes: new Uint8Array([1]), width: 100, height: 80, expiresAt: Date.now() + 1_000 }}
       onConfirm={vi.fn()}
       onRemove={vi.fn()}
     />);

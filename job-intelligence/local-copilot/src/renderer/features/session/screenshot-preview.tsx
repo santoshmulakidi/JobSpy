@@ -1,24 +1,18 @@
 import { useEffect, useState, type FormEvent } from 'react';
 
-import type { ScreenshotEdits, ScreenshotRectangle } from '../../../main/capture/screenshot-service';
-
-export interface ScreenshotPreviewValue {
-  readonly id: string;
-  readonly mediaType: 'image/png' | 'image/jpeg' | 'image/webp';
-  readonly bytes: Uint8Array;
-  readonly width: number;
-  readonly height: number;
-}
+import type { ScreenshotEditsValue, ScreenshotPreviewValue, ScreenshotRectangleValue } from '../../../shared/contracts';
+export type { ScreenshotPreviewValue } from '../../../shared/contracts';
 
 export interface ScreenshotPreviewProps {
   readonly preview: ScreenshotPreviewValue;
-  readonly onConfirm: (id: string, edits: ScreenshotEdits) => void;
+  readonly approved?: boolean;
+  readonly onConfirm: (id: string, edits: ScreenshotEditsValue) => void;
   readonly onRemove: (id: string) => void;
 }
 
-export function ScreenshotPreview({ preview, onConfirm, onRemove }: ScreenshotPreviewProps) {
+export function ScreenshotPreview({ preview, approved = false, onConfirm, onRemove }: ScreenshotPreviewProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0, width: preview.width, height: preview.height });
-  const [redactions, setRedactions] = useState<ScreenshotRectangle[]>([]);
+  const [redactions, setRedactions] = useState<ScreenshotRectangleValue[]>([]);
   const [src, setSrc] = useState('');
 
   useEffect(() => {
@@ -34,8 +28,8 @@ export function ScreenshotPreview({ preview, onConfirm, onRemove }: ScreenshotPr
 
   return <figure aria-labelledby={`screenshot-${preview.id}-caption`}>
     <img src={src} alt="Screenshot preview" width={preview.width} height={preview.height} />
-    <figcaption id={`screenshot-${preview.id}-caption`}>Review screenshot before sending</figcaption>
-    <form onSubmit={submit}>
+    <figcaption id={`screenshot-${preview.id}-caption`}>{approved ? 'Screenshot approved for the next request' : 'Review screenshot before sending'}</figcaption>
+    {approved ? <button type="button" onClick={() => onRemove(preview.id)}>Remove screenshot</button> : <form onSubmit={submit}>
       <fieldset>
         <legend>Crop</legend>
         <NumberField label="Crop left" value={crop.x} onChange={(x) => setCrop({ ...crop, x })} />
@@ -53,7 +47,7 @@ export function ScreenshotPreview({ preview, onConfirm, onRemove }: ScreenshotPr
       <button type="button" onClick={() => setRedactions([...redactions, { x: 0, y: 0, width: 1, height: 1 }])}>Add redaction</button>
       <button type="submit">Confirm screenshot</button>
       <button type="button" onClick={() => onRemove(preview.id)}>Remove screenshot</button>
-    </form>
+    </form>}
   </figure>;
 }
 

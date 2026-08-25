@@ -46,6 +46,8 @@ type OverlayWindow = Pick<BrowserWindow,
   | 'showInactive'
   | 'isVisible'
   | 'isDestroyed'
+  | 'getBounds'
+  | 'setPosition'
 >;
 
 export function createOverlayControls(window: OverlayWindow) {
@@ -75,6 +77,10 @@ export function createOverlayControls(window: OverlayWindow) {
     hide(): void {
       window.setFocusable(false);
       window.hide();
+    },
+    move(x: number, y: number): void {
+      const bounds = window.getBounds();
+      window.setPosition(bounds.x + x, bounds.y + y);
     },
   };
 }

@@ -5,6 +5,7 @@ const NoRequest = z.undefined();
 
 export const StartSessionRequest = z
   .object({
+    operationId: NonEmptyId,
     sttProviderId: NonEmptyId,
     llmProviderId: NonEmptyId,
     microphone: z.boolean(),
@@ -13,7 +14,7 @@ export const StartSessionRequest = z
   })
   .strict();
 export const PauseSessionRequest = NoRequest;
-export const StopSessionRequest = NoRequest;
+export const StopSessionRequest = z.object({ operationId: NonEmptyId }).strict();
 export const SessionStatusRequest = NoRequest;
 
 export const ListProvidersRequest = NoRequest;
@@ -34,6 +35,8 @@ const ScreenshotEdits = z.object({
   redactions: z.array(ScreenshotRectangle).max(20).optional(),
   remove: z.boolean().optional(),
 }).strict();
+export type ScreenshotRectangleValue = z.infer<typeof ScreenshotRectangle>;
+export type ScreenshotEditsValue = z.infer<typeof ScreenshotEdits>;
 export const ConfirmCaptureRequest = z.object({ captureId: NonEmptyId, edits: ScreenshotEdits.optional() }).strict();
 export const DiscardCaptureRequest = z.object({ captureId: NonEmptyId }).strict();
 
@@ -51,6 +54,30 @@ export const SetOverlayClickThroughRequest = z.object({ enabled: z.boolean() }).
 export const SetOverlayAlwaysOnTopRequest = z.object({ enabled: z.boolean() }).strict();
 export const SetOverlayCaptureProtectionRequest = z.object({ enabled: z.boolean() }).strict();
 export const HideOverlayRequest = NoRequest;
+export const MoveOverlayRequest = z.object({
+  x: z.number().int().min(-100).max(100),
+  y: z.number().int().min(-100).max(100),
+}).strict();
+
+export const SendAnswerRequest = z.object({
+  providerId: NonEmptyId,
+  model: NonEmptyId.optional(),
+  question: z.string().trim().min(1).max(8_000),
+  screenshotId: NonEmptyId.optional(),
+}).strict();
+export const CancelAnswerRequest = NoRequest;
+export const COPILOT_EVENT_CHANNEL = 'copilot:event';
+export const CopilotMainEvent = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('answer-delta'), text: z.string() }).strict(),
+  z.object({
+    type: z.literal('answer-completed'),
+    model: NonEmptyId,
+    latencyMs: z.number().int().nonnegative(),
+  }).strict(),
+  z.object({ type: z.literal('answer-failed'), message: z.string() }).strict(),
+  z.object({ type: z.literal('answer-cancelled') }).strict(),
+]);
+export type CopilotMainEventValue = z.infer<typeof CopilotMainEvent>;
 
 export const IpcErrorCode = z.enum([
   'UNKNOWN_CHANNEL',
@@ -70,13 +97,34 @@ export const IpcFailure = z.object({ ok: z.literal(false), error: IpcError }).st
 export const IpcSuccess = z.object({ ok: z.literal(true) }).strict();
 export const IpcResponse = z.union([IpcSuccess, IpcFailure]);
 
-export const StartSessionResponse = IpcResponse;
+const SessionSnapshot = z.object({
+  phase: z.enum(['idle', 'capturing', 'paused', 'generating', 'error', 'stopped']),
+  error: z.object({ code: z.enum(['GENERATION_FAILED', 'UTILITY_PROCESS_CRASHED']), message: z.string() }).strict().nullable(),
+}).strict();
+const SessionCommandSuccess = z.object({ ok: z.literal(true), operationId: NonEmptyId, snapshot: SessionSnapshot }).strict();
+export const StartSessionResponse = z.union([SessionCommandSuccess, IpcFailure]);
 export const PauseSessionResponse = IpcResponse;
-export const StopSessionResponse = IpcResponse;
-export const SessionStatusResponse = IpcResponse;
-export const ListProvidersResponse = IpcResponse;
+export const StopSessionResponse = z.union([SessionCommandSuccess, IpcFailure]);
+export const SessionStatusResponse = z.union([z.object({ ok: z.literal(true), snapshot: SessionSnapshot }).strict(), IpcFailure]);
+const Provider = z.object({
+  id: NonEmptyId,
+  kind: z.enum(['stt', 'llm']),
+  name: NonEmptyId,
+  destination: NonEmptyId,
+  optional: z.boolean(),
+  models: z.array(NonEmptyId).optional(),
+  configured: z.boolean(),
+}).strict();
+export type ProviderValue = z.infer<typeof Provider>;
+export const ListProvidersResponse = z.union([z.object({ ok: z.literal(true), providers: z.array(Provider) }).strict(), IpcFailure]);
 export const TestProviderResponse = IpcResponse;
-export const SaveProviderSecretResponse = IpcResponse;
+export const SaveProviderSecretResponse = z.union([
+  z.object({
+    ok: z.literal(true),
+    status: z.object({ providerId: NonEmptyId, configured: z.boolean() }).strict(),
+  }).strict(),
+  IpcFailure,
+]);
 const ScreenshotPreview = z.object({
   id: NonEmptyId,
   displayId: NonEmptyId.optional(),
@@ -86,6 +134,7 @@ const ScreenshotPreview = z.object({
   height: z.number().int().positive(),
   expiresAt: z.number().int().positive(),
 }).strict();
+export type ScreenshotPreviewValue = z.infer<typeof ScreenshotPreview>;
 const ConfirmedScreenshot = z.object({
   id: NonEmptyId,
   width: z.number().int().positive(),
@@ -107,6 +156,9 @@ export const SetOverlayCaptureProtectionResponse = z.union([
   IpcFailure,
 ]);
 export const HideOverlayResponse = IpcResponse;
+export const MoveOverlayResponse = IpcResponse;
+export const SendAnswerResponse = IpcResponse;
+export const CancelAnswerResponse = IpcResponse;
 
 export const IPC_METHODS = {
   'session:start': { request: StartSessionRequest, response: StartSessionResponse },
@@ -137,9 +189,40 @@ export const IPC_METHODS = {
     response: SetOverlayCaptureProtectionResponse,
   },
   'overlay:hide': { request: HideOverlayRequest, response: HideOverlayResponse },
+  'overlay:move': { request: MoveOverlayRequest, response: MoveOverlayResponse },
+  'answer:send': { request: SendAnswerRequest, response: SendAnswerResponse },
+  'answer:cancel': { request: CancelAnswerRequest, response: CancelAnswerResponse },
 } as const;
 
 export type IpcChannel = keyof typeof IPC_METHODS;
 export type IpcRequest<C extends IpcChannel> = z.input<(typeof IPC_METHODS)[C]['request']>;
 export type IpcMethodResponse<C extends IpcChannel> = z.output<(typeof IPC_METHODS)[C]['response']>;
 export type SerializedIpcError = z.infer<typeof IpcError>;
+
+export interface CopilotBridge {
+  readonly session: {
+    start(request: IpcRequest<'session:start'>): Promise<IpcMethodResponse<'session:start'>>;
+    stop(request: IpcRequest<'session:stop'>): Promise<IpcMethodResponse<'session:stop'>>;
+    status(): Promise<IpcMethodResponse<'session:status'>>;
+  };
+  readonly providers: {
+    list(): Promise<IpcMethodResponse<'providers:list'>>;
+    saveSecret(request: IpcRequest<'providers:save-secret'>): Promise<IpcMethodResponse<'providers:save-secret'>>;
+  };
+  readonly capture: {
+    preview(request: IpcRequest<'capture:preview'>): Promise<IpcMethodResponse<'capture:preview'>>;
+    confirm(request: IpcRequest<'capture:confirm'>): Promise<IpcMethodResponse<'capture:confirm'>>;
+    discard(request: IpcRequest<'capture:discard'>): Promise<IpcMethodResponse<'capture:discard'>>;
+  };
+  readonly overlay: {
+    setOpacity(request: IpcRequest<'overlay:set-opacity'>): Promise<IpcMethodResponse<'overlay:set-opacity'>>;
+    setAlwaysOnTop(request: IpcRequest<'overlay:set-always-on-top'>): Promise<IpcMethodResponse<'overlay:set-always-on-top'>>;
+    move(request: IpcRequest<'overlay:move'>): Promise<IpcMethodResponse<'overlay:move'>>;
+    hide(): Promise<IpcMethodResponse<'overlay:hide'>>;
+  };
+  readonly answer?: {
+    send(request: IpcRequest<'answer:send'>): Promise<IpcMethodResponse<'answer:send'>>;
+    cancel(): Promise<IpcMethodResponse<'answer:cancel'>>;
+  };
+  readonly onAnswerEvent?: (listener: (event: CopilotMainEventValue) => void) => () => void;
+}

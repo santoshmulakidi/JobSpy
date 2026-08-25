@@ -1,6 +1,15 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 
-import { IPC_METHODS, type IpcChannel, type IpcMethodResponse, type IpcRequest } from '../shared/contracts';
+import {
+  COPILOT_EVENT_CHANNEL,
+  CopilotMainEvent,
+  IPC_METHODS,
+  type CopilotBridge,
+  type CopilotMainEventValue,
+  type IpcChannel,
+  type IpcMethodResponse,
+  type IpcRequest,
+} from '../shared/contracts';
 
 const invalidRequest = {
   ok: false as const,
@@ -16,16 +25,14 @@ async function invoke<C extends IpcChannel>(channel: C, payload: IpcRequest<C>):
   return ipcRenderer.invoke(channel, request.data) as Promise<IpcMethodResponse<C>>;
 }
 
-export const copilot = {
+export const copilot: CopilotBridge = {
   session: {
     start: (request: IpcRequest<'session:start'>) => invoke('session:start', request),
-    pause: () => invoke('session:pause', undefined),
-    stop: () => invoke('session:stop', undefined),
+    stop: (request: IpcRequest<'session:stop'>) => invoke('session:stop', request),
     status: () => invoke('session:status', undefined),
   },
   providers: {
     list: () => invoke('providers:list', undefined),
-    test: (request: IpcRequest<'providers:test'>) => invoke('providers:test', request),
     saveSecret: (request: IpcRequest<'providers:save-secret'>) => invoke('providers:save-secret', request),
   },
   capture: {
@@ -33,21 +40,24 @@ export const copilot = {
     confirm: (request: IpcRequest<'capture:confirm'>) => invoke('capture:confirm', request),
     discard: (request: IpcRequest<'capture:discard'>) => invoke('capture:discard', request),
   },
-  history: {
-    list: (request: IpcRequest<'history:list'>) => invoke('history:list', request),
-    get: (request: IpcRequest<'history:get'>) => invoke('history:get', request),
-    delete: (request: IpcRequest<'history:delete'>) => invoke('history:delete', request),
-    export: (request: IpcRequest<'history:export'>) => invoke('history:export', request),
-  },
   overlay: {
     setOpacity: (request: IpcRequest<'overlay:set-opacity'>) => invoke('overlay:set-opacity', request),
-    setClickThrough: (request: IpcRequest<'overlay:set-click-through'>) =>
-      invoke('overlay:set-click-through', request),
     setAlwaysOnTop: (request: IpcRequest<'overlay:set-always-on-top'>) =>
       invoke('overlay:set-always-on-top', request),
-    setCaptureProtection: (request: IpcRequest<'overlay:set-capture-protection'>) =>
-      invoke('overlay:set-capture-protection', request),
+    move: (request: IpcRequest<'overlay:move'>) => invoke('overlay:move', request),
     hide: () => invoke('overlay:hide', undefined),
+  },
+  answer: {
+    send: (request: IpcRequest<'answer:send'>) => invoke('answer:send', request),
+    cancel: () => invoke('answer:cancel', undefined),
+  },
+  onAnswerEvent(listener: (event: CopilotMainEventValue) => void): () => void {
+    const handler = (_event: IpcRendererEvent, payload: unknown): void => {
+      const parsed = CopilotMainEvent.safeParse(payload);
+      if (parsed.success) listener(parsed.data);
+    };
+    ipcRenderer.on(COPILOT_EVENT_CHANNEL, handler);
+    return () => ipcRenderer.removeListener(COPILOT_EVENT_CHANNEL, handler);
   },
 };
 

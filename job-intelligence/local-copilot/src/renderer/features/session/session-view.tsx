@@ -9,13 +9,12 @@ export function SessionView({ state, controller }: { readonly state: CopilotUiSt
     <section className="session-bar" aria-label="Session controls">
       <div aria-live="polite"><span className={`signal signal-${state.phase}`} /> <strong>{phaseLabel(state.phase)}</strong></div>
       <div className="button-row">
-        {!active && <button className="primary" type="button" onClick={() => void controller.startSession()}>Start session</button>}
-        {active && <button type="button" onClick={() => void controller.togglePause()}>{state.phase === 'paused' ? 'Resume' : 'Pause'}</button>}
-        {active && <button className="danger" type="button" onClick={() => void controller.stopSession()}>Stop</button>}
+        {!active && <button className="primary" type="button" disabled={state.sessionPending} onClick={() => void controller.startSession()}>Start session</button>}
+        {active && <button className="danger" type="button" disabled={state.sessionPending} onClick={() => void controller.stopSession()}>Stop</button>}
         <button type="button" onClick={() => void controller.previewScreenshot()}>Screenshot</button>
       </div>
     </section>
-    {state.screenshot && <ScreenshotPreview preview={state.screenshot} onConfirm={(id, edits) => void controller.confirmScreenshot(id, edits)} onRemove={(id) => void controller.discardScreenshot(id)} />}
+    {state.screenshot && <ScreenshotPreview preview={state.screenshot} approved={state.approvedScreenshotId === state.screenshot.id} onConfirm={(id, edits) => void controller.confirmScreenshot(id, edits)} onRemove={(id) => void controller.discardScreenshot(id)} />}
     <TranscriptPanel state={state} controller={controller} />
     <AnswerPanel state={state} controller={controller} />
   </>;

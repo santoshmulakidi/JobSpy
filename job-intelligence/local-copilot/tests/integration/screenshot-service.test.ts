@@ -92,7 +92,7 @@ describe('ScreenshotService', () => {
     await expect(service.confirm(expired.id, {})).rejects.toThrow('not found');
   });
 
-  it('applies crop, redact, and remove edits and zeroes request buffers even when sending fails', async () => {
+  it('keeps an approved screenshot after a failed send and consumes it after a successful retry', async () => {
     const { service, captured, edited } = createService([Buffer.from([7, 8]), Buffer.from([9, 10])]);
     const approved = await service.preview();
     const removed = await service.preview();
@@ -110,6 +110,7 @@ describe('ScreenshotService', () => {
     })).rejects.toThrow('provider failed');
 
     expect(edited).toEqual([edits]);
+    await expect(service.withConfirmed([approved.id], async () => 'sent')).resolves.toBe('sent');
     expect([...captured[0]]).toEqual([0, 0]);
   });
 

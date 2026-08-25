@@ -230,7 +230,7 @@ export class SessionController {
     this.pendingBuffers = [];
   }
 
-  private snapshot(): SessionSnapshot {
+  public snapshot(): SessionSnapshot {
     return {
       phase: this.phase,
       captureLifecycle: this.captureAbortController ? this.captureLifecycle : null,

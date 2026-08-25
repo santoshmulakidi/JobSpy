@@ -144,15 +144,13 @@ export class ScreenshotService {
     if (records.some((record) => !record.confirmed)) {
       throw new Error('Screenshot is not confirmed.');
     }
-    try {
-      return await send(records.map((record) => ({
-        id: record.id,
-        mediaType: record.mediaType,
-        data: record.bytes,
-      })));
-    } finally {
-      for (const record of records) this.discard(record.id);
-    }
+    const result = await send(records.map((record) => ({
+      id: record.id,
+      mediaType: record.mediaType,
+      data: record.bytes,
+    })));
+    for (const record of records) this.discard(record.id);
+    return result;
   }
 
   dispose(): void {

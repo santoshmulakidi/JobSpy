@@ -145,6 +145,11 @@ export class SecretStore {
     return { providerId, configured: false };
   }
 
+  isConfigured(providerId: string): boolean {
+    const reference = this.findReference(providerId);
+    return Boolean(reference && existsSync(this.secretPath(reference)));
+  }
+
   private ensureEncryptionAvailable(): void {
     if (!this.safeStorage.isEncryptionAvailable()) {
       throw new SecretStorageUnavailableError();
