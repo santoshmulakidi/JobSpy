@@ -7,6 +7,9 @@ import type {
   LlmProviderConfig,
   LlmTransportDependencies,
 } from '../../providers/llm/types';
+import { createDeepgramAdapter } from '../../providers/stt/deepgram';
+import { createElevenLabsAdapter } from '../../providers/stt/elevenlabs';
+import type { TranscriptionAdapter, WebSocketFactory } from '../../providers/stt/types';
 
 export type LlmProviderId = 'gemini' | 'openai' | 'anthropic' | 'openrouter' | 'opencode';
 
@@ -35,5 +38,17 @@ export function createLlmAdapter(
     case 'anthropic': return createAnthropicAdapter(config, dependencies);
     case 'openrouter': return createOpenRouterAdapter(config, dependencies);
     case 'opencode': return createOpenCodeAdapter(config, dependencies);
+  }
+}
+
+export type SttProviderId = 'deepgram' | 'elevenlabs';
+
+export function createSttAdapter(
+  provider: SttProviderId,
+  options: { readonly apiKey: string; readonly webSocketFactory: WebSocketFactory },
+): TranscriptionAdapter {
+  switch (provider) {
+    case 'deepgram': return createDeepgramAdapter({ apiKey: options.apiKey, webSocketFactory: options.webSocketFactory });
+    case 'elevenlabs': return createElevenLabsAdapter({ apiKey: options.apiKey, webSocketFactory: options.webSocketFactory });
   }
 }

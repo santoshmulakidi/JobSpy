@@ -68,6 +68,9 @@ export const SendAnswerRequest = z.object({
 export const CancelAnswerRequest = NoRequest;
 export const COPILOT_EVENT_CHANNEL = 'copilot:event';
 export const CopilotMainEvent = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('transcript-partial'), text: z.string() }).strict(),
+  z.object({ type: z.literal('transcript-final'), text: z.string() }).strict(),
+  z.object({ type: z.literal('transcript-failed'), message: z.string() }).strict(),
   z.object({ type: z.literal('answer-delta'), text: z.string() }).strict(),
   z.object({
     type: z.literal('answer-completed'),

@@ -148,6 +148,24 @@ describe('complete renderer journey', () => {
     expect(controller.getState().error).toContain('not connected');
   });
 
+  it('renders streamed transcripts into the composer and surfaces transcription failures', async () => {
+    const api = bridge();
+    const controller = createCopilotController(api);
+    await controller.load();
+
+    api.emitAnswerEvent({ type: 'transcript-partial', text: 'What is the' });
+    expect(controller.getState()).toMatchObject({ transcriptDraft: 'What is the', transcriptFinal: false });
+    expect(renderToStaticMarkup(<CopilotApp controller={controller} />)).toContain('Listening');
+
+    api.emitAnswerEvent({ type: 'transcript-final', text: 'What is the notice period?' });
+    expect(controller.getState()).toMatchObject({ transcriptDraft: 'What is the notice period?', transcriptFinal: true });
+
+    api.emitAnswerEvent({ type: 'transcript-failed', message: 'The transcription provider quota was exceeded.' });
+    const state = controller.getState();
+    expect(state.error).toContain('quota');
+    expect(renderToStaticMarkup(<CopilotApp controller={controller} />)).toContain('role="alert"');
+  });
+
   it('keeps an approved screenshot visible and removable', async () => {
     const api = bridge();
     const controller = createCopilotController(api);

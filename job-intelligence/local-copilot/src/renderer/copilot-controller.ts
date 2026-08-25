@@ -5,6 +5,7 @@ export type UiTheme = 'system' | 'light' | 'dark';
 export type UiProvider = ProviderValue;
 export type CopilotUiEvent = { readonly type: 'transcript-partial'; readonly text: string }
   | { readonly type: 'transcript-final'; readonly text: string }
+  | { readonly type: 'transcript-failed'; readonly message: string }
   | { readonly type: 'answer-delta'; readonly text: string }
   | { readonly type: 'answer-completed'; readonly model: string; readonly latencyMs: number }
   | { readonly type: 'answer-failed'; readonly message: string }
@@ -97,6 +98,7 @@ export function createCopilotController(bridge: CopilotBridge): CopilotControlle
     accept(event) {
       if (event.type === 'transcript-partial') publish({ transcriptDraft: event.text, transcriptFinal: false });
       else if (event.type === 'transcript-final') publish({ transcriptDraft: event.text, transcriptFinal: true });
+      else if (event.type === 'transcript-failed') fail(event.message);
       else if (event.type === 'answer-delta') publish({ answer: state.answer + event.text, answerPending: true });
       else if (event.type === 'answer-completed') publish({ answerPending: false, model: event.model, latencyMs: event.latencyMs });
       else if (event.type === 'answer-cancelled') publish({ answerPending: false, message: 'Answer cancelled.' });

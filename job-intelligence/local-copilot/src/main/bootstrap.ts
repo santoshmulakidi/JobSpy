@@ -33,7 +33,8 @@ import { Database } from './storage/database';
 import { SecretStore } from './storage/secrets';
 import { AnswerService } from './answers/answer-service';
 import type { ScreenshotAttachment } from './capture/screenshot-service';
-import { createLlmAdapter, listLlmProviders, type LlmProviderId } from './providers/provider-registry';
+import { createLlmAdapter, listLlmProviders, type LlmProviderId, type SttProviderId } from './providers/provider-registry';
+import { TranscriptionService } from './transcription/transcription-service';
 import { COPILOT_EVENT_CHANNEL } from '../shared/contracts';
 
 const LOCAL_SCHEME = 'copilot';
@@ -131,6 +132,10 @@ app.whenReady().then(async () => {
     publish: (event) => overlayWindow.webContents.send(COPILOT_EVENT_CHANNEL, event),
     createAdapter: (providerId, config) => createLlmAdapter(providerId, config),
   });
+  const transcriptionService = new TranscriptionService({
+    publish: (event) => overlayWindow.webContents.send(COPILOT_EVENT_CHANNEL, event),
+  });
+  const sttProviderIds = providers.filter(({ kind }) => kind === 'stt').map(({ id }) => id);
   installElectronLoopbackHandler(session.defaultSession, desktopCapturer, permissionGate);
   const audioRuntime = new AudioPipelineRuntime({
     captureWebContents: captureWindow.webContents,
@@ -149,8 +154,9 @@ app.whenReady().then(async () => {
       port1: AudioPipelinePort;
       port2: AudioPipelinePort;
     },
-    onFrame: (frame) => frame.pcm.fill(0),
+    onFrame: (frame) => transcriptionService.handleFrame(frame),
     onFailure: (message) => {
+      void transcriptionService.stop();
       sessionController.dispatch({ type: 'utility-process-crashed', message });
     },
   });
@@ -160,8 +166,21 @@ app.whenReady().then(async () => {
       if (event.sender?.id !== overlayWindow.webContents.id) {
         return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized request.' } };
       }
-      const request = payload as { operationId: string; microphone: boolean; systemAudio: boolean };
+      const request = payload as { operationId: string; sttProviderId: string; microphone: boolean; systemAudio: boolean };
+      if (!sttProviderIds.includes(request.sttProviderId)) {
+        return { ok: false, error: { code: 'INVALID_REQUEST' as const, message: 'Invalid request.' } };
+      }
+      if (!secretStore.isConfigured(request.sttProviderId)) {
+        return { ok: false, error: { code: 'NOT_READY' as const, message: 'Operation is not available.' } };
+      }
       await audioRuntime.start({ microphone: request.microphone, systemAudio: request.systemAudio });
+      try {
+        const apiKey = secretStore.withSecret(request.sttProviderId, (secret) => secret);
+        await transcriptionService.start(request.sttProviderId as SttProviderId, apiKey);
+      } catch {
+        await audioRuntime.stop();
+        return { ok: false, error: { code: 'INTERNAL' as const, message: 'Operation failed.' } };
+      }
       sessionController.dispatch({ type: 'start' });
       return { ok: true, operationId: request.operationId, snapshot: sessionSnapshot(sessionController) };
     },
@@ -169,7 +188,7 @@ app.whenReady().then(async () => {
       if (event.sender?.id !== overlayWindow.webContents.id) {
         return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized request.' } };
       }
-      await audioRuntime.stop();
+      await Promise.allSettled([audioRuntime.stop(), transcriptionService.stop()]);
       sessionController.dispatch({ type: 'stop' });
       const request = payload as { operationId: string };
       return { ok: true, operationId: request.operationId, snapshot: sessionSnapshot(sessionController) };
@@ -251,11 +270,18 @@ app.whenReady().then(async () => {
     },
   });
 
-  captureWindow.webContents.on('render-process-gone', () => { void audioRuntime.stop(); });
-  captureWindow.on('closed', () => { void audioRuntime.stop(); });
+  captureWindow.webContents.on('render-process-gone', () => {
+    void audioRuntime.stop();
+    void transcriptionService.stop();
+  });
+  captureWindow.on('closed', () => {
+    void audioRuntime.stop();
+    void transcriptionService.stop();
+  });
   app.once('before-quit', () => {
     screenshotService.dispose();
     answerService.dispose();
+    transcriptionService.dispose();
     database.close();
     void audioRuntime.stop();
   });
