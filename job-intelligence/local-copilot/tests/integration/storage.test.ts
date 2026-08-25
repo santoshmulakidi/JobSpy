@@ -1,11 +1,22 @@
-import { lstatSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { existsSync, lstatSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const electronSafeStorage = vi.hoisted(() => ({
+  isEncryptionAvailable: vi.fn(() => true),
+  encryptString: vi.fn((value: string) => Buffer.from(`electron:${Buffer.from(value).toString('base64url')}`)),
+  decryptString: vi.fn((value: Buffer) =>
+    Buffer.from(value.toString().replace('electron:', ''), 'base64url').toString(),
+  ),
+}));
+
+vi.mock('electron', () => ({ safeStorage: electronSafeStorage }));
 
 import { Database } from '../../src/main/storage/database';
 import {
   SecretNotFoundError,
+  SecretReferenceInvalidError,
   SecretStorageUnavailableError,
   SecretStore,
   type SafeStorage,
@@ -28,6 +39,13 @@ function createSafeStorage(available = true): SafeStorage {
   };
 }
 
+function createTestStore(database: Database, directory: string, available = true): SecretStore {
+  return SecretStore.createForTesting(
+    { database, directory },
+    createSafeStorage(available),
+  );
+}
+
 function allFileBytes(directory: string): Buffer[] {
   return readdirSync(directory, { recursive: true })
     .filter((entry): entry is string => typeof entry === 'string')
@@ -40,6 +58,13 @@ afterEach(() => {
   for (const directory of workspaceDirectories.splice(0)) {
     rmSync(directory, { recursive: true, force: true });
   }
+});
+
+beforeEach(() => {
+  electronSafeStorage.isEncryptionAvailable.mockReset();
+  electronSafeStorage.isEncryptionAvailable.mockReturnValue(true);
+  electronSafeStorage.encryptString.mockClear();
+  electronSafeStorage.decryptString.mockClear();
 });
 
 describe('local storage', () => {
@@ -97,11 +122,7 @@ describe('local storage', () => {
   it('keeps a secret out of SQLite and returns only masked status metadata', () => {
     const directory = createWorkspace();
     const database = Database.open(join(directory, 'copilot.sqlite'));
-    const store = new SecretStore({
-      database,
-      directory: join(directory, 'secrets'),
-      safeStorage: createSafeStorage(),
-    });
+    const store = createTestStore(database, join(directory, 'secrets'));
 
     const status = store.save('openai', syntheticSecret);
 
@@ -114,11 +135,7 @@ describe('local storage', () => {
   it('decrypts a saved secret only inside the main-process callback', () => {
     const directory = createWorkspace();
     const database = Database.open(join(directory, 'copilot.sqlite'));
-    const store = new SecretStore({
-      database,
-      directory: join(directory, 'secrets'),
-      safeStorage: createSafeStorage(),
-    });
+    const store = createTestStore(database, join(directory, 'secrets'));
     store.save('openai', syntheticSecret);
 
     let observedSecret: string | undefined;
@@ -135,11 +152,7 @@ describe('local storage', () => {
   it('replaces an existing secret without returning the secret or its reference', () => {
     const directory = createWorkspace();
     const database = Database.open(join(directory, 'copilot.sqlite'));
-    const store = new SecretStore({
-      database,
-      directory: join(directory, 'secrets'),
-      safeStorage: createSafeStorage(),
-    });
+    const store = createTestStore(database, join(directory, 'secrets'));
     store.save('openai', 'first-secret');
 
     const status = store.save('openai', syntheticSecret);
@@ -154,11 +167,7 @@ describe('local storage', () => {
   it('removes a secret and reports masked unconfigured status', () => {
     const directory = createWorkspace();
     const database = Database.open(join(directory, 'copilot.sqlite'));
-    const store = new SecretStore({
-      database,
-      directory: join(directory, 'secrets'),
-      safeStorage: createSafeStorage(),
-    });
+    const store = createTestStore(database, join(directory, 'secrets'));
     store.save('openai', syntheticSecret);
 
     const status = store.delete('openai');
@@ -172,15 +181,96 @@ describe('local storage', () => {
   it('fails closed before writing when safeStorage encryption is unavailable', () => {
     const directory = createWorkspace();
     const database = Database.open(join(directory, 'copilot.sqlite'));
-    const store = new SecretStore({
-      database,
-      directory: join(directory, 'secrets'),
-      safeStorage: createSafeStorage(false),
-    });
+    const store = createTestStore(database, join(directory, 'secrets'), false);
 
     expect(() => store.save('openai', syntheticSecret)).toThrow(SecretStorageUnavailableError);
     expect(database.connection.prepare('SELECT * FROM provider_configs').all()).toEqual([]);
     expect(() => readdirSync(join(directory, 'secrets'))).toThrow();
+    database.close();
+  });
+
+  it('binds production secret stores to Electron safeStorage', () => {
+    const directory = createWorkspace();
+    const database = Database.open(join(directory, 'copilot.sqlite'));
+    const store = SecretStore.create({ database, directory: join(directory, 'secrets') });
+
+    store.save('openai', syntheticSecret);
+
+    expect(electronSafeStorage.encryptString).toHaveBeenCalledWith(syntheticSecret);
+    expect(store.withSecret('openai', (secret) => secret)).toBe(syntheticSecret);
+    database.close();
+  });
+
+  it('fails closed when Electron safeStorage is unavailable', () => {
+    electronSafeStorage.isEncryptionAvailable.mockReturnValue(false);
+    const directory = createWorkspace();
+    const database = Database.open(join(directory, 'copilot.sqlite'));
+    const store = SecretStore.create({ database, directory: join(directory, 'secrets') });
+
+    expect(() => store.save('openai', syntheticSecret)).toThrow(SecretStorageUnavailableError);
+    expect(database.connection.prepare('SELECT * FROM provider_configs').all()).toEqual([]);
+    database.close();
+  });
+
+  it('rejects a tampered reference before saving over it', () => {
+    const directory = createWorkspace();
+    const database = Database.open(join(directory, 'copilot.sqlite'));
+    const store = createTestStore(database, join(directory, 'secrets'));
+    database.connection
+      .prepare('INSERT INTO provider_configs (provider_id, secret_reference_id) VALUES (?, ?)')
+      .run('openai', '../outside');
+
+    expect(() => store.save('openai', syntheticSecret)).toThrow(SecretReferenceInvalidError);
+    expect(
+      database.connection
+        .prepare('SELECT secret_reference_id FROM provider_configs WHERE provider_id = ?')
+        .get('openai'),
+    ).toEqual({ secret_reference_id: '../outside' });
+    database.close();
+  });
+
+  it('rejects an empty database reference instead of treating it as absent', () => {
+    const directory = createWorkspace();
+    const database = Database.open(join(directory, 'copilot.sqlite'));
+    const store = createTestStore(database, join(directory, 'secrets'));
+    database.connection
+      .prepare('INSERT INTO provider_configs (provider_id, secret_reference_id) VALUES (?, ?)')
+      .run('openai', '');
+
+    try {
+      expect(() => store.withSecret('openai', () => undefined)).toThrow(SecretReferenceInvalidError);
+    } finally {
+      database.close();
+    }
+  });
+
+  it('rejects a tampered reference before reading outside the secret directory', () => {
+    const directory = createWorkspace();
+    const database = Database.open(join(directory, 'copilot.sqlite'));
+    const store = createTestStore(database, join(directory, 'secrets'));
+    const outsidePath = join(directory, 'outside.bin');
+    writeFileSync(outsidePath, 'outside');
+    database.connection
+      .prepare('INSERT INTO provider_configs (provider_id, secret_reference_id) VALUES (?, ?)')
+      .run('openai', '../outside');
+
+    expect(() => store.withSecret('openai', () => undefined)).toThrow(SecretReferenceInvalidError);
+    expect(existsSync(outsidePath)).toBe(true);
+    database.close();
+  });
+
+  it('rejects a tampered reference before deleting outside the secret directory', () => {
+    const directory = createWorkspace();
+    const database = Database.open(join(directory, 'copilot.sqlite'));
+    const store = createTestStore(database, join(directory, 'secrets'));
+    const outsidePath = join(directory, 'outside.bin');
+    writeFileSync(outsidePath, 'outside');
+    database.connection
+      .prepare('INSERT INTO provider_configs (provider_id, secret_reference_id) VALUES (?, ?)')
+      .run('openai', '../outside');
+
+    expect(() => store.delete('openai')).toThrow(SecretReferenceInvalidError);
+    expect(existsSync(outsidePath)).toBe(true);
     database.close();
   });
 });

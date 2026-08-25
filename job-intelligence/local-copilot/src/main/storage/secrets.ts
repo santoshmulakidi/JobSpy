@@ -1,6 +1,7 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { safeStorage as electronSafeStorage } from 'electron';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
+import { isAbsolute, relative, resolve } from 'node:path';
 
 import { Database } from './database';
 
@@ -13,7 +14,6 @@ export interface SafeStorage {
 export interface SecretStoreOptions {
   readonly database: Database;
   readonly directory: string;
-  readonly safeStorage: SafeStorage;
 }
 
 /** Serializable metadata that may safely cross the renderer boundary. */
@@ -36,9 +36,18 @@ export class SecretNotFoundError extends Error {
   }
 }
 
+export class SecretReferenceInvalidError extends Error {
+  constructor() {
+    super('Protected secret reference is invalid.');
+    this.name = 'SecretReferenceInvalidError';
+  }
+}
+
 interface SecretReferenceRow {
   secret_reference_id: string | null;
 }
+
+const UUID_V4_REFERENCE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
  * Main-process-only provider secret store. The database contains an opaque file
@@ -49,10 +58,23 @@ export class SecretStore {
   private readonly directory: string;
   private readonly safeStorage: SafeStorage;
 
-  constructor(options: SecretStoreOptions) {
+  private constructor(options: SecretStoreOptions, safeStorage: SafeStorage) {
     this.database = options.database;
-    this.directory = options.directory;
-    this.safeStorage = options.safeStorage;
+    this.directory = resolve(options.directory);
+    this.safeStorage = safeStorage;
+  }
+
+  /** Production construction always uses Electron's Windows-DPAPI safeStorage. */
+  static create(options: SecretStoreOptions): SecretStore {
+    return new SecretStore(options, electronSafeStorage);
+  }
+
+  /** Explicit test seam for isolated unit and integration tests. */
+  static createForTesting(options: SecretStoreOptions, safeStorage: SafeStorage): SecretStore {
+    if (process.env.NODE_ENV !== 'test') {
+      throw new Error('Test secret storage is unavailable outside test execution.');
+    }
+    return new SecretStore(options, safeStorage);
   }
 
   save(providerId: string, secret: string): SecretStatus {
@@ -133,10 +155,30 @@ export class SecretStore {
     const row = this.database.connection
       .prepare('SELECT secret_reference_id FROM provider_configs WHERE provider_id = ?')
       .get(providerId) as SecretReferenceRow | undefined;
-    return row?.secret_reference_id ?? undefined;
+    const reference = row?.secret_reference_id;
+    if (reference !== undefined && reference !== null) {
+      this.validateReference(reference);
+    }
+    return reference ?? undefined;
   }
 
   private secretPath(reference: string): string {
-    return join(this.directory, `${reference}.bin`);
+    this.validateReference(reference);
+    const path = resolve(this.directory, `${reference}.bin`);
+    const pathFromDirectory = relative(this.directory, path);
+    if (
+      pathFromDirectory.length === 0 ||
+      pathFromDirectory.startsWith('..') ||
+      isAbsolute(pathFromDirectory)
+    ) {
+      throw new SecretReferenceInvalidError();
+    }
+    return path;
+  }
+
+  private validateReference(reference: string): void {
+    if (!UUID_V4_REFERENCE.test(reference)) {
+      throw new SecretReferenceInvalidError();
+    }
   }
 }
