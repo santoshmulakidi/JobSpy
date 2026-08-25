@@ -3,6 +3,7 @@ import { relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { createOverlayWindow } from './windows/overlay-window';
+import { registerIpc } from './ipc/register-ipc';
 
 const LOCAL_SCHEME = 'copilot';
 const CONTENT_SECURITY_POLICY = [
@@ -62,6 +63,7 @@ function installContentSecurityPolicy(): void {
 app.whenReady().then(async () => {
   protocol.handle(LOCAL_SCHEME, (request) => net.fetch(resolveRendererAsset(request.url).toString()));
   installContentSecurityPolicy();
+  registerIpc();
   createOverlayWindow();
 });
 
