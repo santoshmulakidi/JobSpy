@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { BrowserMediaCaptureHost } from '../../src/audio/browser-media-capture-host';
 import { CaptureController } from '../../src/audio/capture-controller';
@@ -321,6 +321,76 @@ describe('audio pipeline', () => {
       .rejects.toThrow('microphone unavailable');
     expect(releases).toBe(1);
     expect(systemTrack.stopCalls).toBe(1);
+  });
+
+  it('stops a newly acquired stream when media attachment throws', async () => {
+    const track = { stopCalls: 0, onended: null, stop() { this.stopCalls += 1; } };
+    const stream = {
+      getAudioTracks: () => [track],
+      getVideoTracks: () => [],
+      getTracks: () => [track],
+    } as unknown as MediaStream;
+    const host = new BrowserMediaCaptureHost({
+      mediaDevices: {
+        getDisplayMedia: async () => stream,
+        getUserMedia: async () => stream,
+      } as Pick<MediaDevices, 'getDisplayMedia' | 'getUserMedia'>,
+      connectStream: () => { throw new Error('web audio setup failed'); },
+    });
+
+    await expect(host.start({ microphone: false, systemAudio: true }, () => undefined, () => undefined))
+      .rejects.toThrow('web audio setup failed');
+
+    expect(track.stopCalls).toBe(1);
+  });
+
+  it('cleans every partially initialized Web Audio resource when node connection throws', async () => {
+    const calls: string[] = [];
+    const track = { stopCalls: 0, onended: null, stop() { this.stopCalls += 1; } };
+    const stream = {
+      getAudioTracks: () => [track],
+      getVideoTracks: () => [],
+      getTracks: () => [track],
+    } as unknown as MediaStream;
+    class FailingAudioContext {
+      public sampleRate = 48_000;
+      public destination = {};
+      public createMediaStreamSource() {
+        return { connect: () => calls.push('input-connect'), disconnect: () => calls.push('input-disconnect') };
+      }
+      public createScriptProcessor() {
+        return {
+          onaudioprocess: null,
+          connect: () => { calls.push('processor-connect'); throw new Error('node connection failed'); },
+          disconnect: () => calls.push('processor-disconnect'),
+        };
+      }
+      public createGain() {
+        return {
+          gain: { value: 1 },
+          connect: () => calls.push('gain-connect'),
+          disconnect: () => calls.push('gain-disconnect'),
+        };
+      }
+      public close() { calls.push('context-close'); return Promise.resolve(); }
+    }
+    vi.stubGlobal('AudioContext', FailingAudioContext);
+    const host = new BrowserMediaCaptureHost({
+      mediaDevices: {
+        getDisplayMedia: async () => stream,
+        getUserMedia: async () => stream,
+      } as Pick<MediaDevices, 'getDisplayMedia' | 'getUserMedia'>,
+    });
+
+    await expect(host.start({ microphone: false, systemAudio: true }, () => undefined, () => undefined))
+      .rejects.toThrow('node connection failed');
+
+    expect(calls).toContain('input-disconnect');
+    expect(calls).toContain('processor-disconnect');
+    expect(calls).toContain('gain-disconnect');
+    expect(calls).toContain('context-close');
+    expect(track.stopCalls).toBe(1);
+    vi.unstubAllGlobals();
   });
 
   it('stops a stream returned after capture was cancelled while permission was pending', async () => {

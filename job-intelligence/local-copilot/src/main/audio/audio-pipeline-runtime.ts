@@ -39,6 +39,9 @@ interface AudioPipelineRuntimeOptions {
   readonly onFrame?: (frame: AudioFrame) => void;
   readonly onSpeech?: (event: Extract<AudioUtilityMessage, { type: 'speech-start' | 'speech-end' }>) => void;
   readonly onFailure?: (message: string) => void;
+  readonly stopTimeoutMs?: number;
+  readonly scheduleStopTimeout?: (listener: () => void, delayMs: number) => unknown;
+  readonly cancelStopTimeout?: (handle: unknown) => void;
 }
 
 export interface AudioPipelineStartConfig {
@@ -62,12 +65,19 @@ export class AudioPipelineRuntime {
   private child: UtilityChild | null = null;
   private lifecycle: string | null = null;
   private expectedStop = false;
+  private stopPromise: Promise<void> | null = null;
+  private resolveStop: (() => void) | null = null;
+  private rejectStop: ((error: Error) => void) | null = null;
+  private stopTimer: unknown;
+  private startPromise: Promise<void> | null = null;
+  private resolveStart: (() => void) | null = null;
+  private rejectStart: ((error: Error) => void) | null = null;
 
   public constructor(private readonly options: AudioPipelineRuntimeOptions) {}
 
   public async start(capture: AudioPipelineStartConfig): Promise<void> {
     if (this.child) {
-      return;
+      return this.startPromise ?? Promise.resolve();
     }
     const lifecycle = this.options.createLifecycleId?.() ?? crypto.randomUUID();
     const child = this.options.forkUtility(this.options.utilityEntryPath);
@@ -98,22 +108,45 @@ export class AudioPipelineRuntime {
           initialCredits: 32,
         },
       };
+      this.startPromise = new Promise<void>((resolve, reject) => {
+        this.resolveStart = resolve;
+        this.rejectStart = reject;
+      });
+      const starting = this.startPromise;
       child.postMessage({ type: 'start', config });
+      return starting;
     } catch (error) {
-      this.stop();
+      this.clearStartPromise();
+      this.abortFailedStart();
       throw error;
     }
   }
 
-  public stop(): void {
+  public stop(): Promise<void> {
     if (!this.child) {
-      return;
+      return Promise.resolve();
+    }
+    if (this.stopPromise) {
+      return this.stopPromise;
     }
     this.expectedStop = true;
     this.options.permissionGate.revoke(this.lifecycle ?? undefined);
-    this.child.postMessage({ type: 'stop' });
-    this.child.kill();
-    this.release();
+    this.rejectStartup(new Error('Audio capture stopped before it became ready.'));
+    this.stopPromise = new Promise<void>((resolve, reject) => {
+      this.resolveStop = resolve;
+      this.rejectStop = reject;
+    });
+    const stopping = this.stopPromise;
+    try {
+      this.child.postMessage({ type: 'stop' });
+    } catch {
+      this.forceStop();
+      return stopping;
+    }
+    const schedule = this.options.scheduleStopTimeout
+      ?? ((listener: () => void, delayMs: number) => setTimeout(listener, delayMs));
+    this.stopTimer = schedule(() => this.forceStop(), this.options.stopTimeoutMs ?? 2_000);
+    return stopping;
   }
 
   public isActive(): boolean {
@@ -141,13 +174,22 @@ export class AudioPipelineRuntime {
       case 'speech-end':
         this.options.onSpeech?.(utilityMessage);
         break;
+      case 'capture-ready':
+        if (utilityMessage.lifecycle === this.lifecycle) {
+          this.resolveStart?.();
+          this.clearStartPromise();
+        }
+        break;
+      case 'capture-error':
+        if (utilityMessage.lifecycle === this.lifecycle) {
+          this.rejectStartup(new Error(utilityMessage.message));
+          void this.stop();
+        }
+        break;
       case 'error':
         this.fail(utilityMessage.message);
         break;
       case 'stopped':
-        this.expectedStop = true;
-        this.child?.kill();
-        this.release();
         break;
       case 'ready':
       case 'source-lost':
@@ -158,15 +200,70 @@ export class AudioPipelineRuntime {
 
   private readonly onExit = (code: number) => {
     const expected = this.expectedStop;
+    if (this.startPromise) {
+      this.rejectStartup(new Error(`Audio utility exited before capture was ready with code ${code}.`));
+    }
     this.release();
-    if (!expected) {
+    if (expected) {
+      this.completeStop();
+    } else {
       this.options.onFailure?.(`Audio utility exited with code ${code}.`);
     }
   };
 
   private fail(message: string): void {
+    this.rejectStartup(new Error(message));
     this.options.onFailure?.(message);
-    this.stop();
+    void this.stop();
+  }
+
+  private forceStop(): void {
+    if (!this.child) {
+      this.completeStop();
+      return;
+    }
+    if (!this.child.kill()) {
+      const error = new Error('Audio utility did not stop.');
+      this.options.onFailure?.(error.message);
+      this.rejectStop?.(error);
+      this.clearStopPromise();
+    }
+  }
+
+  private abortFailedStart(): void {
+    const child = this.child;
+    this.expectedStop = true;
+    this.options.permissionGate.revoke(this.lifecycle ?? undefined);
+    if (child?.kill()) {
+      this.release();
+    }
+  }
+
+  private rejectStartup(error: Error): void {
+    this.rejectStart?.(error);
+    this.clearStartPromise();
+  }
+
+  private clearStartPromise(): void {
+    this.startPromise = null;
+    this.resolveStart = null;
+    this.rejectStart = null;
+  }
+
+  private completeStop(): void {
+    this.resolveStop?.();
+    this.clearStopPromise();
+  }
+
+  private clearStopPromise(): void {
+    if (this.stopTimer !== undefined) {
+      const cancel = this.options.cancelStopTimeout ?? ((handle: unknown) => clearTimeout(handle as NodeJS.Timeout));
+      cancel(this.stopTimer);
+    }
+    this.stopTimer = undefined;
+    this.stopPromise = null;
+    this.resolveStop = null;
+    this.rejectStop = null;
   }
 
   private release(): void {

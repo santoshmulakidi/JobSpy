@@ -11,6 +11,7 @@ interface CapturePreloadIpc {
     channel: 'audio:capture-port',
     listener: (event: TransferEvent, message: unknown) => void,
   ): unknown;
+  send(channel: 'audio:capture-preload-ready'): void;
 }
 
 interface DomMessagePort {
@@ -19,6 +20,8 @@ interface DomMessagePort {
   close(): void;
   addEventListener(type: 'message', listener: (event: MessageEvent<unknown>) => void): void;
   removeEventListener(type: 'message', listener: (event: MessageEvent<unknown>) => void): void;
+  addEventListener(type: 'close', listener: () => void): void;
+  removeEventListener(type: 'close', listener: () => void): void;
 }
 
 function isCaptureRuntimePort(port: unknown): port is CaptureRuntimePort {
@@ -42,29 +45,24 @@ function adaptMessagePort(port: unknown): CaptureRuntimePort | null {
     || typeof candidate.removeEventListener !== 'function') {
     return null;
   }
-  const closeListeners = new Set<() => void>();
   return {
     on(event, listener) {
       if (event === 'message') {
         candidate.addEventListener?.('message', listener as (event: MessageEvent<unknown>) => void);
       } else {
-        closeListeners.add(listener as () => void);
+        candidate.addEventListener?.('close', listener as () => void);
       }
     },
     off(event, listener) {
       if (event === 'message') {
         candidate.removeEventListener?.('message', listener as (event: MessageEvent<unknown>) => void);
       } else {
-        closeListeners.delete(listener as () => void);
+        candidate.removeEventListener?.('close', listener as () => void);
       }
     },
     postMessage: (message) => candidate.postMessage?.(message),
     start: () => candidate.start?.(),
-    close: () => {
-      candidate.close?.();
-      for (const listener of closeListeners) listener();
-      closeListeners.clear();
-    },
+    close: () => candidate.close?.(),
   };
 }
 
@@ -89,5 +87,6 @@ export function installCapturePreload(ipc: CapturePreloadIpc, host: CaptureHost)
     }
     runtime.connect(port, parsed.data.lifecycle);
   });
+  ipc.send('audio:capture-preload-ready');
   return runtime;
 }

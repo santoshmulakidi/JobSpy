@@ -27,6 +27,7 @@ export class AudioCaptureRuntime {
   private lifecycle: string | null = null;
   private credits = 0;
   private maxCredits = 0;
+  private startupEpoch = 0;
 
   public constructor(private readonly host: CaptureHost) {}
 
@@ -42,6 +43,7 @@ export class AudioCaptureRuntime {
   public disconnect(notify = true): void {
     const port = this.port;
     const lifecycle = this.lifecycle;
+    this.startupEpoch += 1;
     this.host.stop();
     this.port = null;
     this.lifecycle = null;
@@ -66,13 +68,41 @@ export class AudioCaptureRuntime {
     const command = parsed.data;
     switch (command.type) {
       case 'start-capture':
+        const startupEpoch = this.startupEpoch += 1;
+        const startupPort = this.port;
+        const startupLifecycle = this.lifecycle;
         this.credits = command.credits;
         this.maxCredits = command.credits;
         void this.host.start(
           command.config,
           (chunk) => this.sendChunk(chunk),
           (source) => this.sendSourceLost(source),
-        ).catch(() => this.disconnect());
+        ).then(() => {
+          if (
+            startupEpoch === this.startupEpoch
+            && startupPort === this.port
+            && startupLifecycle === this.lifecycle
+            && startupPort
+            && startupLifecycle
+          ) {
+            startupPort.postMessage({ type: 'capture-ready', lifecycle: startupLifecycle });
+          }
+        }, () => {
+          if (
+            startupEpoch === this.startupEpoch
+            && startupPort === this.port
+            && startupLifecycle === this.lifecycle
+            && startupPort
+            && startupLifecycle
+          ) {
+            this.host.stop();
+            startupPort.postMessage({
+              type: 'capture-error',
+              lifecycle: startupLifecycle,
+              message: 'Audio capture failed.',
+            });
+          }
+        });
         break;
       case 'capture-credit':
         this.credits = Math.min(this.maxCredits, this.credits + command.count);

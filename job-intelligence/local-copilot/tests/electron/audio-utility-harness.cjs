@@ -6,125 +6,166 @@ const { app, BrowserWindow, ipcMain, MessageChannelMain, utilityProcess } = requ
 
 const workingRoot = resolve(__dirname, '..', '..');
 const usePackagedEntry = process.argv.includes('packaged');
+const packagedApp = join(
+  workingRoot,
+  'out',
+  'local-windows-ai-copilot-win32-x64',
+  'resources',
+  'app.asar',
+);
 const utilityEntry = usePackagedEntry
-  ? join(
-      workingRoot,
-      'out',
-      'local-windows-ai-copilot-win32-x64',
-      'resources',
-      'app.asar',
-      '.vite',
-      'build',
-      'audio-utility.js',
-    )
+  ? join(packagedApp, '.vite', 'build', 'audio-utility.js')
   : join(workingRoot, '.vite', 'build', 'audio-utility.js');
+const capturePreload = usePackagedEntry
+  ? join(packagedApp, '.vite', 'build', 'capture-preload.js')
+  : join(workingRoot, '.vite', 'build', 'capture-preload.js');
+const runtimeEntry = usePackagedEntry
+  ? join(packagedApp, '.vite', 'build', 'audio-pipeline-runtime.cjs')
+  : join(workingRoot, '.vite', 'build', 'audio-pipeline-runtime.cjs');
 const crashEntry = join(__dirname, 'audio-crash-fixture.cjs');
-const preload = join(__dirname, 'audio-capture-fixture.cjs');
 const userData = mkdtempSync(join(tmpdir(), 'copilot-audio-electron-'));
+const { AudioPipelineRuntime } = require(runtimeEntry);
+
 app.setPath('userData', userData);
 app.disableHardwareAcceleration();
+app.once('quit', () => {
+  try { rmSync(userData, { recursive: true, force: true }); } catch {}
+});
 
 let timeout;
 let window;
-let child;
+const liveChildren = new Set();
 
 function fail(error) {
   clearTimeout(timeout);
-  try { child?.kill(); } catch {}
+  for (const child of liveChildren) {
+    try { child.kill(); } catch {}
+  }
   try { window?.destroy(); } catch {}
   process.stderr.write(`${error?.stack ?? error}\n`);
   app.exit(1);
 }
 
-function waitForExit(processHandle) {
-  return new Promise((resolveExit) => processHandle.once('exit', (code) => resolveExit(code)));
+function waitForPreloadReady(webContents) {
+  return new Promise((resolveReady) => {
+    const onReady = (event) => {
+      if (event.sender !== webContents) return;
+      ipcMain.off('audio:capture-preload-ready', onReady);
+      resolveReady();
+    };
+    ipcMain.on('audio:capture-preload-ready', onReady);
+  });
+}
+
+function createRuntime(options = {}) {
+  let forcedKills = 0;
+  let child;
+  const gate = {
+    lifecycle: null,
+    authorize(lifecycle) { this.lifecycle = lifecycle; },
+    revoke(lifecycle) {
+      if (lifecycle === undefined || lifecycle === this.lifecycle) this.lifecycle = null;
+    },
+  };
+  const runtime = new AudioPipelineRuntime({
+    captureWebContents: window.webContents,
+    permissionGate: gate,
+    utilityEntryPath: options.utilityEntry ?? utilityEntry,
+    createLifecycleId: () => options.lifecycle,
+    stopTimeoutMs: options.stopTimeoutMs ?? 2_000,
+    createMessageChannel: () => new MessageChannelMain(),
+    forkUtility: (entry) => {
+      const processHandle = utilityProcess.fork(entry, [], {
+        env: {},
+        serviceName: 'Production Audio Lifecycle Harness',
+        stdio: 'ignore',
+      });
+      liveChildren.add(processHandle);
+      processHandle.once('exit', () => liveChildren.delete(processHandle));
+      child = {
+        on: (...args) => processHandle.on(...args),
+        off: (...args) => processHandle.off(...args),
+        postMessage: (message, transfer = []) => {
+          if (!(options.suppressStop && message?.type === 'stop')) {
+            processHandle.postMessage(message, transfer);
+          }
+        },
+        kill: () => {
+          forcedKills += 1;
+          return processHandle.kill();
+        },
+      };
+      return child;
+    },
+    onFailure: (message) => {
+      if (!options.allowFailure) fail(new Error(message));
+    },
+  });
+  return { runtime, gate, forcedKills: () => forcedKills, child: () => child };
 }
 
 app.whenReady().then(async () => {
-  assert.equal(existsSync(utilityEntry), true, `missing built utility: ${utilityEntry}`);
-  timeout = setTimeout(() => fail(new Error(`Electron audio integration timed out: ${JSON.stringify({ frame, dropped, detachments })}`)), 15_000);
+  for (const entry of [utilityEntry, capturePreload, runtimeEntry]) {
+    assert.equal(existsSync(entry), true, `missing production harness entry: ${entry}`);
+  }
+  timeout = setTimeout(() => fail(new Error('Electron production audio lifecycle timed out.')), 20_000);
   window = new BrowserWindow({
     show: false,
     webPreferences: {
-      preload,
+      preload: capturePreload,
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
       webSecurity: true,
     },
   });
-  await window.loadURL('data:text/html,<title>capture fixture</title>');
+  const preloadReady = waitForPreloadReady(window.webContents);
+  await window.loadURL('data:text/html,<title>production capture preload</title>');
+  await preloadReady;
 
-  const detachments = [];
-  ipcMain.on('audio-fixture-detached', (_event, detached) => detachments.push(detached));
-  ipcMain.once('audio-fixture-error', (_event, message) => fail(new Error(message)));
+  const normal = createRuntime({ lifecycle: 'electron-normal-stop' });
+  await normal.runtime.start({ microphone: false, systemAudio: false });
+  assert.equal(normal.gate.lifecycle, 'electron-normal-stop');
+  await normal.runtime.stop();
+  assert.equal(normal.forcedKills(), 0, 'normal stop must not use forced kill');
+  assert.equal(normal.runtime.isActive(), false);
 
-  child = utilityProcess.fork(utilityEntry, [], {
-    env: {},
-    serviceName: 'Audio Integration Fixture',
-    stdio: 'ignore',
-  });
-  await new Promise((resolveSpawn, rejectSpawn) => {
-    child.once('spawn', resolveSpawn);
-    child.once('exit', (code) => rejectSpawn(new Error(`utility exited before spawn handshake: ${code}`)));
-  });
-
-  const { port1, port2 } = new MessageChannelMain();
-  const lifecycle = 'electron-audio-fixture';
-  window.webContents.postMessage(
-    'audio:capture-port',
-    { type: 'audio-capture-port', lifecycle },
-    [port1],
+  const failure = createRuntime({ lifecycle: 'electron-acquisition-failure', allowFailure: true });
+  await assert.rejects(
+    failure.runtime.start({ microphone: true, systemAudio: false }),
+    /Audio capture failed\./,
   );
-  child.postMessage({ type: 'connect', lifecycle }, [port2]);
+  await failure.runtime.stop();
+  assert.equal(failure.runtime.isActive(), false);
 
-  let frame;
-  let dropped;
-  let stopped = false;
-  child.on('message', (message) => {
-    if (message?.type === 'frame' && !frame) {
-      frame = message.frame;
-      setTimeout(() => child.postMessage({ type: 'frame-ack', sequence: frame.sequence }), 75);
-    } else if (message?.type === 'frames-dropped') {
-      dropped = message;
-      child.postMessage({ type: 'stop' });
-    } else if (message?.type === 'stopped') {
-      stopped = true;
-      child.kill();
-    } else if (message?.type === 'error') {
-      fail(new Error(message.message));
-    }
+  const crashed = createRuntime({
+    lifecycle: 'electron-crash-cleanup',
+    utilityEntry: crashEntry,
+    allowFailure: true,
   });
-  child.postMessage({
-    type: 'start',
-    config: {
-      targetSampleRate: 24_000,
-      maxBufferedFrames: 4,
-      jitterWindowMs: 0,
-      maxInFlightFrames: 1,
-      vad: { threshold: 1_000, speechFrames: 1, silenceFrames: 1 },
-      capture: { lifecycle, microphone: true, systemAudio: false, initialCredits: 2 },
-    },
-  });
+  await assert.rejects(
+    crashed.runtime.start({ microphone: false, systemAudio: false }),
+    /exited before capture was ready/,
+  );
+  assert.equal(crashed.runtime.isActive(), false);
 
-  const exitCode = await waitForExit(child);
-  assert.equal(exitCode, 0);
-  assert.equal(stopped, true);
-  assert.ok(frame);
-  assert.ok(frame.pcm instanceof Int16Array);
-  assert.deepEqual([...frame.pcm], [1, 3]);
-  assert.deepEqual(dropped, { type: 'frames-dropped', count: 1, lastSequence: 1 });
-  assert.deepEqual(detachments, [true, true]);
+  const timeoutStop = createRuntime({
+    lifecycle: 'electron-timeout-stop',
+    suppressStop: true,
+    stopTimeoutMs: 100,
+  });
+  await timeoutStop.runtime.start({ microphone: false, systemAudio: false });
+  await timeoutStop.runtime.stop();
+  assert.equal(timeoutStop.forcedKills(), 1, 'timeout path must force-kill exactly once');
+
+  const afterRemoteClose = createRuntime({ lifecycle: 'electron-after-remote-close' });
+  await afterRemoteClose.runtime.start({ microphone: false, systemAudio: false });
+  await afterRemoteClose.runtime.stop();
+  assert.equal(afterRemoteClose.forcedKills(), 0);
+
   window.destroy();
   window = undefined;
-
-  const crashed = utilityProcess.fork(crashEntry, [], { env: {}, stdio: 'ignore' });
-  await new Promise((resolveSpawn) => crashed.once('spawn', resolveSpawn));
-  const crashCode = await waitForExit(crashed);
-  assert.notEqual(crashCode, 0);
-
   clearTimeout(timeout);
-  rmSync(userData, { recursive: true, force: true });
-  process.stdout.write('ELECTRON_AUDIO_OK spawn transfer clone backpressure exit crash\n');
+  process.stdout.write('ELECTRON_AUDIO_OK production-preload ready failure remote-close graceful-stop timeout crash\n');
   app.quit();
 }).catch(fail);

@@ -89,13 +89,19 @@ export class BrowserMediaCaptureHost {
     onChunk: (chunk: RawAudioChunk) => void,
     onSourceLost: (source: AudioSource) => void,
   ): void {
-    const connection = this.connectStream(stream, source, onChunk, () => {
-      if (epoch !== this.epoch) {
-        return;
-      }
-      this.releaseSource(source);
-      onSourceLost(source);
-    });
+    let connection: CaptureConnection;
+    try {
+      connection = this.connectStream(stream, source, onChunk, () => {
+        if (epoch !== this.epoch) {
+          return;
+        }
+        this.releaseSource(source);
+        onSourceLost(source);
+      });
+    } catch (error) {
+      stopStream(stream);
+      throw error;
+    }
     this.resources.set(source, { stream, connection });
   }
 
@@ -140,42 +146,57 @@ function connectWebAudioStream(
   now: (() => number) | undefined,
 ): CaptureConnection {
   const context = new AudioContext();
-  const input = context.createMediaStreamSource(stream);
-  const processor = context.createScriptProcessor(2_048, 1, 1);
-  const mutedOutput = context.createGain();
-  mutedOutput.gain.value = 0;
-  input.connect(processor);
-  processor.connect(mutedOutput);
-  mutedOutput.connect(context.destination);
-  processor.onaudioprocess = (event) => {
-    const channels = event.inputBuffer.numberOfChannels;
-    const samplesPerChannel = event.inputBuffer.length;
-    const interleaved = new Int16Array(samplesPerChannel * channels);
-    for (let channel = 0; channel < channels; channel += 1) {
-      const samples = event.inputBuffer.getChannelData(channel);
-      for (let index = 0; index < samples.length; index += 1) {
-        const sample = Math.max(-1, Math.min(1, samples[index] ?? 0));
-        interleaved[index * channels + channel] = Math.round(sample * (sample < 0 ? 32_768 : 32_767));
+  let input: MediaStreamAudioSourceNode | null = null;
+  let processor: ScriptProcessorNode | null = null;
+  let mutedOutput: GainNode | null = null;
+  const release = () => {
+    if (processor) processor.onaudioprocess = null;
+    safeDisconnect(input);
+    safeDisconnect(processor);
+    safeDisconnect(mutedOutput);
+    void context.close();
+  };
+  try {
+    input = context.createMediaStreamSource(stream);
+    processor = context.createScriptProcessor(2_048, 1, 1);
+    mutedOutput = context.createGain();
+    mutedOutput.gain.value = 0;
+    input.connect(processor);
+    processor.connect(mutedOutput);
+    mutedOutput.connect(context.destination);
+    processor.onaudioprocess = (event) => {
+      const channels = event.inputBuffer.numberOfChannels;
+      const samplesPerChannel = event.inputBuffer.length;
+      const interleaved = new Int16Array(samplesPerChannel * channels);
+      for (let channel = 0; channel < channels; channel += 1) {
+        const samples = event.inputBuffer.getChannelData(channel);
+        for (let index = 0; index < samples.length; index += 1) {
+          const sample = Math.max(-1, Math.min(1, samples[index] ?? 0));
+          interleaved[index * channels + channel] = Math.round(sample * (sample < 0 ? 32_768 : 32_767));
+        }
       }
+      onChunk({
+        source,
+        capturedAt: now?.() ?? performance.timeOrigin + performance.now(),
+        sampleRate: context.sampleRate,
+        channels,
+        pcm: interleaved,
+      });
+    };
+    for (const track of stream.getAudioTracks()) {
+      track.onended = () => onSourceLost(source);
     }
-    onChunk({
-      source,
-      capturedAt: now?.() ?? performance.timeOrigin + performance.now(),
-      sampleRate: context.sampleRate,
-      channels,
-      pcm: interleaved,
-    });
-  };
-  for (const track of stream.getAudioTracks()) {
-    track.onended = () => onSourceLost(source);
+    return { release };
+  } catch (error) {
+    release();
+    throw error;
   }
-  return {
-    release() {
-      processor.onaudioprocess = null;
-      input.disconnect();
-      processor.disconnect();
-      mutedOutput.disconnect();
-      void context.close();
-    },
-  };
+}
+
+function safeDisconnect(node: AudioNode | null): void {
+  try {
+    node?.disconnect();
+  } catch {
+    // A partially initialized graph can contain a node Chromium already detached.
+  }
 }

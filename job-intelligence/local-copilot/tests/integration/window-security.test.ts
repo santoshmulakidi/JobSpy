@@ -1,16 +1,35 @@
 import { describe, expect, it, vi } from 'vitest';
 
 let creationOptions: { show?: boolean; webPreferences: Record<string, unknown> } | undefined;
+let createdWebContents: {
+  id: number;
+  on: ReturnType<typeof vi.fn>;
+  once: ReturnType<typeof vi.fn>;
+  setWindowOpenHandler: ReturnType<typeof vi.fn>;
+} | undefined;
+let preloadReady: ((event: { sender: unknown }) => void) | undefined;
+let didFinishLoad: (() => void) | undefined;
 
 vi.mock('electron', () => ({
+  ipcMain: {
+    on: vi.fn((channel: string, listener: typeof preloadReady) => {
+      if (channel === 'audio:capture-preload-ready') preloadReady = listener;
+    }),
+    off: vi.fn(),
+  },
   BrowserWindow: vi.fn(function BrowserWindow(options) {
     creationOptions = options;
+    createdWebContents = {
+      id: 17,
+      on: vi.fn(),
+      once: vi.fn((event: string, listener: () => void) => {
+        if (event === 'did-finish-load') didFinishLoad = listener;
+      }),
+      setWindowOpenHandler: vi.fn(),
+    };
     return {
       loadURL: vi.fn(),
-      webContents: {
-        on: vi.fn(),
-        setWindowOpenHandler: vi.fn(),
-      },
+      webContents: createdWebContents,
     };
   }),
 }));
@@ -71,5 +90,24 @@ describe('packaged overlay window security', () => {
       },
     });
     expect(creationOptions?.webPreferences.preload).toMatch(/capture-preload\.js$/);
+  });
+
+  it('becomes ready only after load and an exact capture-preload handshake', async () => {
+    const { createAudioCaptureWindow } = await import('../../src/main/windows/audio-capture-window');
+
+    const handle = createAudioCaptureWindow();
+    let ready = false;
+    void handle.ready.then(() => { ready = true; });
+    didFinishLoad?.();
+    await Promise.resolve();
+    expect(ready).toBe(false);
+
+    preloadReady?.({ sender: { id: 99 } });
+    await Promise.resolve();
+    expect(ready).toBe(false);
+    preloadReady?.({ sender: createdWebContents });
+    await handle.ready;
+
+    expect(ready).toBe(true);
   });
 });

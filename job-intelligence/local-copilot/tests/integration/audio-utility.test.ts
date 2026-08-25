@@ -42,6 +42,7 @@ describe('audio utility boundary', () => {
         build: expect.arrayContaining([
           { entry: 'src/audio/utility-entry.ts', config: 'vite.utility.config.ts' },
           { entry: 'src/audio/capture-preload.ts', config: 'vite.capture-preload.config.ts' },
+          { entry: 'src/main/audio/audio-pipeline-runtime.ts', config: 'vite.audio-runtime.config.ts' },
         ]),
       },
     });
@@ -246,7 +247,74 @@ describe('audio utility boundary', () => {
     expect([...raw]).toEqual([0, 0, 0, 0]);
 
     parent.receive({ type: 'stop' });
+    await waitFor(() => capture.sent.some(({ type }) => type === 'stop-capture'));
+    capture.receive({ type: 'capture-stopped', lifecycle: 'capture-real' });
     await utility.closed;
     expect(capture.sent.at(-1)).toEqual({ type: 'stop-capture', lifecycle: 'capture-real' });
+  });
+
+  it('forwards capture readiness and waits for renderer stopped acknowledgement before stopping', async () => {
+    const parent = new TestParentPort();
+    const capture = new TestParentPort();
+    const connected = startAudioUtilityParentPort(parent);
+    parent.receive({ type: 'connect', lifecycle: 'capture-handshake' }, [capture]);
+    const utility = await connected;
+    parent.receive({
+      type: 'start',
+      config: {
+        targetSampleRate: 24_000,
+        maxBufferedFrames: 4,
+        jitterWindowMs: 0,
+        maxInFlightFrames: 1,
+        vad: { threshold: 1_000, speechFrames: 1, silenceFrames: 1 },
+        capture: {
+          lifecycle: 'capture-handshake', microphone: false, systemAudio: false, initialCredits: 1,
+        },
+      },
+    });
+    capture.receive({ type: 'capture-ready', lifecycle: 'capture-handshake' });
+    await waitFor(() => parent.sent.some(({ type }) => type === 'capture-ready'));
+    expect(parent.sent).toContainEqual({ type: 'capture-ready', lifecycle: 'capture-handshake' });
+
+    parent.receive({ type: 'stop' });
+    await waitFor(() => capture.sent.some(({ type }) => type === 'stop-capture'));
+    expect(parent.sent).not.toContainEqual({ type: 'stopped' });
+
+    capture.receive({ type: 'capture-stopped', lifecycle: 'capture-handshake' });
+    await utility.closed;
+    expect(parent.sent.at(-1)).toEqual({ type: 'stopped' });
+  });
+
+  it('forwards capture startup failure and completes teardown only after renderer acknowledgement', async () => {
+    const parent = new TestParentPort();
+    const capture = new TestParentPort();
+    const connected = startAudioUtilityParentPort(parent);
+    parent.receive({ type: 'connect', lifecycle: 'capture-failure' }, [capture]);
+    const utility = await connected;
+    parent.receive({
+      type: 'start',
+      config: {
+        targetSampleRate: 24_000,
+        maxBufferedFrames: 4,
+        jitterWindowMs: 0,
+        maxInFlightFrames: 1,
+        vad: { threshold: 1_000, speechFrames: 1, silenceFrames: 1 },
+        capture: {
+          lifecycle: 'capture-failure', microphone: true, systemAudio: false, initialCredits: 1,
+        },
+      },
+    });
+    capture.receive({
+      type: 'capture-error', lifecycle: 'capture-failure', message: 'Audio capture failed.',
+    });
+    await waitFor(() => parent.sent.some(({ type }) => type === 'capture-error'));
+    expect(parent.sent).toContainEqual({
+      type: 'capture-error', lifecycle: 'capture-failure', message: 'Audio capture failed.',
+    });
+    expect(parent.sent).not.toContainEqual({ type: 'stopped' });
+
+    capture.receive({ type: 'capture-stopped', lifecycle: 'capture-failure' });
+    await utility.closed;
+    expect(parent.sent.at(-1)).toEqual({ type: 'stopped' });
   });
 });

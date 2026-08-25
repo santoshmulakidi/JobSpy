@@ -81,7 +81,9 @@ app.whenReady().then(async () => {
   protocol.handle(LOCAL_SCHEME, (request) => net.fetch(resolveRendererAsset(request.url).toString()));
   installContentSecurityPolicy();
   const overlayWindow = createOverlayWindow();
-  const captureWindow = createAudioCaptureWindow();
+  const captureWindowHandle = createAudioCaptureWindow();
+  await captureWindowHandle.ready;
+  const captureWindow = captureWindowHandle.window;
   const permissionGate = new CapturePermissionGate(captureWindow.webContents);
   const sessionController = new SessionController();
   installElectronLoopbackHandler(session.defaultSession, desktopCapturer, permissionGate);
@@ -119,19 +121,19 @@ app.whenReady().then(async () => {
       sessionController.dispatch({ type: 'start' });
       return { ok: true };
     },
-    'session:stop': (_payload, event) => {
+    'session:stop': async (_payload, event) => {
       if (event.sender?.id !== overlayWindow.webContents.id) {
         return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized request.' } };
       }
-      audioRuntime.stop();
+      await audioRuntime.stop();
       sessionController.dispatch({ type: 'stop' });
       return { ok: true };
     },
   });
 
-  captureWindow.webContents.on('render-process-gone', () => audioRuntime.stop());
-  captureWindow.on('closed', () => audioRuntime.stop());
-  app.once('before-quit', () => audioRuntime.stop());
+  captureWindow.webContents.on('render-process-gone', () => { void audioRuntime.stop(); });
+  captureWindow.on('closed', () => { void audioRuntime.stop(); });
+  app.once('before-quit', () => { void audioRuntime.stop(); });
 });
 
 app.on('window-all-closed', () => {

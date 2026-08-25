@@ -6,7 +6,7 @@
   "scripts": {
     "start": "electron-forge start",
     "test": "vitest run",
-    "test:electron-audio": "vite build --config vite.utility.config.ts --outDir .vite/build --emptyOutDir false && electron tests/electron/audio-utility-harness.cjs",
+    "test:electron-audio": "vite build --config vite.utility.config.ts --outDir .vite/build --emptyOutDir false && vite build --config vite.capture-preload.config.ts --outDir .vite/build --emptyOutDir false && vite build --config vite.audio-runtime.config.ts --outDir .vite/build --emptyOutDir false && electron tests/electron/audio-utility-harness.cjs",
     "test:electron-audio:packaged": "electron tests/electron/audio-utility-harness.cjs packaged",
     "typecheck": "tsc --noEmit",
     "package": "electron-forge package",

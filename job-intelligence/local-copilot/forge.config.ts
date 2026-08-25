@@ -32,6 +32,10 @@ const config: ForgeConfig = {
             entry: 'src/audio/capture-preload.ts',
             config: 'vite.capture-preload.config.ts',
           },
+          {
+            entry: 'src/main/audio/audio-pipeline-runtime.ts',
+            config: 'vite.audio-runtime.config.ts',
+          },
         ],
         renderer: [
           {

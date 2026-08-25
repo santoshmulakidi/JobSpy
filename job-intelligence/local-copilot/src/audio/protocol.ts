@@ -71,6 +71,12 @@ export const CaptureStreamCommandSchema = z.discriminatedUnion('type', [
     lifecycle: z.string().min(1).max(128),
     source: AudioSourceSchema,
   }).strict(),
+  z.object({ type: z.literal('capture-ready'), lifecycle: z.string().min(1).max(128) }).strict(),
+  z.object({
+    type: z.literal('capture-error'),
+    lifecycle: z.string().min(1).max(128),
+    message: z.string().min(1).max(1_024),
+  }).strict(),
   z.object({ type: z.literal('capture-stopped'), lifecycle: z.string().min(1).max(128) }).strict(),
 ]);
 
@@ -93,6 +99,12 @@ export const AudioUtilityMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('ready') }).strict(),
   z.object({ type: z.literal('frame'), frame: AudioFrameSchema }).strict(),
   z.object({ type: z.literal('source-lost'), source: AudioSourceSchema }).strict(),
+  z.object({ type: z.literal('capture-ready'), lifecycle: z.string().min(1).max(128) }).strict(),
+  z.object({
+    type: z.literal('capture-error'),
+    lifecycle: z.string().min(1).max(128),
+    message: z.string().min(1).max(1_024),
+  }).strict(),
   z.object({
     type: z.enum(['speech-start', 'speech-end']),
     source: AudioSourceSchema,
@@ -118,6 +130,8 @@ export type AudioUtilityCommand =
 export type AudioUtilityMessage =
   | { readonly type: 'ready' }
   | { readonly type: 'frame'; readonly frame: AudioFrame }
+  | { readonly type: 'capture-ready'; readonly lifecycle: string }
+  | { readonly type: 'capture-error'; readonly lifecycle: string; readonly message: string }
   | CaptureEvent
   | { readonly type: 'speech-start' | 'speech-end'; readonly source: AudioSource; readonly capturedAt: number }
   | { readonly type: 'frames-dropped'; readonly count: number; readonly lastSequence: number }

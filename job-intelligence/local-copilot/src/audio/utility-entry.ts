@@ -37,34 +37,50 @@ export function startAudioUtility(
   });
   let started = false;
   let stopped = false;
+  let stopping = false;
+  let stopErrorMessage: string | undefined;
   let vad: VadDetector | null = null;
   let config: AudioUtilityConfig | null = null;
   const inFlight = new Set<number>();
   let droppedSinceAck = 0;
   let lastDroppedSequence = -1;
 
-  const close = (errorMessage?: string) => {
+  const finishStop = () => {
     if (stopped) {
       return;
     }
     stopped = true;
-    controller.stop();
-    inFlight.clear();
     port.off('message', onMessage);
     if (capturePort !== port) {
       capturePort.off('message', onCaptureMessage);
     }
-    if (config?.capture) {
-      capturePort.postMessage({ type: 'stop-capture', lifecycle: config.capture.lifecycle });
-    }
-    if (errorMessage) {
-      port.postMessage({ type: 'error', fatal: true, message: errorMessage });
+    if (stopErrorMessage) {
+      port.postMessage({ type: 'error', fatal: true, message: stopErrorMessage });
     }
     port.postMessage({ type: 'stopped' });
     if (capturePort !== port) {
       capturePort.close?.();
     }
     resolveClosed();
+  };
+
+  const requestStop = (errorMessage?: string) => {
+    if (stopped) {
+      return;
+    }
+    stopErrorMessage ??= errorMessage;
+    if (stopping) {
+      return;
+    }
+    stopping = true;
+    controller.stop();
+    inFlight.clear();
+    port.off('message', onMessage);
+    if (config?.capture && capturePort !== port) {
+      capturePort.postMessage({ type: 'stop-capture', lifecycle: config.capture.lifecycle });
+      return;
+    }
+    finishStop();
   };
 
   const pumpFrames = async () => {
@@ -91,7 +107,7 @@ export function startAudioUtility(
         }
       }
     } catch {
-      close('Audio utility processing failed.');
+      requestStop('Audio utility processing failed.');
     }
   };
   const pumpEvents = async () => {
@@ -104,7 +120,7 @@ export function startAudioUtility(
     const parsed = AudioUtilityCommandSchema.safeParse(event.data);
     if (!parsed.success) {
       zeroCandidatePcm(event.data);
-      close('Invalid audio utility command.');
+      requestStop('Invalid audio utility command.');
       return;
     }
     const command = parsed.data;
@@ -153,14 +169,14 @@ export function startAudioUtility(
           }
           break;
         case 'stop':
-          close();
+          requestStop();
           break;
         default:
           throw new Error('Unsupported audio utility command.');
       }
     } catch {
       zeroCandidatePcm(event.data);
-      close('Audio utility processing failed.');
+      requestStop('Audio utility processing failed.');
     }
   };
 
@@ -168,7 +184,7 @@ export function startAudioUtility(
     const parsed = CaptureStreamCommandSchema.safeParse(event.data);
     if (!parsed.success || !config?.capture || parsed.data.lifecycle !== config.capture.lifecycle) {
       zeroCandidatePcm(event.data);
-      close('Invalid capture stream command.');
+      requestStop('Invalid capture stream command.');
       return;
     }
     const command = parsed.data;
@@ -185,13 +201,26 @@ export function startAudioUtility(
         case 'source-lost':
           controller.sourceLost(command.source);
           break;
+        case 'capture-ready':
+          port.postMessage(command);
+          break;
+        case 'capture-error':
+          port.postMessage(command);
+          requestStop();
+          break;
         case 'capture-stopped':
-          close();
+          if (!stopping) {
+            stopping = true;
+            controller.stop();
+            inFlight.clear();
+            port.off('message', onMessage);
+          }
+          finishStop();
           break;
       }
     } catch {
       zeroCandidatePcm(event.data);
-      close('Audio utility processing failed.');
+      requestStop('Audio utility processing failed.');
     }
   };
 
@@ -228,6 +257,6 @@ const utilityParentPort = process.parentPort;
 if (utilityParentPort) {
   void startAudioUtilityParentPort(utilityParentPort)
     .then(({ closed }) => closed)
-    .then(() => { process.exitCode = 0; })
-    .catch(() => { process.exitCode = 1; });
+    .then(() => { setImmediate(() => process.exit(0)); })
+    .catch(() => { setImmediate(() => process.exit(1)); });
 }
