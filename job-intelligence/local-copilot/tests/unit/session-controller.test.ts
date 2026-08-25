@@ -91,6 +91,23 @@ describe('SessionController', () => {
     expect(controllers.map(({ signal }) => signal.aborted)).toEqual([true, true]);
   });
 
+  it('fails closed on generation failure without waiting for a later stop', () => {
+    const { controller, controllers } = createController();
+    controller.dispatch({ type: 'start' });
+    controller.dispatch({ type: 'buffer-pending', bytes: new Uint8Array([1, 2, 3]) });
+    controller.dispatch({ type: 'generate', requestId: 'question-1' });
+
+    expect(controller.dispatch({ type: 'generation-failed', requestId: 'question-1', message: 'provider failed' }))
+      .toMatchObject({
+        phase: 'error',
+        error: { code: 'GENERATION_FAILED', message: 'provider failed' },
+        captureLifecycle: null,
+        generation: null,
+        pendingBufferBytes: 0,
+      });
+    expect(controllers.map(({ signal }) => signal.aborted)).toEqual([true, true]);
+  });
+
   it('clears pending in-memory buffers and emits exactly one terminal event', async () => {
     const { controller } = createController();
     const events = controller.events()[Symbol.asyncIterator]();
@@ -109,5 +126,26 @@ describe('SessionController', () => {
       expect.objectContaining({ type: 'session-ended', reason: 'stopped' }),
     ]);
     await events.return?.();
+  });
+
+  it('closes current and future event streams after the terminal event', async () => {
+    const { controller } = createController();
+    const current = controller.events()[Symbol.asyncIterator]();
+    controller.dispatch({ type: 'start' });
+    controller.dispatch({ type: 'stop' });
+
+    await nextEvent(current);
+    await nextEvent(current);
+    expect(await nextEvent(current)).toMatchObject({ type: 'session-ended', reason: 'stopped' });
+    expect(await Promise.race([current.next(), Promise.resolve('still-open')])).toEqual({
+      done: true,
+      value: undefined,
+    });
+
+    const future = controller.events()[Symbol.asyncIterator]();
+    expect(await Promise.race([future.next(), Promise.resolve('still-open')])).toEqual({
+      done: true,
+      value: undefined,
+    });
   });
 });

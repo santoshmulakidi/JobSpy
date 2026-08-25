@@ -163,7 +163,9 @@ export class SessionController {
         this.publish({ type: 'generation-completed', snapshot: this.snapshot(), requestId: intent.requestId });
         break;
       case 'generation-failed':
+        this.abortCapture();
         this.abortGeneration();
+        this.clearPendingBuffers();
         this.error = { code: 'GENERATION_FAILED', message: intent.message };
         this.publish({ type: 'session-error', snapshot: this.snapshot(), error: this.error });
         break;
@@ -184,6 +186,7 @@ export class SessionController {
         this.error = null;
         this.publish({ type: 'capture-cancelled', snapshot: this.snapshot() });
         this.publish({ type: 'session-ended', snapshot: this.snapshot(), reason: 'stopped' });
+        this.closeSubscribers();
         break;
     }
 
@@ -192,7 +195,11 @@ export class SessionController {
 
   public events(): AsyncIterable<SessionEvent> {
     const iterator = new EventIterator(() => this.subscribers.delete(iterator));
-    this.subscribers.add(iterator);
+    if (this.phase === 'stopped') {
+      iterator.close();
+    } else {
+      this.subscribers.add(iterator);
+    }
     return {
       [Symbol.asyncIterator]: () => iterator,
     };
@@ -236,6 +243,12 @@ export class SessionController {
   private publish(event: SessionEvent): void {
     for (const subscriber of this.subscribers) {
       subscriber.push(event);
+    }
+  }
+
+  private closeSubscribers(): void {
+    for (const subscriber of [...this.subscribers]) {
+      subscriber.close();
     }
   }
 }
