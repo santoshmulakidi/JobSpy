@@ -292,6 +292,118 @@ describe('provider-specific request mapping', () => {
   });
 });
 
+describe('provider-specific response mapping', () => {
+  it('accepts named OpenAI Responses events when the event name matches the payload type', async () => {
+    const fake = recordingFetch(sse([
+      'event: response.created\ndata: {"type":"response.created","response":{"id":"r1","status":"in_progress"}}\n\n',
+      'event: response.output_text.delta\ndata: {"type":"response.output_text.delta","delta":"Hello"}\n\n',
+      'event: response.completed\ndata: {"type":"response.completed","response":{"status":"completed","usage":{"input_tokens":2,"output_tokens":1,"total_tokens":3}}}\n\n',
+    ]));
+    const adapter = createOpenAiAdapter(
+      { apiKey: secret, model: 'gpt-test', capabilities: ['text'] },
+      { fetch: fake.fetch as typeof globalThis.fetch },
+    );
+
+    expect(await collect(adapter)).toEqual([
+      { type: 'request-accepted' },
+      { type: 'text-delta', text: 'Hello' },
+      { type: 'usage', inputTokens: 2, outputTokens: 1, totalTokens: 3 },
+      { type: 'completed', reason: 'stop' },
+    ]);
+  });
+
+  it.each([
+    ['mismatched', 'response.output_text.delta', 'response.created'],
+    ['unknown', 'response.future', 'response.future'],
+  ])('rejects %s named OpenAI Responses events safely', async (_case, event, type) => {
+    const fake = recordingFetch(sse([`event: ${event}\ndata: ${JSON.stringify({ type })}\n\n`]));
+    const adapter = createOpenAiAdapter(
+      { apiKey: secret, model: 'gpt-test', capabilities: ['text'] },
+      { fetch: fake.fetch as typeof globalThis.fetch },
+    );
+
+    expect(await collect(adapter)).toEqual([{
+      type: 'failed', code: 'invalid-event', message: 'Provider sent an invalid streaming event.', retryable: false,
+    }]);
+  });
+
+  it.each([
+    ['OpenRouter', createOpenRouterAdapter, 'vendor/model'],
+    ['OpenCode', createOpenCodeAdapter, 'ox-alpha'],
+  ] as const)('%s accepts a final usage-only chat chunk', async (_name, create, model) => {
+    const fake = recordingFetch(sse([
+      'data: {"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}\n\n',
+      'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\n',
+      'data: {"choices":[],"usage":{"prompt_tokens":2,"completion_tokens":1,"total_tokens":3}}\n\n',
+      'data: [DONE]\n\n',
+    ]));
+    const adapter = create(
+      { apiKey: secret, model, capabilities: ['text'] },
+      { fetch: fake.fetch as typeof globalThis.fetch },
+    );
+
+    expect(await collect(adapter)).toEqual([
+      { type: 'request-accepted' },
+      { type: 'text-delta', text: 'Hello' },
+      { type: 'usage', inputTokens: 2, outputTokens: 1, totalTokens: 3 },
+      { type: 'completed', reason: 'stop' },
+    ]);
+  });
+
+  it('maps OpenAI max-output-token incompletion to length and preserves usage', async () => {
+    const fake = recordingFetch(sse([
+      'event: response.incomplete\ndata: {"type":"response.incomplete","response":{"status":"incomplete","incomplete_details":{"reason":"max_output_tokens"},"usage":{"input_tokens":2,"output_tokens":4,"total_tokens":6}}}\n\n',
+    ]));
+    const adapter = createOpenAiAdapter(
+      { apiKey: secret, model: 'gpt-test', capabilities: ['text'] },
+      { fetch: fake.fetch as typeof globalThis.fetch },
+    );
+
+    expect(await collect(adapter)).toEqual([
+      { type: 'request-accepted' },
+      { type: 'usage', inputTokens: 2, outputTokens: 4, totalTokens: 6 },
+      { type: 'completed', reason: 'length' },
+    ]);
+  });
+
+  it.each([
+    ['refusal delta', [
+      'event: response.refusal.delta\ndata: {"type":"response.refusal.delta","delta":"I cannot help with that."}\n\n',
+      'event: response.completed\ndata: {"type":"response.completed","response":{"status":"completed","usage":{"input_tokens":2,"output_tokens":5,"total_tokens":7}}}\n\n',
+    ]],
+    ['refusal output', [
+      'event: response.completed\ndata: {"type":"response.completed","response":{"status":"completed","output":[{"type":"message","content":[{"type":"refusal","refusal":"I cannot help with that."}]}],"usage":{"input_tokens":2,"output_tokens":5,"total_tokens":7}}}\n\n',
+    ]],
+  ] as const)('maps OpenAI %s to content-filter without emitting refusal text', async (_case, records) => {
+    const fake = recordingFetch(sse(records));
+    const adapter = createOpenAiAdapter(
+      { apiKey: secret, model: 'gpt-test', capabilities: ['text'] },
+      { fetch: fake.fetch as typeof globalThis.fetch },
+    );
+
+    expect(await collect(adapter)).toEqual([
+      { type: 'request-accepted' },
+      { type: 'usage', inputTokens: 2, outputTokens: 5, totalTokens: 7 },
+      { type: 'completed', reason: 'content-filter' },
+    ]);
+  });
+
+  it('maps Gemini prompt-level blocking without candidates to content-filter', async () => {
+    const fake = recordingFetch(sse([
+      'data: {"promptFeedback":{"blockReason":"SAFETY","safetyRatings":[]}}\n\n',
+    ]));
+    const adapter = createGeminiAdapter(
+      { apiKey: secret, model: 'gemini-test', capabilities: ['text'] },
+      { fetch: fake.fetch as typeof globalThis.fetch },
+    );
+
+    expect(await collect(adapter)).toEqual([
+      { type: 'request-accepted' },
+      { type: 'completed', reason: 'content-filter' },
+    ]);
+  });
+});
+
 describe('completion validation', () => {
   it('rejects a truncated stream and an unknown finish reason', async () => {
     const truncated = recordingFetch(sse([

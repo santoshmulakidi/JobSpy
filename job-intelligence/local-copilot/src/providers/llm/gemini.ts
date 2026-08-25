@@ -14,6 +14,7 @@ import {
 } from './types';
 
 const Chunk = z.object({
+  promptFeedback: z.object({ blockReason: z.string().min(1) }).passthrough().optional(),
   candidates: z.array(z.object({
     content: z.object({
       parts: z.array(z.object({ text: z.string().optional() }).passthrough()),
@@ -25,7 +26,7 @@ const Chunk = z.object({
     candidatesTokenCount: z.number().int().nonnegative(),
     totalTokenCount: z.number().int().nonnegative(),
   }).passthrough().optional(),
-}).passthrough().refine((value) => value.candidates || value.usageMetadata);
+}).passthrough().refine((value) => value.promptFeedback || value.candidates || value.usageMetadata);
 
 export function createGeminiAdapter(
   config: LlmProviderConfig,
@@ -77,6 +78,11 @@ function createGeminiMapper(): LlmStreamMapper {
       }
       const tokens = parsed.data.usageMetadata;
       if (tokens) events.push(usage(tokens.promptTokenCount, tokens.candidatesTokenCount, tokens.totalTokenCount));
+      if (parsed.data.promptFeedback?.blockReason) {
+        completed = true;
+        events.push({ type: 'completed', reason: 'content-filter' });
+        return events;
+      }
       const finishReason = parsed.data.candidates?.find(({ finishReason }) => finishReason)?.finishReason;
       if (finishReason) {
         const reason = geminiReason(finishReason);
