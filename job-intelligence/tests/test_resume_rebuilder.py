@@ -59,7 +59,19 @@ def clear_ai_env(monkeypatch):
 
 
 def make_test_settings(**kwargs):
-    return Settings(_env_file=None, **kwargs)
+    isolated = {
+        "omniroute_api_key": None,
+        "omniroute_base_url": "http://100.68.181.75:20128/v1",
+        "openrouter_api_key": None,
+        "nvidia_api_key": None,
+        "groq_api_key": None,
+        "gemini_api_key": None,
+        "gemini_api_key_2": None,
+        "gemini_api_key_3": None,
+        "gemini_api_key_4": None,
+        "gemini_api_key_5": None,
+    }
+    return Settings(_env_file=None, **(isolated | kwargs))
 
 
 def test_resume_prompt_includes_recruiter_authentic_humanizer_rules():
@@ -362,7 +374,7 @@ def test_rebuild_resume_returns_prompt_only_without_keys(monkeypatch):
 
 
 def test_resume_rebuild_endpoint_validates_and_returns_fallback(monkeypatch):
-    monkeypatch.setattr("api.main.settings.omniroute_model", "")
+    monkeypatch.setattr("api.main.settings", make_test_settings(omniroute_model=""))
     client = TestClient(app)
 
     response = client.post(

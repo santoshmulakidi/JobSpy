@@ -5,6 +5,12 @@
 *.db-wal
 .env
 __pycache__/
+build/
+*.egg-info/
+*.before-*
+*.bak
+*.bak.*
+docs/personal/
 *.py[cod]
 .pytest_cache/
 .venv/
