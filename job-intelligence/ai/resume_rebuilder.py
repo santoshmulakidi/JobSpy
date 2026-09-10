@@ -411,16 +411,20 @@ def _chat_completion(*, provider: dict[str, str], messages: list[dict[str, str]]
         headers["HTTP-Referer"] = settings.openrouter_site_url
         headers["X-Title"] = settings.openrouter_app_name
 
+    payload: dict[str, object] = {
+        "model": provider["model"],
+        "messages": messages,
+        "temperature": 0.2,
+        "max_tokens": settings.resume_rebuild_max_tokens,
+        "stream": False,
+    }
+    if reasoning_effort := provider.get("reasoning_effort"):
+        payload["reasoning"] = {"effort": reasoning_effort}
+
     response = httpx.post(
         f"{provider['base_url']}/chat/completions",
         headers=headers,
-        json={
-            "model": provider["model"],
-            "messages": messages,
-            "temperature": 0.2,
-            "max_tokens": settings.resume_rebuild_max_tokens,
-            "stream": False,
-        },
+        json=payload,
         timeout=settings.ai_request_timeout_seconds,
     )
     response.raise_for_status()

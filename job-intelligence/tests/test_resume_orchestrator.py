@@ -45,7 +45,7 @@ def settings(*, repairs=0):
         openrouter_api_key="or",
         nvidia_resume_writer_model="nvidia/nemotron-3-ultra-550b-a55b",
         nvidia_resume_writer_fallback_model="z-ai/glm-5.2",
-        openrouter_resume_writer_model="deepseek/deepseek-v4-pro",
+        openrouter_resume_writer_model="deepseek/deepseek-v4-pro-0813",
         omniroute_api_key="om",
         omniroute_resume_writer_model="no-think/claude/claude-sonnet-5",
         omniroute_resume_writer_best_model="claude/claude-sonnet-5",
@@ -70,11 +70,13 @@ class FakeCompletion:
     def __init__(self, failures=()):
         self.failures = list(failures)
         self.models = []
+        self.providers = []
         self.prompts = []
 
     def __call__(self, provider, messages):
         model = provider["model"]
         self.models.append(model)
+        self.providers.append(provider.copy())
         self.prompts.append(messages[-1]["content"])
         if self.failures and self.failures[0] == model:
             self.failures.pop(0)
@@ -221,6 +223,23 @@ def test_selected_writer_falls_back_to_the_tier_chain():
         settings(), completion=fake,
     )
     assert fake.models[:2] == ["claude/claude-opus-5", "no-think/claude/claude-sonnet-5"]
+    assert result.status == "REVIEWED"
+
+
+def test_openrouter_writer_uses_requested_high_reasoning_fallback_order():
+    models = (
+        "deepseek/deepseek-v4-pro-0813",
+        "z-ai/glm-5.3",
+        "moonshotai/kimi-k2.6",
+        "qwen/qwen3.8-max-0902",
+    )
+    fake = FakeCompletion(failures=models[:3])
+    result = orchestrate_resume(
+        _request_with_model("openrouter", models[0], speed="best"),
+        settings(), completion=fake,
+    )
+    assert fake.models[:4] == list(models)
+    assert all(provider["reasoning_effort"] == "high" for provider in fake.providers[:4])
     assert result.status == "REVIEWED"
 
 

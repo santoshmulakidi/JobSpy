@@ -7,7 +7,7 @@ from docx import Document
 from fastapi.testclient import TestClient
 
 from ai.resume_docx import build_resume_docx
-from ai.resume_rebuilder import _unsupported_numeric_claims, build_resume_prompt, rebuild_resume
+from ai.resume_rebuilder import _chat_completion, _unsupported_numeric_claims, build_resume_prompt, rebuild_resume
 from api.main import app
 from storage.config import Settings
 
@@ -90,6 +90,30 @@ def test_numeric_guard_rejects_unsupported_claims():
         base_resume=BASE_RESUME,
         rebuilt_resume=BASE_RESUME + "\nReduced latency by 40%.",
     ) == ["40%"]
+
+
+def test_openrouter_high_reasoning_is_sent(monkeypatch):
+    captured = {}
+    request = httpx.Request("POST", "https://openrouter.ai/api/v1/chat/completions")
+
+    def fake_post(_url, **kwargs):
+        captured.update(kwargs["json"])
+        return httpx.Response(
+            200, request=request,
+            json={"choices": [{"message": {"content": "resume"}}]},
+        )
+
+    monkeypatch.setattr("ai.resume_rebuilder.httpx.post", fake_post)
+    _chat_completion(
+        provider={
+            "name": "openrouter", "base_url": "https://openrouter.ai/api/v1",
+            "api_key": "test", "model": "deepseek/deepseek-v4-pro-0813",
+            "reasoning_effort": "high",
+        },
+        messages=[{"role": "user", "content": "write"}],
+        settings=make_test_settings(),
+    )
+    assert captured["reasoning"] == {"effort": "high"}
 
 
 def test_rebuild_resume_uses_free_omniroute_first(monkeypatch):

@@ -306,9 +306,24 @@ export function resumeLabModelChoices(): ResumeLabModelChoice[] {
       note: "Highest quality, slowest. Two ATS repair passes.",
     },
     {
-      id: "deepseek-paid", provider: "openrouter", model: "deepseek/deepseek-v4-pro",
-      label: "DeepSeek V4 Pro", cost: "Paid", pace: "Slow", speed: "best",
-      note: "Billed via OpenRouter credits.",
+      id: "deepseek-v4-pro-0813", provider: "openrouter", model: "deepseek/deepseek-v4-pro-0813",
+      label: "DeepSeek V4 Pro 0813", cost: "Paid", pace: "Slow", speed: "best",
+      note: "Recommended high-reasoning main model (~$0.013/resume). Falls back to GLM, Kimi, then Qwen.",
+    },
+    {
+      id: "glm-53-paid", provider: "openrouter", model: "z-ai/glm-5.3",
+      label: "GLM 5.3", cost: "Paid", pace: "Slow", speed: "best",
+      note: "High reasoning. OpenRouter fallback 1 (~$0.022/resume).",
+    },
+    {
+      id: "kimi-k26-paid", provider: "openrouter", model: "moonshotai/kimi-k2.6",
+      label: "Kimi K2.6", cost: "Paid", pace: "Slow", speed: "best",
+      note: "High reasoning. OpenRouter fallback 2 (~$0.018/resume).",
+    },
+    {
+      id: "qwen-38-max-paid", provider: "openrouter", model: "qwen/qwen3.8-max-0902",
+      label: "Qwen 3.8 Max 0902", cost: "Paid", pace: "Slow", speed: "best",
+      note: "High reasoning. OpenRouter fallback 3 (~$0.040/resume).",
     },
     {
       id: "claude-sonnet-45-paid", provider: "openrouter", model: "anthropic/claude-sonnet-4.5",

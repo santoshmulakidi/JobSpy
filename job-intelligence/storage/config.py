@@ -39,10 +39,10 @@ class Settings(BaseSettings):
     )
     nvidia_model: str = "meta/llama-3.1-8b-instruct"
     nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
-    resume_orchestration_version: str = "2026-08-11-v1"
+    resume_orchestration_version: str = "2026-09-10-v2"
     nvidia_resume_writer_model: str = "nvidia/nemotron-3-ultra-550b-a55b"
     nvidia_resume_writer_fallback_model: str = "z-ai/glm-5.2"
-    openrouter_resume_writer_model: str = "deepseek/deepseek-v4-pro"
+    openrouter_resume_writer_model: str = "deepseek/deepseek-v4-pro-0813"
     omniroute_resume_writer_model: str = "no-think/claude/claude-sonnet-5"
     omniroute_resume_writer_best_model: str = "claude/claude-sonnet-5"
     omniroute_resume_reviewer_model: str = "no-think/claude/claude-haiku-4-5-20251001"

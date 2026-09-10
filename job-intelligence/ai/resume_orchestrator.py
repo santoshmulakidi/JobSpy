@@ -74,6 +74,13 @@ CompletionFn = Callable[[dict[str, str], list[dict[str, str]]], str]
 
 _BULLET_GLYPH_RE = re.compile(r"^(\s*)[▪▶●◆■□○◦‣∙·–—]\s+")
 
+_OPENROUTER_WRITER_MODELS = (
+    "deepseek/deepseek-v4-pro-0813",
+    "z-ai/glm-5.3",
+    "moonshotai/kimi-k2.6",
+    "qwen/qwen3.8-max-0902",
+)
+
 
 def _normalize_bullets(text: str) -> str:
     """Rewrite non-standard bullet glyphs to a plain hyphen.
@@ -116,7 +123,10 @@ def _provider_for(name: str, model: str, settings: Settings) -> dict[str, str]:
     }
     resolved = name if name in bases else "omniroute"
     base_url, api_key = bases[resolved]
-    return _provider(resolved, base_url, api_key, model)
+    provider = _provider(resolved, base_url, api_key, model)
+    if resolved == "openrouter" and model in _OPENROUTER_WRITER_MODELS:
+        provider["reasoning_effort"] = "high"
+    return provider
 
 
 def _provider(name: str, base_url: str, api_key: str | None, model: str) -> dict[str, str]:
@@ -302,7 +312,11 @@ def orchestrate_resume(
         "nvidia", settings.nvidia_base_url, settings.nvidia_api_key,
         settings.nvidia_resume_writer_fallback_model,
     )
-    paid_writer = _provider("openrouter", settings.openrouter_base_url, settings.openrouter_api_key, settings.openrouter_resume_writer_model)
+    openrouter_writers = [
+        _provider_for("openrouter", model, settings)
+        for model in _OPENROUTER_WRITER_MODELS
+    ]
+    paid_writer = openrouter_writers[0]
     reviewer_primary = _provider("omniroute", settings.omniroute_base_url, settings.omniroute_api_key, settings.omniroute_resume_reviewer_model)
     reviewer_fallback = _provider("omniroute", settings.omniroute_base_url, settings.omniroute_api_key, settings.omniroute_resume_reviewer_fallback_model)
     omniroute_writer = _provider(
@@ -328,8 +342,13 @@ def orchestrate_resume(
         chosen = _provider_for(
             request.writer_provider or "omniroute", request.writer_model, settings
         )
+        fallbacks = (
+            openrouter_writers + writer_chain
+            if chosen["name"] == "openrouter"
+            else writer_chain
+        )
         writer_chain = [chosen] + [
-            p for p in writer_chain if p["model"] != chosen["model"]
+            p for p in fallbacks if p["model"] != chosen["model"]
         ]
     draft = None
     writer = writer_chain[0]
