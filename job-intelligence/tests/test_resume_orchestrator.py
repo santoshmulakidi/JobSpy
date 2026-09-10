@@ -155,6 +155,7 @@ def test_both_reviewers_failing_is_not_success():
     fake = FakeCompletion(failures=(
         "no-think/claude/claude-haiku-4-5-20251001",
         "no-think/claude/claude-sonnet-5",
+        "z-ai/glm-5.3",
     ))
     result = orchestrate_resume(request(speed="fast"), settings(), completion=fake)
     assert result.status == "WRITER_ONLY"

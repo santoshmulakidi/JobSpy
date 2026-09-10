@@ -319,6 +319,7 @@ def orchestrate_resume(
     paid_writer = openrouter_writers[0]
     reviewer_primary = _provider("omniroute", settings.omniroute_base_url, settings.omniroute_api_key, settings.omniroute_resume_reviewer_model)
     reviewer_fallback = _provider("omniroute", settings.omniroute_base_url, settings.omniroute_api_key, settings.omniroute_resume_reviewer_fallback_model)
+    reviewer_openrouter = openrouter_writers[1]
     omniroute_writer = _provider(
         "omniroute", settings.omniroute_base_url, settings.omniroute_api_key,
         settings.omniroute_resume_writer_model,
@@ -369,19 +370,26 @@ def orchestrate_resume(
     emit("WRITER_SUCCEEDED", "info", "writer", writer, "Resume writer completed")
 
     emit("REVIEWER_STARTED", "info", "reviewer", reviewer_primary, "Claude Haiku review started")
-    try:
-        reviewed = call(reviewer_primary, _messages(request, draft=draft))
-        successful_reviewer = reviewer_primary
-    except Exception:
-        emit("REVIEWER_FALLBACK", "warning", "reviewer", reviewer_fallback, "Claude Haiku failed; Claude Sonnet review started")
+    successful_reviewer = reviewer_primary
+    reviewed = None
+    for reviewer, message in (
+        (reviewer_primary, "Claude Haiku failed; Claude Sonnet review started"),
+        (reviewer_fallback, "Claude Sonnet failed; OpenRouter GLM review started"),
+        (reviewer_openrouter, "OpenRouter GLM review started"),
+    ):
+        if reviewer is not reviewer_primary:
+            emit("REVIEWER_FALLBACK", "warning", "reviewer", reviewer, message)
         try:
-            reviewed = call(reviewer_fallback, _messages(request, draft=draft))
-            successful_reviewer = reviewer_fallback
+            reviewed = call(reviewer, _messages(request, draft=draft))
+            successful_reviewer = reviewer
+            break
         except Exception:
-            emit("FINAL_FAILURE", "error", "reviewer", reviewer_fallback, "All resume reviewers failed")
-            return OrchestrationResult(
-                status="WRITER_ONLY", resume_text=None, diagnostic_draft=draft, events=events
-            )
+            continue
+    if reviewed is None:
+        emit("FINAL_FAILURE", "error", "reviewer", reviewer_openrouter, "All resume reviewers failed")
+        return OrchestrationResult(
+            status="WRITER_ONLY", resume_text=None, diagnostic_draft=draft, events=events
+        )
 
     try:
         validated = _validate_generated_resume(reviewed, base_resume=request.source_resume)
