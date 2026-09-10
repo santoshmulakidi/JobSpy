@@ -258,8 +258,8 @@ export function resumeModelChoices(): ResumeModelChoice[] {
     { provider: "openrouter", model: "meta-llama/llama-4-maverick:free", label: "Free: OpenRouter Llama 4 Maverick", tier: "Free / Low cost" },
     { provider: "openrouter", model: "google/gemma-3-27b-it:free", label: "Free: OpenRouter Gemma 3 27B", tier: "Free / Low cost" },
     { provider: "nvidia", model: "meta/llama-3.1-8b-instruct", label: "Free: NVIDIA Llama 3.1 8B", tier: "Free / Low cost" },
-    { provider: "openrouter", model: "anthropic/claude-sonnet-4-5", label: "Premium: Claude Sonnet 4.5", tier: "Premium" },
-    { provider: "openrouter", model: "anthropic/claude-opus-4-5", label: "Premium: Claude Opus 4.5", tier: "Premium" },
+    { provider: "openrouter", model: "anthropic/claude-sonnet-4.5", label: "Premium: Claude Sonnet 4.5", tier: "Premium" },
+    { provider: "openrouter", model: "anthropic/claude-opus-4.5", label: "Premium: Claude Opus 4.5", tier: "Premium" },
     { provider: "openrouter", model: "openai/gpt-4o", label: "Premium: GPT-4o", tier: "Premium" },
   ];
 }
@@ -311,7 +311,7 @@ export function resumeLabModelChoices(): ResumeLabModelChoice[] {
       note: "Billed via OpenRouter credits.",
     },
     {
-      id: "claude-sonnet-45-paid", provider: "openrouter", model: "anthropic/claude-sonnet-4-5",
+      id: "claude-sonnet-45-paid", provider: "openrouter", model: "anthropic/claude-sonnet-4.5",
       label: "Claude Sonnet 4.5", cost: "Paid", pace: "Medium", speed: "best",
       note: "Billed via OpenRouter credits. Strong prose quality at moderate latency.",
     },
