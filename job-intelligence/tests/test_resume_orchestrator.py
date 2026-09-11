@@ -45,7 +45,7 @@ def settings(*, repairs=0):
         openrouter_api_key="or",
         nvidia_resume_writer_model="nvidia/nemotron-3-ultra-550b-a55b",
         nvidia_resume_writer_fallback_model="z-ai/glm-5.2",
-        openrouter_resume_writer_model="deepseek/deepseek-v4-pro-0813",
+        openrouter_resume_writer_model="deepseek/deepseek-v4.1-flash",
         omniroute_api_key="om",
         omniroute_resume_writer_model="no-think/claude/claude-sonnet-5",
         omniroute_resume_writer_best_model="claude/claude-sonnet-5",
@@ -229,7 +229,7 @@ def test_selected_writer_falls_back_to_the_tier_chain():
 
 def test_openrouter_writer_uses_requested_high_reasoning_fallback_order():
     models = (
-        "deepseek/deepseek-v4-pro-0813",
+        "deepseek/deepseek-v4.1-flash",
         "z-ai/glm-5.3",
         "moonshotai/kimi-k2.6",
         "qwen/qwen3.8-max-0902",

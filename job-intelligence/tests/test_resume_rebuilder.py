@@ -119,7 +119,7 @@ def test_openrouter_high_reasoning_is_sent(monkeypatch):
     _chat_completion(
         provider={
             "name": "openrouter", "base_url": "https://openrouter.ai/api/v1",
-            "api_key": "test", "model": "deepseek/deepseek-v4-pro-0813",
+            "api_key": "test", "model": "deepseek/deepseek-v4.1-flash",
             "reasoning_effort": "high",
         },
         messages=[{"role": "user", "content": "write"}],

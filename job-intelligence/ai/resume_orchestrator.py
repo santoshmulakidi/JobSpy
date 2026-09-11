@@ -75,7 +75,7 @@ CompletionFn = Callable[[dict[str, str], list[dict[str, str]]], str]
 _BULLET_GLYPH_RE = re.compile(r"^(\s*)[▪▶●◆■□○◦‣∙·–—]\s+")
 
 _OPENROUTER_WRITER_MODELS = (
-    "deepseek/deepseek-v4-pro-0813",
+    "deepseek/deepseek-v4.1-flash",
     "z-ai/glm-5.3",
     "moonshotai/kimi-k2.6",
     "qwen/qwen3.8-max-0902",

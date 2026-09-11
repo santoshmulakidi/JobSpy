@@ -306,9 +306,9 @@ export function resumeLabModelChoices(): ResumeLabModelChoice[] {
       note: "Highest quality, slowest. Two ATS repair passes.",
     },
     {
-      id: "deepseek-v4-pro-0813", provider: "openrouter", model: "deepseek/deepseek-v4-pro-0813",
-      label: "DeepSeek V4 Pro 0813", cost: "Paid", pace: "Slow", speed: "best",
-      note: "Recommended high-reasoning main model (~$0.013/resume). Falls back to GLM, Kimi, then Qwen.",
+      id: "deepseek-v4.1-flash", provider: "openrouter", model: "deepseek/deepseek-v4.1-flash",
+      label: "DeepSeek V4.1 Flash", cost: "Paid", pace: "Medium", speed: "best",
+      note: "Recommended lower-cost high-reasoning main model. Falls back to GLM, Kimi, then Qwen.",
     },
     {
       id: "glm-53-paid", provider: "openrouter", model: "z-ai/glm-5.3",

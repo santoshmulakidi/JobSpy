@@ -517,7 +517,7 @@ export default function ResumeLabPage() {
   const [rebuildLoading, setRebuildLoading] = useState(false);
   const [rebuildResult, setRebuildResult] = useState<ResumeRebuildResult | null>(null);
   const modelChoices = resumeLabModelChoices();
-  const [modelChoiceId, setModelChoiceId] = useState<string>("deepseek-v4-pro-0813");
+  const [modelChoiceId, setModelChoiceId] = useState<string>("deepseek-v4.1-flash");
   const [targetPages, setTargetPages] = useState<string>("2");
   const modelChoice = modelChoices.find((c) => c.id === modelChoiceId) ?? modelChoices[0]!;
   const generationSpeed: ResumeGenerationSpeed = modelChoice.speed;
